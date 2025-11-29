@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Informations générales -->
+  <title>Programme EAJ – BA 116</title>
+  <meta name="description" content="Programme hebdomadaire des Escadrilles Air Jeunesse (EAJ) – BA 116. Activités, groupes, séances, événements spéciaux." />
+
+  <!-- Couleur de thème (adresse/onglet mobile) -->
+  <meta name="theme-color" content="#0053a6" />
+
+  <!-- Web App (Android / Chrome) -->
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- Web App (iOS / Safari) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <!-- Icône navigateur -->
+  <link rel="icon" type="image/x-icon" href="images/eaj.ico">
+
+  <!-- Icônes Apple -->
+  <link rel="apple-touch-icon" href="images/logo_eaj192.png">
+
+  <!-- Manifest (icônes 192/512 + config PWA) -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- CSS principal -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body data-theme="dark">
+  <!-- ⚠️ Bannière d’alerte -->
+  <div id="alert-banner"></div>
+
+  <header>
+    <div class="logo-wrapper">
+      <!-- 💡 Mets ton logo ici : images/logo-eaj.png -->
+      <img src="images/logo_eaj.png" alt="Logo Escadrilles Air Jeunesse">
+      <div class="site-title-text">
+        <h1>Escadrilles Air Jeunesse</h1>
+        <p>BA 116 – Programme des activités</p>
+        <div class="badge-time">
+          ⏱ Mercredi après-midi • 14h–17h (et événements ponctuels)
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Barre filtres + bouton thème -->
+  <div id="filter-bar">
+    <div id="filter-buttons">
+      <button class="btn-filter" data-filter="all">Tous</button>
+      <button class="btn-filter" data-filter="EAJ1">EAJ1</button>
+      <button class="btn-filter" data-filter="EAJ2">EAJ2</button>
+      <button class="btn-filter" data-filter="EAJ3">EAJ3</button>
+    </div>
+    <button id="theme-toggle" class="btn-theme" type="button">
+      🌙 Mode sombre
+    </button>
+  </div>
+
+  <!-- 🎨 Légende -->
+  <section class="legend">
+    <strong>Légende des activités :</strong>
+    <div class="legend-line">
+      📘 BIA &nbsp;•&nbsp;
+      🏃‍♂️ Sport &nbsp;•&nbsp;
+      🏛️ Visite &nbsp;•&nbsp;
+      🛠️ Projet &nbsp;•&nbsp;
+      ✈️ Aéromodélisme &nbsp;•&nbsp;
+      🛸 Drone &nbsp;•&nbsp;
+      🎯 Tir &nbsp;•&nbsp;
+      🤝 Rencontres &nbsp;•&nbsp;
+      🕯️ Devoir de mémoire &nbsp;•&nbsp;
+      🎖️ Cérémonie &nbsp;•&nbsp;
+      ✨ Autres
+
+    </div>
+  </section>
+
+  <main class="container">
+    <div id="week-container"></div>
+  </main>
+
+  <!-- ✅ Bas de page -->
+  <footer>
+    <div class="footer-line">EAJ BA 116 - 2025</div>
+    <div class="footer-line" id="last-update"></div>
+    <!-- 🔧 Lien discret admin -->
+    <div class="footer-line">
+      <a href="#" id="admin-link" class="footer-link footer-link-admin">
+        🔧 Accès administration
+      </a>
+    </div>
+  </footer>
+
+  <!-- 🔐 Fenêtre modale code admin -->
+<div id="admin-modal" class="admin-modal" aria-hidden="true">
+  <div class="admin-modal-backdrop"></div>
+  <div class="admin-modal-dialog">
+    <h2>Accès administrateur</h2>
+    <p class="admin-modal-text">
+      Cette zone est réservée aux encadrants EAJ.<br>
+      Merci de saisir le code d’accès.
+    </p>
+    <input type="password" id="admin-code-input" placeholder="Code d’accès" />
+    <div class="admin-modal-actions">
+      <button type="button" id="admin-cancel" class="btn-admin btn-admin-secondary">Annuler</button>
+      <button type="button" id="admin-validate" class="btn-admin btn-admin-primary">Valider</button>
+    </div>
+    <p class="admin-error" id="admin-error" style="display:none;">
+      Code incorrect. Merci de vérifier.
+    </p>
+  </div>
+</div>
+
+<button id="back-to-top" class="back-to-top air-patch" type="button">
+  ✈️
+</button>
+
+  <!-- ⚙️ JS : d’abord les données, puis la logique -->
+  <script src="planning.js"></script>
+  <script src="script.js"></script>
+
+ 
+
+</body>
+</html>

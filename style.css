@@ -1,0 +1,948 @@
+:root {
+  /* Couleurs de base (light) */
+  --blue-main: #0053a6;
+  --blue-light: #e4effb;
+  --blue-soft: #1e73c9;
+  --red-main: #e3312d;
+
+  --bg-page: #f3f5f9;
+  --bg-card: #ffffff;
+  --bg-card-soft: #f7f9fc;
+
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --border-soft: #d0d7e2;
+}
+
+/* Thème sombre : on redéfinit les variables */
+body[data-theme="dark"] {
+  --bg-page: #050816;
+  --bg-card: #101827;
+  --bg-card-soft: #161d2f;
+
+  --text-main: #f9fafb;
+  --text-muted: #9ca3af;
+  --border-soft: #1f2937;
+
+  --blue-light: #0b1730;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #f8fbff 0, var(--bg-page) 45%, #e5e9f2 100%);
+  color: var(--text-main);
+  min-height: 100vh;
+  padding: 1.5rem 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+body[data-theme="dark"] {
+  background: radial-gradient(circle at top, #0b1730 0, #050816 45%, #020617 100%);
+}
+
+/* ⚠️ Bannière d’alerte */
+#alert-banner {
+  display: none;
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #fca5a5;
+  font-weight: 500;
+}
+
+header {
+  max-width: 960px;
+  margin: 0 auto 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.6rem;
+}
+
+.logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.logo-wrapper img {
+  max-height: 70px;
+  height: auto;
+  width: auto;
+}
+
+.site-title-text {
+  text-align: left;
+}
+
+.site-title-text h1 {
+  font-size: 1.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--blue-main);
+  margin-bottom: 0.1rem;
+}
+
+.site-title-text p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.badge-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.1rem;
+  padding: 0.25rem 0.9rem;
+  border-radius: 999px;
+  background: var(--blue-light);
+  color: var(--blue-soft);
+  font-size: 0.8rem;
+  border: 1px solid rgba(0, 83, 166, 0.18);
+}
+
+/* Barre filtres + bouton thème */
+#filter-bar {
+  max-width: 960px;
+  margin: 0 auto 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+#filter-buttons {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.btn-filter {
+  padding: 0.45rem 1.1rem;
+  background: var(--bg-card);
+  color: var(--blue-main);
+  border: 1px solid rgba(0, 83, 166, 0.35);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.btn-filter:hover {
+  background: var(--blue-light);
+}
+
+.btn-filter.active {
+  background: var(--blue-main);
+  color: #ffffff;
+  border-color: var(--blue-main);
+}
+
+.btn-theme {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: 0.2s;
+}
+
+.btn-theme:hover {
+  background: var(--bg-card-soft);
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.week {
+  background: linear-gradient(135deg, rgba(0, 83, 166, 0.08), var(--bg-card));
+  border-radius: 1.1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-soft);
+  margin-bottom: 0.7rem;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+/* Séances passées grisées */
+.week-past {
+  opacity: 0.55;
+}
+
+body[data-theme="dark"] .week-past {
+  opacity: 0.4;
+}
+
+/* Prochaine séance mise en valeur */
+.week-next {
+  border-color: var(--blue-main);
+  box-shadow: 0 0 0 2px rgba(0, 83, 166, 0.2), 0 10px 24px rgba(15, 23, 42, 0.18);
+  transform: translateY(-2px);
+}
+
+.week-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 0.8rem;
+}
+
+.week-title {
+  font-size: 1.1rem;
+  font-weight: 650;
+  color: var(--blue-main);
+}
+
+body[data-theme="dark"] .week-title {
+  color: #bfdbfe;
+}
+
+.week-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.week-label {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 83, 166, 0.25);
+  background: var(--bg-card);
+  color: var(--red-main);
+  font-weight: 600;
+}
+
+/* Badge séance passée */
+.week-label-past {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #9ca3af;
+  background: var(--bg-card);
+  color: #6b7280;
+  font-weight: 500;
+}
+
+body[data-theme="dark"] .week-label-past {
+  color: #9ca3af;
+  border-color: #4b5563;
+}
+
+.groups {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 700px) {
+  .groups {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.group-card {
+  background: var(--bg-card);
+  border-radius: 0.9rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.group-title {
+  font-size: 1rem;
+  font-weight: 650;
+  margin-bottom: 0.05rem;
+  color: var(--blue-main);
+}
+
+/* Toujours 3 colonnes bien ordonnées */
+.groups {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+/* Même si un groupe manque, on garde les colonnes */
+.group-card[data-group="EAJ1"] {
+  order: 1;
+}
+.group-card[data-group="EAJ2"] {
+  order: 2;
+}
+.group-card[data-group="EAJ3"] {
+  order: 3;
+}
+
+/* Version mobile : une colonne, mais ordre respecté */
+@media (max-width: 699px) {
+  .groups {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+body[data-theme="dark"] .group-title {
+  color: #bfdbfe;
+}
+
+.label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+}
+
+.value {
+  font-size: 0.9rem;
+}
+
+.activities-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+}
+
+.activity-chip {
+  font-size: 0.78rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: var(--bg-card-soft);
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  line-height: 1.2;
+  white-space: normal;
+  max-width: 100%;
+}
+
+.activity-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: #64748b;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.activity-chip span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+  word-break: break-word;
+}
+
+.tag-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+
+.tag {
+  font-size: 0.75rem;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  color: var(--blue-soft);
+  white-space: nowrap;
+}
+
+.week-off {
+  text-align: center;
+  padding: 1.5rem 1rem 0.8rem;
+}
+
+.week-off-emoji {
+  font-size: 2.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.week-off-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--blue-main);
+}
+
+body[data-theme="dark"] .week-off-title {
+  color: #bfdbfe;
+}
+
+.week-off-text {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+/* Légende & aide */
+.legend {
+  max-width: 960px;
+  margin: 0 auto 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 0.8rem;
+  padding: 0.8rem 1rem;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.legend strong {
+  color: var(--blue-main);
+}
+
+.legend-line {
+  margin-top: 0.35rem;
+  line-height: 1.6;
+}
+
+footer {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: auto;
+  padding-top: 1.5rem;
+}
+
+.footer-line {
+  margin: 0.15rem 0;
+}
+
+.footer-link {
+  color: #0053a6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.footer-link:hover {
+  text-decoration: underline;
+}
+
+.help {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-align: left;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.help ul {
+  margin-left: 1rem;
+  margin-top: 0.2rem;
+}
+
+.help code {
+  background: #e5e7eb;
+  padding: 0.12rem 0.35rem;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+}
+
+body[data-theme="dark"] .help code {
+  background: #111827;
+}
+
+.footer-link-admin {
+  font-size: 0.75rem;
+  opacity: 0.35;
+}
+
+.footer-link-admin:hover {
+  opacity: 0.9;
+}
+
+.footer-link-admin {
+  font-size: 0.75rem;
+  opacity: 0.35;
+}
+
+.footer-link-admin:hover {
+  opacity: 0.9;
+}
+
+/* --- Fenêtre modale admin --- */
+
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  display: none; /* caché par défaut */
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+}
+
+.admin-modal-overlay.active {
+  display: flex;
+}
+
+.admin-modal {
+  max-width: 420px;
+  width: 100%;
+  background: var(--bg-card);
+  border-radius: 0.9rem;
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.45);
+  padding: 1rem 1.1rem 0.9rem;
+}
+
+.admin-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.admin-modal-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--blue-main);
+}
+
+body[data-theme="dark"] .admin-modal-title {
+  color: #bfdbfe;
+}
+
+.admin-modal-close {
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.admin-modal-close:hover {
+  color: var(--text-main);
+}
+
+.admin-modal-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.7rem;
+}
+
+.admin-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.4rem;
+}
+
+.admin-modal-field label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.admin-modal-field input {
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-card-soft);
+  color: var(--text-main);
+}
+
+.admin-modal-field input:focus {
+  outline: none;
+  border-color: var(--blue-main);
+  box-shadow: 0 0 0 1px rgba(0, 83, 166, 0.35);
+}
+
+.admin-modal-error {
+  min-height: 1.1rem;
+  font-size: 0.78rem;
+  color: #b91c1c;
+  margin-bottom: 0.4rem;
+}
+
+.admin-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.admin-btn {
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-card);
+  color: var(--text-main);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.admin-btn-primary {
+  border-color: var(--blue-main);
+  background: var(--blue-main);
+  color: #ffffff;
+}
+
+.admin-btn-primary:hover {
+  filter: brightness(1.05);
+}
+
+.admin-btn-secondary:hover {
+  background: var(--bg-card-soft);
+}
+
+/* petit effet secousse en cas d’erreur de code */
+.admin-modal.shake {
+  animation: admin-shake 0.3s;
+}
+
+@keyframes admin-shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+
+/* Carte d'activité commune en pleine largeur, style "pas de séance" */
+.week-common-card {
+  margin-bottom: 0.9rem;
+  background: var(--bg-card);
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 83, 166, 0.35);
+  padding: 1.2rem 1rem 0.9rem;
+  text-align: center;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+.week-common-emoji {
+  font-size: 2.2rem;
+  margin-bottom: 0.4rem;
+}
+
+.week-common-title {
+  font-size: 1.05rem;
+  font-weight: 650;
+  margin-bottom: 0.1rem;
+  color: var(--blue-main);
+}
+
+body[data-theme="dark"] .week-common-title {
+  color: #bfdbfe;
+}
+
+.week-common-groups {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.week-common-extra {
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* On recentre un peu la liste d'activités dans ce bloc */
+.week-common-card .activities-list {
+  justify-content: center;
+}
+
+.activity-chip {
+  border-radius: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.35rem;
+  background: var(--bg-card);
+  border-left: 4px solid var(--blue-main);
+  transition: 0.15s;
+  color: var(--text-main);  /* ⇐ texte bien lisible */
+}
+
+.activity-chip:hover {
+  transform: translateY(-1px);
+}
+
+.activity-chip span {
+  display: inline-block;
+  font-size: 0.85rem;
+}
+
+.activity-chip strong {
+  font-weight: 600;
+}
+
+.activity-chip small {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  opacity: 0.9;             /* pas trop gris */
+  color: inherit;           /* même couleur que le texte principal */
+}
+
+/* On n’utilise plus le petit rond */
+.activity-dot {
+  display: none;
+}
+
+.back-to-top {
+  position: fixed;
+  right: 1.2rem;
+  bottom: 1.2rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: none; /* affiché en JS */
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.25);
+  z-index: 40;
+}
+
+.back-to-top:hover {
+  transform: translateY(-1px);
+  background: var(--bg-card-soft);
+}
+.footer-link-small {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.footer-link-small:hover {
+  opacity: 1;
+}
+
+/* Modal admin */
+.admin-modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.admin-modal.open {
+  display: flex;
+}
+
+.admin-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.admin-modal-dialog {
+  position: relative;
+  background: var(--bg-card);
+  color: var(--text-main);
+  border-radius: 0.9rem;
+  padding: 1.2rem 1.4rem;
+  max-width: 340px;
+  width: 90%;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.45);
+  border: 1px solid var(--border-soft);
+  z-index: 51;
+}
+
+.admin-modal-dialog h2 {
+  font-size: 1rem;
+  margin-bottom: 0.4rem;
+  color: var(--blue-main);
+}
+
+.admin-modal-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.7rem;
+}
+
+#admin-code-input {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-card-soft);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  margin-bottom: 0.7rem;
+}
+
+.admin-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+}
+
+.btn-admin {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn-admin-primary {
+  background: var(--blue-main);
+  color: #ffffff;
+  border-color: var(--blue-main);
+}
+
+.btn-admin-secondary {
+  background: var(--bg-card-soft);
+  color: var(--text-main);
+  border-color: var(--border-soft);
+}
+
+.btn-admin-primary:hover {
+  filter: brightness(1.05);
+}
+
+.btn-admin-secondary:hover {
+  background: var(--bg-card);
+}
+
+.admin-error {
+  font-size: 0.75rem;
+  color: #b91c1c;
+}
+
+/* Patch militaire flottant (retour haut) */
+.back-to-top.air-patch {
+  position: fixed;
+  right: 1.2rem;
+  bottom: 1.2rem;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--blue-main);
+  background: linear-gradient(145deg, #0e1a2b, #1a2c46);
+  color: #e5edf8;
+  font-size: 1.4rem;
+  display: none; /* affiché par JS */
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 999;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), 
+              inset 0 0 10px rgba(255, 255, 255, 0.05);
+  transition: 0.2s ease;
+}
+
+/* Mode clair */
+body[data-theme="light"] .back-to-top.air-patch {
+  background: linear-gradient(145deg, #ffffff, #dbe7ff);
+  color: #1a2e4a;
+  border-color: #3b82f6;
+}
+
+/* Hover (petit glow bleu) */
+.back-to-top.air-patch:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.45),
+              inset 0 0 12px rgba(255, 255, 255, 0.12);
+}
+
+/* Animation apparition */
+.back-to-top.air-patch.show {
+  display: flex;
+  animation: patchPop 0.25s ease;
+}
+
+@keyframes patchPop {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.group-card-off {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  opacity: 0.8;
+}
+
+.group-off {
+  margin-top: 0.4rem;
+}
+
+.group-off-emoji {
+  font-size: 1.8rem;
+  margin-bottom: 0.2rem;
+}
+
+.group-off-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+  color: var(--red-main, #e3312d);
+}
+
+.group-off-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.gen-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.gen-header h1 {
+  margin: 0;
+}
+
+.back-btn {
+  padding: 0.4rem 0.8rem;
+  background: #0053a6;
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.back-btn:hover {
+  background: #003d7a;
+}

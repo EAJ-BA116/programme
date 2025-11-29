@@ -1,0 +1,892 @@
+// ===============================
+//  Constantes et utilitaires
+// ===============================
+
+// Même définition que côté site public
+const TYPES_ACTIVITE_DEFINITION = {
+  bia:            { label: "Cours BIA",         emoji: "📘", color: "#1d4ed8" },
+  sport:          { label: "Sport",             emoji: "🏃‍♂️", color: "#f97316" },
+  visite:         { label: "Visite",            emoji: "🏛️", color: "#a855f7" },
+  projet:         { label: "Projet",            emoji: "🛠️",  color: "#22c55e" },
+  aeromodelisme:  { label: "Aéromodélisme",     emoji: "✈️",  color: "#0ea5e9" },
+  drone:          { label: "Drone",             emoji: "🛸",  color: "#6366f1" },
+  tir:            { label: "Tir",               emoji: "🎯",  color: "#ef4444" },
+  rencontres:     { label: "Rencontres",        emoji: "🤝",  color: "#eab308" },
+  devoirMemoire:  { label: "Devoir de mémoire", emoji: "🕯️", color: "#facc15" },
+  ceremonie:      { label: "Cérémonie",         emoji: "🎖️", color: "#e3312d" },
+  autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
+};
+
+const TYPES_ACTIVITE_CHOICES = [
+  { value: "bia",            label: "📘 Cours BIA" },
+  { value: "sport",          label: "🏃‍♂️ Sport" },
+  { value: "visite",         label: "🏛️ Visite" },
+  { value: "projet",         label: "🛠️ Projet" },
+  { value: "aeromodelisme",  label: "✈️ Aéromodélisme" },
+  { value: "drone",          label: "🛸 Drone" },
+  { value: "tir",            label: "🎯 Tir" },
+  { value: "rencontres",     label: "🤝 Rencontres" },
+  { value: "devoirMemoire",  label: "🕯️ Devoir de mémoire" },
+  { value: "ceremonie",      label: "🎖️ Cérémonie" },
+  { value: "autre",          label: "✨ Autres" }
+];
+
+const GROUPS = [
+  { id: "EAJ1", label: "Groupe 1 – EAJ1" },
+  { id: "EAJ2", label: "Groupe 2 – EAJ2" },
+  { id: "EAJ3", label: "Groupe 3 – EAJ3" }
+];
+
+const MOIS_FR = [
+  "janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+];
+
+let weekCounter = 0;
+
+// Références DOM globales
+const weeksContainer = document.getElementById("weeks-container");
+const btnAddWeek     = document.getElementById("btn-add-week");
+const btnGenerate    = document.getElementById("btn-generate");
+const btnSave        = document.getElementById("btn-save");
+const output         = document.getElementById("output");
+
+// ===============================
+//  Utilitaires dates
+// ===============================
+
+function getTodayFrDate() {
+  const d = new Date();
+  const jj = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${jj}/${mm}/${yyyy}`;
+}
+
+function formatDateFrValue(value) {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+
+  if (digits.length <= 2) {
+    return digits;
+  } else if (digits.length <= 4) {
+    return digits.slice(0, 2) + "/" + digits.slice(2);
+  } else {
+    return (
+      digits.slice(0, 2) +
+      "/" +
+      digits.slice(2, 4) +
+      "/" +
+      digits.slice(4, 8)
+    );
+  }
+}
+
+function parseDateFr(str) {
+  const clean = (str || "").trim();
+  if (!clean) return null;
+
+  const parts = clean.split("/");
+  if (parts.length !== 3) return null;
+
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const year = parseInt(parts[2], 10);
+
+  if (
+    isNaN(day) || isNaN(month) || isNaN(year) ||
+    day < 1 || day > 31 || month < 1 || month > 12 || year < 1900
+  ) {
+    return null;
+  }
+
+  const d = new Date(year, month - 1, day);
+  if (
+    d.getFullYear() !== year ||
+    d.getMonth() !== month - 1 ||
+    d.getDate() !== day
+  ) {
+    return null;
+  }
+
+  const iso =
+    year.toString().padStart(4, "0") +
+    "-" +
+    month.toString().padStart(2, "0") +
+    "-" +
+    day.toString().padStart(2, "0");
+
+  const label = `${day} ${MOIS_FR[month - 1]} ${year}`;
+  return { iso, label };
+}
+
+function attachDateFrBehavior(dateFrInput) {
+  if (!dateFrInput) return;
+  dateFrInput.addEventListener("input", (e) => {
+    e.target.value = formatDateFrValue(e.target.value);
+  });
+}
+
+// ===============================
+//  Helpers HTML pour la preview
+// ===============================
+
+function buildInfoBlock(label, value) {
+  if (!value) return "";
+  return `
+    <p class="label">${label}</p>
+    <p class="value">${value}</p>
+  `;
+}
+
+function buildTagLine(encadrant, tag) {
+  const tags = [];
+  if (encadrant) tags.push(`<span class="tag">Encadrant : ${encadrant}</span>`);
+  if (tag)       tags.push(`<span class="tag">${tag}</span>`);
+  if (!tags.length) return "";
+  return `<div class="tag-line">${tags.join("")}</div>`;
+}
+
+function createActivityChip(activity, groupDefaults = {}) {
+  const typeCfg = TYPES_ACTIVITE_DEFINITION[activity.type] || {
+    label: "Autre",
+    emoji: "✨",
+    color: "#64748b"
+  };
+
+  const baseColor = typeCfg.color;
+  const bgColor = baseColor.length === 7 ? baseColor + "25" : baseColor;
+
+  const extras = [];
+  const horaire  = activity.horaire  || groupDefaults.horaire  || "";
+  const lieu     = activity.lieu     || groupDefaults.lieu     || "";
+  const tenue    = activity.tenue    || groupDefaults.tenue    || "";
+  const materiel = activity.materiel || groupDefaults.materiel || "";
+  const encadrant= activity.encadrant|| groupDefaults.encadrant|| "";
+
+  if (horaire)  extras.push(`⏰ ${horaire}`);
+  if (lieu)     extras.push(`📍 ${lieu}`);
+  if (tenue)    extras.push(`👕 ${tenue}`);
+  if (materiel) extras.push(`🎒 ${materiel}`);
+  if (encadrant)extras.push(`👤 ${encadrant}`);
+
+  let html = `${typeCfg.emoji} <strong>${typeCfg.label}</strong> – ${activity.texte}`;
+  if (extras.length > 0) {
+    html += `<br><small>${extras.join(" • ")}</small>`;
+  }
+
+  return `
+    <div class="activity-chip" style="background:${bgColor};border-left:4px solid ${baseColor};">
+      <span>${html}</span>
+    </div>
+  `;
+}
+
+// ===============================
+//  Lignes d’activité (formulaire)
+// ===============================
+
+function createActivityRow() {
+  const row = document.createElement("div");
+  row.className = "activity-row";
+
+  const topLine = document.createElement("div");
+  topLine.style.display = "grid";
+  topLine.style.gridTemplateColumns = "130px minmax(0,1fr) auto";
+  topLine.style.gap = "0.3rem";
+  topLine.style.alignItems = "center";
+
+  const select = document.createElement("select");
+  TYPES_ACTIVITE_CHOICES.forEach(t => {
+    const opt = document.createElement("option");
+    opt.value = t.value;
+    opt.textContent = t.label;
+    select.appendChild(opt);
+  });
+
+  const inputTexte = document.createElement("input");
+  inputTexte.type = "text";
+  inputTexte.placeholder = "Texte de l'activité (ex : Cours BIA : météo)";
+
+  const btnRemove = document.createElement("button");
+  btnRemove.type = "button";
+  btnRemove.className = "btn btn-small btn-danger";
+  btnRemove.textContent = "✖";
+  btnRemove.addEventListener("click", () => row.remove());
+
+  topLine.appendChild(select);
+  topLine.appendChild(inputTexte);
+  topLine.appendChild(btnRemove);
+
+  const extra = document.createElement("div");
+  extra.className = "activity-extra";
+  extra.innerHTML = `
+    <input type="text" class="act-horaire"  placeholder="Horaire spécifique (facultatif)" />
+    <input type="text" class="act-lieu"     placeholder="Lieu spécifique (facultatif)" />
+    <input type="text" class="act-tenue"    placeholder="Tenue spécifique (facultatif)" />
+    <input type="text" class="act-materiel" placeholder="Matériel spécifique (facultatif)" />
+    <input type="text" class="act-encadrant"placeholder="Encadrant spécifique (facultatif)" />
+  `;
+
+  row.appendChild(topLine);
+  row.appendChild(extra);
+  return row;
+}
+
+// ===============================
+//  Formulaires groupes & communs
+// ===============================
+
+function createGroupForm(groupId, label) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "group-form";
+  wrapper.dataset.group = groupId;
+
+  wrapper.innerHTML = `
+    <div class="group-header">
+      <div class="group-title">${label}</div>
+      <div class="group-toggle">
+        <label>
+          <input type="checkbox" class="group-enabled" checked />
+          Inclure ce groupe
+        </label>
+      </div>
+    </div>
+    <div class="group-fields">
+      <div class="field">
+        <label>Lieu</label>
+        <input type="text" class="group-lieu" placeholder="Ex : Salle de cours / hangar..." />
+      </div>
+      <div class="field">
+        <label>Horaire</label>
+        <input type="text" class="group-horaire" placeholder="Ex : 13h45–17h00 (facultatif)" />
+      </div>
+      <div class="field">
+        <label>Tenue</label>
+        <input type="text" class="group-tenue" placeholder="Ex : Tenue de sport, tenue correcte..." />
+      </div>
+      <div class="field">
+        <label>Matériel à apporter</label>
+        <input type="text" class="group-materiel" placeholder="Ex : Gourde, trousse, carnet..." />
+      </div>
+      <div class="field">
+        <label>Encadrant</label>
+        <input type="text" class="group-encadrant" placeholder="Ex : Sgt Dupont, CNE Durand..." />
+      </div>
+      <div class="field">
+        <label>Tag (résumé)</label>
+        <input type="text" class="group-tag" placeholder="Ex : BIA, Cohésion, Projet..." />
+      </div>
+      <div class="activities-block">
+        <div class="activities-header">
+          <span>Activités</span>
+          <button type="button" class="btn btn-small btn-primary btn-add-activity">➕ Ajouter une activité</button>
+        </div>
+        <div class="activities-list"></div>
+      </div>
+    </div>
+  `;
+
+  const activitiesList = wrapper.querySelector(".activities-list");
+  const btnAddActivity = wrapper.querySelector(".btn-add-activity");
+
+  activitiesList.appendChild(createActivityRow());
+  btnAddActivity.addEventListener("click", () => {
+    activitiesList.appendChild(createActivityRow());
+  });
+
+  return wrapper;
+}
+
+function createCommonForm() {
+  const wrapper = document.createElement("div");
+  wrapper.className = "common-form";
+
+  wrapper.innerHTML = `
+    <div class="common-header">
+      <div class="common-title-inner">Activité commune</div>
+      <button type="button" class="btn btn-small btn-danger btn-remove-common">Supprimer</button>
+    </div>
+    <div class="common-groups">
+      <label><input type="checkbox" class="common-group-checkbox" value="EAJ1" checked /> EAJ1</label>
+      <label><input type="checkbox" class="common-group-checkbox" value="EAJ2" checked /> EAJ2</label>
+      <label><input type="checkbox" class="common-group-checkbox" value="EAJ3" checked /> EAJ3</label>
+      <span>(décoche les groupes non concernés)</span>
+    </div>
+    <div class="group-fields">
+      <div class="field">
+        <label>Lieu</label>
+        <input type="text" class="common-lieu" placeholder="Ex : Salle de sport / monument..." />
+      </div>
+      <div class="field">
+        <label>Horaire</label>
+        <input type="text" class="common-horaire" placeholder="Ex : 13h45–17h00 (facultatif)" />
+      </div>
+      <div class="field">
+        <label>Tenue</label>
+        <input type="text" class="common-tenue" placeholder="Ex : Tenue correcte..." />
+      </div>
+      <div class="field">
+        <label>Matériel à apporter</label>
+        <input type="text" class="common-materiel" placeholder="Ex : Gourde, parapluie..." />
+      </div>
+      <div class="field">
+        <label>Encadrant</label>
+        <input type="text" class="common-encadrant" placeholder="Ex : Équipe EAJ, Sgt Dupont..." />
+      </div>
+      <div class="field">
+        <label>Tag (résumé)</label>
+        <input type="text" class="common-tag" placeholder="Ex : Activité commune, Devoir de mémoire..." />
+      </div>
+      <div class="activities-block">
+        <div class="activities-header">
+          <span>Activités</span>
+          <button type="button" class="btn btn-small btn-primary btn-add-activity-common">➕ Ajouter une activité</button>
+        </div>
+        <div class="activities-list-common"></div>
+      </div>
+    </div>
+  `;
+
+  const activitiesList = wrapper.querySelector(".activities-list-common");
+  const btnAddActivity = wrapper.querySelector(".btn-add-activity-common");
+  const btnRemoveCommon = wrapper.querySelector(".btn-remove-common");
+
+  activitiesList.appendChild(createActivityRow());
+  btnAddActivity.addEventListener("click", () => {
+    activitiesList.appendChild(createActivityRow());
+  });
+
+  btnRemoveCommon.addEventListener("click", () => {
+    if (confirm("Supprimer cette activité commune ?")) {
+      wrapper.remove();
+      updateOutput();
+    }
+  });
+
+  return wrapper;
+}
+
+// ===============================
+//  Semaine : formulaire + preview
+// ===============================
+
+function renderWeekPreview(weekObj) {
+  const isOff = weekObj.statut === "off";
+
+  let html = `
+    <section class="week">
+      <div class="week-header">
+        <div>
+          <div class="week-title">${weekObj.date}</div>
+          <div class="week-note">${weekObj.note || ""}</div>
+        </div>
+      </div>
+  `;
+
+  if (isOff) {
+    html += `
+      <div class="week-off">
+        <div class="week-off-emoji">🛑</div>
+        <div class="week-off-title">Pas de séance EAJ</div>
+        <p class="week-off-text">
+          ${weekObj.messageOff || "Les activités reprendront la semaine suivante."}
+        </p>
+      </div>
+    </section>`;
+    return html;
+  }
+
+  // Activités communes
+  if (Array.isArray(weekObj.activitesCommunes) && weekObj.activitesCommunes.length > 0) {
+    weekObj.activitesCommunes.forEach(entry => {
+      const groupes = Array.isArray(entry.groupes) ? entry.groupes : [];
+      const groupesLabel = groupes.length
+        ? "Groupes concernés : " + groupes.join(" + ")
+        : "Tous les groupes";
+
+      html += `
+        <article class="group-card week-common-card">
+          <div class="week-common-emoji">🤝</div>
+          <div class="week-common-title">Activité commune</div>
+          <div class="week-common-groups">${groupesLabel}</div>
+
+          <p class="label">Activités :</p>
+          <div class="activities-list">
+      `;
+
+      (entry.activites || []).forEach(a => {
+        html += createActivityChip(a, entry);
+      });
+
+      html += `
+          </div>
+          ${buildInfoBlock("Horaire :", entry.horaire || "")}
+          ${buildInfoBlock("Lieu :", entry.lieu || "")}
+          ${buildInfoBlock("Tenue :", entry.tenue || "")}
+          ${buildInfoBlock("Matériel à apporter :", entry.materiel || "")}
+          ${buildTagLine(entry.encadrant || "", entry.tag || "Activité commune")}
+        </article>
+      `;
+    });
+  }
+
+  // Groupes
+  html += `<div class="groups">`;
+
+  const presentGroups = new Set((weekObj.groupes || []).map(g => {
+    if (g.titre.includes("EAJ1")) return "EAJ1";
+    if (g.titre.includes("EAJ2")) return "EAJ2";
+    if (g.titre.includes("EAJ3")) return "EAJ3";
+    return "";
+  }).filter(Boolean));
+
+  (weekObj.groupes || []).forEach(g => {
+    const groupId =
+      g.titre.includes("EAJ1") ? "EAJ1" :
+      g.titre.includes("EAJ2") ? "EAJ2" :
+      g.titre.includes("EAJ3") ? "EAJ3" : "";
+
+    html += `
+      <article class="group-card" data-group="${groupId}">
+        <div class="group-title">${g.titre}</div>
+
+        <p class="label">Activités :</p>
+        <div class="activities-list">
+    `;
+
+    (g.activites || []).forEach(a => {
+      html += createActivityChip(a, g);
+    });
+
+    html += `
+        </div>
+        ${buildInfoBlock("Horaire (général) :", g.horaire || "")}
+        ${buildInfoBlock("Lieu (général) :", g.lieu || "")}
+        ${buildInfoBlock("Tenue (générale) :", g.tenue || "")}
+        ${buildInfoBlock("Matériel à apporter (général) :", g.materiel || "")}
+        ${buildTagLine(g.encadrant || "", g.tag || "")}
+      </article>
+    `;
+  });
+
+  // Groupes absents
+  const ALL_GROUPS = [
+    { id: "EAJ1", titre: "Groupe 1 – EAJ1" },
+    { id: "EAJ2", titre: "Groupe 2 – EAJ2" },
+    { id: "EAJ3", titre: "Groupe 3 – EAJ3" }
+  ];
+
+  ALL_GROUPS.forEach(gMeta => {
+    if (!presentGroups.has(gMeta.id)) {
+      html += `
+        <article class="group-card group-card-off" data-group="${gMeta.id}">
+          <div class="group-title">${gMeta.titre}</div>
+          <div class="group-off">
+            <div class="group-off-emoji">🛑</div>
+            <div class="group-off-title">Pas de séance ${gMeta.id}</div>
+            <p class="group-off-text">
+              Ce groupe n'est pas convoqué pour cette date.
+            </p>
+          </div>
+        </article>
+      `;
+    }
+  });
+
+  html += `</div></section>`;
+  return html;
+}
+
+function createWeekForm() {
+  weekCounter += 1;
+
+  const weekDiv = document.createElement("div");
+  weekDiv.className = "week-form";
+  weekDiv.dataset.weekId = String(weekCounter);
+
+  weekDiv.innerHTML = `
+    <div class="week-header-row">
+      <div class="week-title">Semaine n°${weekCounter}</div>
+      <div style="display:flex; gap:0.4rem; align-items:center;">
+        <button type="button" class="btn btn-small btn-secondary btn-edit-week" style="display:none;">Modifier</button>
+        <button type="button" class="btn btn-small btn-primary btn-validate-week">Valider</button>
+        <button type="button" class="btn btn-small btn-danger btn-remove-week">Supprimer</button>
+      </div>
+    </div>
+    <div class="week-edit">
+      <div class="week-fields">
+        <div class="field">
+          <label>Date (JJ/MM/AAAA)</label>
+          <input type="text" class="week-date-fr" placeholder="Ex : 03/12/2025" />
+        </div>
+        <div class="field">
+          <label>
+            <input type="checkbox" class="week-session" checked />
+            Séance EAJ (si décoché : semaine sans séance)
+          </label>
+        </div>
+        <div class="field">
+          <label>Note (petit texte sous la date)</label>
+          <input type="text" class="week-note" placeholder="Ex : Prévoir une tenue chaude..." />
+        </div>
+        <div class="field">
+          <label>Message si OFF (facultatif)</label>
+          <textarea class="week-messageOff" placeholder="Ex : Pas de séance EAJ ce mercredi..."></textarea>
+        </div>
+      </div>
+      <div class="groups-wrapper"></div>
+      <div class="common-wrapper">
+        <div class="common-header-row">
+          <div class="common-title">Activités communes (facultatif)</div>
+          <button type="button" class="btn btn-small btn-primary btn-add-common">➕ Ajouter une activité commune</button>
+        </div>
+        <div class="common-list"></div>
+      </div>
+    </div>
+    <div class="week-preview" style="margin-top:0.6rem; display:none;"></div>
+  `;
+
+  const btnRemove = weekDiv.querySelector(".btn-remove-week");
+  const btnValidate = weekDiv.querySelector(".btn-validate-week");
+  const btnEdit = weekDiv.querySelector(".btn-edit-week");
+
+  const dateFrInput = weekDiv.querySelector(".week-date-fr");
+  const sessionCheckbox = weekDiv.querySelector(".week-session");
+  const noteField = weekDiv.querySelector(".week-note").closest(".field");
+  const messageOffField = weekDiv.querySelector(".week-messageOff").closest(".field");
+
+  // Gestion séance / off
+  function updateSessionFields() {
+    const isSession = sessionCheckbox.checked;
+    if (isSession) {
+      noteField.style.display = "";
+      messageOffField.style.display = "none";
+    } else {
+      noteField.style.display = "none";
+      messageOffField.style.display = "";
+    }
+  }
+  updateSessionFields();
+
+  sessionCheckbox.addEventListener("change", updateSessionFields);
+  attachDateFrBehavior(dateFrInput);
+
+  // Groupes
+  const groupsWrapper = weekDiv.querySelector(".groups-wrapper");
+  GROUPS.forEach(g => {
+    groupsWrapper.appendChild(createGroupForm(g.id, g.label));
+  });
+
+  // Activités communes
+  const commonList = weekDiv.querySelector(".common-list");
+  const btnAddCommon = weekDiv.querySelector(".btn-add-common");
+  btnAddCommon.addEventListener("click", () => {
+    commonList.appendChild(createCommonForm());
+  });
+
+  // Supprimer semaine
+  btnRemove.addEventListener("click", () => {
+    if (confirm("Supprimer cette semaine ?")) {
+      weekDiv.remove();
+      updateOutput();
+    }
+  });
+
+  // Valider = basculer en mode preview
+  btnValidate.addEventListener("click", () => {
+    const weekData = getWeekDataFromForm(weekDiv, true);
+    if (!weekData) return;
+
+    const previewDiv = weekDiv.querySelector(".week-preview");
+    previewDiv.innerHTML = renderWeekPreview(weekData);
+
+    weekDiv.querySelector(".week-edit").style.display = "none";
+    previewDiv.style.display = "block";
+
+    btnValidate.style.display = "none";
+    btnEdit.style.display = "inline-flex";
+
+    updateOutput();
+  });
+
+  // Modifier = revenir au formulaire
+  btnEdit.addEventListener("click", () => {
+    weekDiv.querySelector(".week-edit").style.display = "block";
+    weekDiv.querySelector(".week-preview").style.display = "none";
+
+    btnEdit.style.display = "none";
+    btnValidate.style.display = "inline-flex";
+  });
+
+  weeksContainer.appendChild(weekDiv);
+  return weekDiv;
+}
+
+// ===============================
+//  Lecture du formulaire -> objet
+// ===============================
+
+function getWeekDataFromForm(weekDiv, showAlertOnError = false) {
+  const dateFrInput = weekDiv.querySelector(".week-date-fr");
+  const dateFr = dateFrInput ? dateFrInput.value.trim() : "";
+  const parsed = parseDateFr(dateFr);
+
+  if (!parsed) {
+    if (showAlertOnError) {
+      alert("Date invalide ou manquante pour une semaine (JJ/MM/AAAA).");
+    }
+    return null;
+  }
+
+  const sessionCheckbox = weekDiv.querySelector(".week-session");
+  const isSession = sessionCheckbox && sessionCheckbox.checked;
+
+  const noteInput = weekDiv.querySelector(".week-note");
+  const messageOffInput = weekDiv.querySelector(".week-messageOff");
+
+  const weekObj = {
+    isoDate: parsed.iso,
+    date: parsed.label,
+    statut: isSession ? "session" : "off",
+    note: isSession ? (noteInput.value.trim() || "") : "",
+    messageOff: !isSession ? (messageOffInput.value.trim() || "") : "",
+    activitesCommunes: [],
+    groupes: []
+  };
+
+  // Groupes
+  const groupForms = weekDiv.querySelectorAll(".group-form");
+  groupForms.forEach(groupDiv => {
+    const enabled = groupDiv.querySelector(".group-enabled").checked;
+    if (!enabled) return;
+
+    const groupId = groupDiv.dataset.group;
+    const meta = GROUPS.find(g => g.id === groupId);
+    const titre = meta ? meta.label : groupId;
+
+    const lieu     = groupDiv.querySelector(".group-lieu").value.trim();
+    const horaire  = groupDiv.querySelector(".group-horaire").value.trim();
+    const tenue    = groupDiv.querySelector(".group-tenue").value.trim();
+    const materiel = groupDiv.querySelector(".group-materiel").value.trim();
+    const encadrant= groupDiv.querySelector(".group-encadrant").value.trim();
+    const tag      = groupDiv.querySelector(".group-tag").value.trim();
+
+    const activitiesRows = groupDiv.querySelectorAll(".activity-row");
+    const activites = [];
+    activitiesRows.forEach(row => {
+      const select = row.querySelector("select");
+      const inputText = row.querySelector('input[type="text"]');
+      if (!select || !inputText) return;
+
+      const type = select.value;
+      const texte = inputText.value.trim();
+      if (!texte) return;
+
+      const actHoraire  = row.querySelector(".act-horaire")?.value.trim() || "";
+      const actLieu     = row.querySelector(".act-lieu")?.value.trim() || "";
+      const actTenue    = row.querySelector(".act-tenue")?.value.trim() || "";
+      const actMateriel = row.querySelector(".act-materiel")?.value.trim() || "";
+      const actEncadrant= row.querySelector(".act-encadrant")?.value.trim() || "";
+
+      const act = { type, texte };
+      if (actHoraire)  act.horaire  = actHoraire;
+      if (actLieu)     act.lieu     = actLieu;
+      if (actTenue)    act.tenue    = actTenue;
+      if (actMateriel) act.materiel = actMateriel;
+      if (actEncadrant)act.encadrant= actEncadrant;
+
+      activites.push(act);
+    });
+
+    const groupObj = {
+      titre,
+      activites
+    };
+
+    if (horaire)  groupObj.horaire  = horaire;
+    if (lieu)     groupObj.lieu     = lieu;
+    if (tenue)    groupObj.tenue    = tenue;
+    if (materiel) groupObj.materiel = materiel;
+    if (encadrant)groupObj.encadrant= encadrant;
+    if (tag)      groupObj.tag      = tag;
+
+    weekObj.groupes.push(groupObj);
+  });
+
+  // Activités communes
+  const commonForms = weekDiv.querySelectorAll(".common-form");
+  commonForms.forEach(commonDiv => {
+    const groupCheckboxes = commonDiv.querySelectorAll(".common-group-checkbox:checked");
+    const groupes = [];
+    groupCheckboxes.forEach(cb => {
+      if (cb.value) groupes.push(cb.value);
+    });
+
+    const lieu     = commonDiv.querySelector(".common-lieu").value.trim();
+    const horaire  = commonDiv.querySelector(".common-horaire").value.trim();
+    const tenue    = commonDiv.querySelector(".common-tenue").value.trim();
+    const materiel = commonDiv.querySelector(".common-materiel").value.trim();
+    const encadrant= commonDiv.querySelector(".common-encadrant").value.trim();
+    const tag      = commonDiv.querySelector(".common-tag").value.trim();
+
+    const activitiesRows = commonDiv.querySelectorAll(".activity-row");
+    const activites = [];
+    activitiesRows.forEach(row => {
+      const select = row.querySelector("select");
+      const inputText = row.querySelector('input[type="text"]');
+      if (!select || !inputText) return;
+
+      const type = select.value;
+      const texte = inputText.value.trim();
+      if (!texte) return;
+
+      const actHoraire  = row.querySelector(".act-horaire")?.value.trim() || "";
+      const actLieu     = row.querySelector(".act-lieu")?.value.trim() || "";
+      const actTenue    = row.querySelector(".act-tenue")?.value.trim() || "";
+      const actMateriel = row.querySelector(".act-materiel")?.value.trim() || "";
+      const actEncadrant= row.querySelector(".act-encadrant")?.value.trim() || "";
+
+      const act = { type, texte };
+      if (actHoraire)  act.horaire  = actHoraire;
+      if (actLieu)     act.lieu     = actLieu;
+      if (actTenue)    act.tenue    = actTenue;
+      if (actMateriel) act.materiel = actMateriel;
+      if (actEncadrant)act.encadrant= actEncadrant;
+
+      activites.push(act);
+    });
+
+    if (
+      activites.length === 0 &&
+      !lieu && !tenue && !materiel && !encadrant && !tag
+    ) {
+      return;
+    }
+
+    const commonObj = {
+      groupes,
+      activites
+    };
+    if (horaire)  commonObj.horaire  = horaire;
+    if (lieu)     commonObj.lieu     = lieu;
+    if (tenue)    commonObj.tenue    = tenue;
+    if (materiel) commonObj.materiel = materiel;
+    if (encadrant)commonObj.encadrant= encadrant;
+    if (tag)      commonObj.tag      = tag;
+
+    weekObj.activitesCommunes.push(commonObj);
+  });
+
+  return weekObj;
+}
+
+// Récupérer toutes les semaines
+function getWeeksData() {
+  const weekForms = document.querySelectorAll(".week-form");
+  const weeks = [];
+
+  weekForms.forEach(weekDiv => {
+    const week = getWeekDataFromForm(weekDiv, false);
+    if (week) weeks.push(week);
+  });
+
+  // tri par date croissante
+  weeks.sort((a, b) => (a.isoDate < b.isoDate ? -1 : a.isoDate > b.isoDate ? 1 : 0));
+  return weeks;
+}
+
+// ===============================
+//  Config générale + build JS
+// ===============================
+
+function getConfigData() {
+  const bannerActif = document.getElementById("banner-actif")?.checked ?? false;
+  const bannerText  = document.getElementById("banner-text")?.value.trim() || "";
+  const auteur      = document.getElementById("lastupdate-auteur")?.value.trim() || "Yoann";
+
+  const ALERT_BANNER = {
+    actif: bannerActif,
+    texte: bannerText
+  };
+
+  const LAST_UPDATE = {
+    auteur,
+    dateTexte: getTodayFrDate()
+  };
+
+  return { ALERT_BANNER, LAST_UPDATE };
+}
+
+function buildPlanningJs() {
+  const weeks = getWeeksData();
+  const { ALERT_BANNER, LAST_UPDATE } = getConfigData();
+
+  if (weeks.length === 0) {
+    return "// Aucune semaine valide (renseigner au moins une date JJ/MM/AAAA correcte).";
+  }
+
+  const parts = [];
+  parts.push("// ⚠️ Bannière d’alerte globale");
+  parts.push("const ALERT_BANNER = " + JSON.stringify(ALERT_BANNER, null, 2) + ";\n");
+  parts.push("// 📝 Dernière mise à jour (affichée dans le footer)");
+  parts.push("const LAST_UPDATE = " + JSON.stringify(LAST_UPDATE, null, 2) + ";\n");
+  parts.push("// 🗓️ LISTE DES SEMAINES / ÉVÉNEMENTS (isoDate au format AAAA-MM-JJ)");
+  parts.push("const SEMAINES = " + JSON.stringify(weeks, null, 2) + ";\n");
+
+  return parts.join("\n");
+}
+
+function updateOutput() {
+  const js = buildPlanningJs();
+  output.value = js;
+  output.scrollTop = 0;
+}
+
+function downloadFile(filename, content) {
+  const blob = new Blob([content], { type: "text/javascript" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+// ===============================
+//  Initialisation globale
+// ===============================
+
+(function init() {
+  // Date de dernière mise à jour = aujourd’hui
+  const lastUpdateInput = document.getElementById("lastupdate-date");
+  if (lastUpdateInput) {
+    lastUpdateInput.value = getTodayFrDate();
+    lastUpdateInput.readOnly = true;
+  }
+
+  if (btnAddWeek) {
+    btnAddWeek.addEventListener("click", () => {
+      createWeekForm();
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    });
+  }
+
+  if (btnGenerate) {
+    btnGenerate.addEventListener("click", updateOutput);
+  }
+
+  if (btnSave) {
+    btnSave.addEventListener("click", () => {
+      const js = buildPlanningJs();
+      if (js.startsWith("// Aucune semaine valide")) {
+        alert("Aucune semaine valide. Ajoute au moins une date JJ/MM/AAAA correcte.");
+        return;
+      }
+      downloadFile("planning.js", js);
+    });
+  }
+
+  // On commence avec une semaine vide
+  createWeekForm();
+  updateOutput();
+})();

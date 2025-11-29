@@ -1,0 +1,22 @@
+{
+  "name": "Programme EAJ BA 116",
+  "short_name": "EAJ BA 116",
+  "start_url": "/programme/",
+  "scope": "/programme/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0053a6",
+
+  "icons": [
+    {
+      "src": "images/logo_eaj192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "images/logo_eaj512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
