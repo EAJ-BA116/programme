@@ -3,10 +3,10 @@
   "short_name": "EAJ BA 116",
   "start_url": "/programme/",
   "scope": "/programme/",
-  "display": "standalone",
-  "background_color": "#ffffff",
+  "display": "fullscreen",
+  "orientation": "portrait-primary",
+  "background_color": "#050816",
   "theme_color": "#0053a6",
-
   "icons": [
     {
       "src": "images/logo_eaj192.png",
