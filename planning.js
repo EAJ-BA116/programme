@@ -100,7 +100,7 @@ const SEMAINES = [
         "activites": [
           {
             "type": "bia",
-            "texte": "Aérodynamique",
+            "texte": "Aéronefs et engins spéciaux",
             "horaire": "14h00 à 15h30",
             "materiel": "Manuel BIA, trousse",
             "encadrant": "CNE Gigi"
@@ -108,7 +108,7 @@ const SEMAINES = [
             {
             "type": "aeromodelisme",
             "texte": "Aéromodélisme",
-            "horaire": "14h00 à 15h30",
+            "horaire": "15h30 à 17h00",
             "lieu": "T19",
             "encadrant": "ADC Alexandre"
           },
