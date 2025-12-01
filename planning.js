@@ -13,6 +13,81 @@ const LAST_UPDATE = {
 // 🗓️ LISTE DES SEMAINES / ÉVÉNEMENTS (isoDate au format AAAA-MM-JJ)
 const SEMAINES = [
   {
+    "isoDate": "2026-01-07",
+    "date": "7 janvier 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Moteur",
+            "horaire": "14h - 15h30",
+            "materiel": "Manuel BIA, trousse"
+          }
+        ],
+        "tenue": "Tenue de vol"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-01-14",
+    "date": "14 janvier 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [
+      {
+        "groupes": [
+          "EAJ2",
+          "EAJ3"
+        ],
+        "activites": [
+          {
+            "type": "devoirMemoire",
+            "texte": "Présentation patchs, traditions",
+            "horaire": "14h-17h",
+            "encadrant": "ADJ Grany"
+          }
+        ],
+        "tenue": "Tenue de vol"
+      }
+    ],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Conduite de Vol",
+            "horaire": "14h-15h30",
+            "materiel": "Manuel BIA, trousse"
+          },
+          {
+            "type": "drone",
+            "texte": "Réglementation",
+            "horaire": "15h30-17h00",
+            "tenue": "Manuel BIA, trousse",
+            "encadrant": "ADJ Yoann"
+          }
+        ],
+        "tenue": "Tenue de Vol"
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": []
+      }
+    ]
+  },
+  {
     "isoDate": "2025-12-03",
     "date": "3 décembre 2025",
     "statut": "session",
@@ -30,6 +105,13 @@ const SEMAINES = [
             "materiel": "Manuel BIA, trousse",
             "encadrant": "CNE Gigi"
           },
+            {
+            "type": "aeromodelisme",
+            "texte": "Aéromodélisme",
+            "horaire": "14h00 à 15h30",
+            "lieu": "T19",
+            "encadrant": "ADC Alexandre"
+          },
           {
             "type": "rencontres",
             "texte": "Visite des EAJ de Dijon",
@@ -43,7 +125,7 @@ const SEMAINES = [
         "activites": [
           {
             "type": "aeromodelisme",
-            "texte": "Aéromodélisme (Alexander)",
+            "texte": "Aéromodélisme",
             "horaire": "14h00 à 15h30",
             "lieu": "T19",
             "encadrant": "ADC Alexandre"
@@ -179,6 +261,50 @@ const SEMAINES = [
             "encadrant": "ADC Anthony"
           }
         ]
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": []
+      }
+    ]
+  },
+  {
+    "isoDate": "2025-12-24",
+    "date": "24 décembre 2025",
+    "statut": "off",
+    "note": "",
+    "messageOff": "Vacances scolaires et joyeux Noël",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": []
+      }
+    ]
+  },
+  {
+    "isoDate": "2025-12-31",
+    "date": "31 décembre 2025",
+    "statut": "off",
+    "note": "",
+    "messageOff": "Vacances scolaires et Bonne année",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": []
       },
       {
         "titre": "Groupe 2 – EAJ2",
