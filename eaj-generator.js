@@ -204,9 +204,11 @@ function createActivityRow() {
     select.appendChild(opt);
   });
 
-  const inputTexte = document.createElement("input");
-  inputTexte.type = "text";
-  inputTexte.placeholder = "Texte de l'activité (ex : Cours BIA : météo)";
+const inputTexte = document.createElement("input");
+inputTexte.type = "text";
+inputTexte.className = "activity-main-text";   // 👈 nouvelle classe
+inputTexte.placeholder = "Texte de l'activité (ex : Cours BIA : météo)";
+
 
   const btnRemove = document.createElement("button");
   btnRemove.type = "button";
@@ -673,31 +675,32 @@ function getWeekDataFromForm(weekDiv, showAlertOnError = false) {
     const tag      = groupDiv.querySelector(".group-tag").value.trim();
 
     const activitiesRows = groupDiv.querySelectorAll(".activity-row");
-    const activites = [];
-    activitiesRows.forEach(row => {
-      const select = row.querySelector("select");
-      const inputText = row.querySelector('input[type="text"]');
-      if (!select || !inputText) return;
+const activites = [];
+activitiesRows.forEach(row => {
+  const select = row.querySelector("select");
+  const inputText = row.querySelector(".activity-main-text");  // 👈 ici
+  if (!select || !inputText) return;
 
-      const type = select.value;
-      const texte = inputText.value.trim();
-      if (!texte) return;
+  const type = select.value;
+  const texte = inputText.value.trim();
+  if (!texte) return;
 
-      const actHoraire  = row.querySelector(".act-horaire")?.value.trim() || "";
-      const actLieu     = row.querySelector(".act-lieu")?.value.trim() || "";
-      const actTenue    = row.querySelector(".act-tenue")?.value.trim() || "";
-      const actMateriel = row.querySelector(".act-materiel")?.value.trim() || "";
-      const actEncadrant= row.querySelector(".act-encadrant")?.value.trim() || "";
+  const actHoraire  = row.querySelector(".act-horaire")?.value.trim() || "";
+  const actLieu     = row.querySelector(".act-lieu")?.value.trim() || "";
+  const actTenue    = row.querySelector(".act-tenue")?.value.trim() || "";
+  const actMateriel = row.querySelector(".act-materiel")?.value.trim() || "";
+  const actEncadrant= row.querySelector(".act-encadrant")?.value.trim() || "";
 
-      const act = { type, texte };
-      if (actHoraire)  act.horaire  = actHoraire;
-      if (actLieu)     act.lieu     = actLieu;
-      if (actTenue)    act.tenue    = actTenue;
-      if (actMateriel) act.materiel = actMateriel;
-      if (actEncadrant)act.encadrant= actEncadrant;
+  const act = { type, texte };
+  if (actHoraire)  act.horaire  = actHoraire;
+  if (actLieu)     act.lieu     = actLieu;
+  if (actTenue)    act.tenue    = actTenue;
+  if (actMateriel) act.materiel = actMateriel;
+  if (actEncadrant)act.encadrant= actEncadrant;
 
-      activites.push(act);
-    });
+  activites.push(act);
+});
+
 
     const groupObj = {
       titre,
@@ -804,19 +807,27 @@ function getConfigData() {
   const bannerActif = document.getElementById("banner-actif")?.checked ?? false;
   const bannerText  = document.getElementById("banner-text")?.value.trim() || "";
   const auteur      = document.getElementById("lastupdate-auteur")?.value.trim() || "Yoann";
+  const dateInput   = document.getElementById("lastupdate-date");
 
-  const ALERT_BANNER = {
+  // On lit la date affichée dans le champ ; si vide, on met la date du jour
+  let dateTexte = dateInput?.value.trim();
+  if (!dateTexte) {
+    dateTexte = getTodayFrDate();
+  }
+
+  const ALERT_BANNER_CFG = {
     actif: bannerActif,
     texte: bannerText
   };
 
-  const LAST_UPDATE = {
+  const LAST_UPDATE_CFG = {
     auteur,
-    dateTexte: getTodayFrDate()
+    dateTexte
   };
 
-  return { ALERT_BANNER, LAST_UPDATE };
+  return { ALERT_BANNER: ALERT_BANNER_CFG, LAST_UPDATE: LAST_UPDATE_CFG };
 }
+
 
 function buildPlanningJs() {
   const weeks = getWeeksData();
@@ -853,16 +864,214 @@ function downloadFile(filename, content) {
 }
 
 // ===============================
+//  Rechargement depuis planning.js
+// ===============================
+
+function isoToFrDate(iso) {
+  if (!iso || typeof iso !== "string") return "";
+  const parts = iso.split("-");
+  if (parts.length !== 3) return "";
+  const [yyyy, mm, dd] = parts;
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function chargerPlanningExistant() {
+  if (typeof SEMAINES === "undefined" || !Array.isArray(SEMAINES)) {
+    return false;
+  }
+
+  // Config générale : bannière + dernière MAJ
+  const bannerActifInput   = document.getElementById("banner-actif");
+  const bannerTextArea     = document.getElementById("banner-text");
+  const lastUpdateAuteur   = document.getElementById("lastupdate-auteur");
+  const lastUpdateDate     = document.getElementById("lastupdate-date");
+
+  if (typeof ALERT_BANNER !== "undefined" && ALERT_BANNER) {
+    if (bannerActifInput) bannerActifInput.checked = !!ALERT_BANNER.actif;
+    if (bannerTextArea && ALERT_BANNER.texte) bannerTextArea.value = ALERT_BANNER.texte;
+  }
+
+  if (typeof LAST_UPDATE !== "undefined" && LAST_UPDATE) {
+    if (lastUpdateAuteur && LAST_UPDATE.auteur)  lastUpdateAuteur.value  = LAST_UPDATE.auteur;
+    if (lastUpdateDate && LAST_UPDATE.dateTexte) lastUpdateDate.value     = LAST_UPDATE.dateTexte;
+  } else if (lastUpdateDate) {
+    lastUpdateDate.value = getTodayFrDate();
+  }
+
+  // On vide d’abord tout éventuel contenu existant
+  weeksContainer.innerHTML = "";
+  weekCounter = 0;
+
+  // On trie les semaines par date ISO croissante
+  const weeksSorted = [...SEMAINES].sort((a, b) => {
+    if (a.isoDate < b.isoDate) return -1;
+    if (a.isoDate > b.isoDate) return 1;
+    return 0;
+  });
+
+  weeksSorted.forEach(weekObj => {
+    const weekDiv = createWeekForm();
+
+    // ---- Date + statut (session / off) ----
+    const dateInput        = weekDiv.querySelector(".week-date-fr");
+    const sessionCheckbox  = weekDiv.querySelector(".week-session");
+    const noteInput        = weekDiv.querySelector(".week-note");
+    const messageOffInput  = weekDiv.querySelector(".week-messageOff");
+
+    if (dateInput) {
+      if (weekObj.isoDate) {
+        dateInput.value = isoToFrDate(weekObj.isoDate);
+      } else {
+        dateInput.value = "";
+      }
+    }
+
+    const isSession = weekObj.statut !== "off";
+    if (sessionCheckbox) {
+      sessionCheckbox.checked = isSession;
+      // déclenche l’update des champs (note / messageOff)
+      sessionCheckbox.dispatchEvent(new Event("change"));
+    }
+
+    if (isSession && noteInput) {
+      noteInput.value = weekObj.note || "";
+    }
+    if (!isSession && messageOffInput) {
+      messageOffInput.value = weekObj.messageOff || "";
+    }
+
+    // ---- Groupes : on part de tous désactivés, puis on active ceux présents ----
+    const groupForms = weekDiv.querySelectorAll(".group-form");
+    const groupDivById = {};
+
+    groupForms.forEach(groupDiv => {
+      const enabledCb = groupDiv.querySelector(".group-enabled");
+      if (enabledCb) enabledCb.checked = false;
+
+      const gid = groupDiv.dataset.group;
+      if (gid) groupDivById[gid] = groupDiv;
+
+      // on nettoie tout
+      groupDiv.querySelector(".group-lieu").value      = "";
+      groupDiv.querySelector(".group-horaire").value   = "";
+      groupDiv.querySelector(".group-tenue").value     = "";
+      groupDiv.querySelector(".group-materiel").value  = "";
+      groupDiv.querySelector(".group-encadrant").value = "";
+      groupDiv.querySelector(".group-tag").value       = "";
+
+      const list = groupDiv.querySelector(".activities-list");
+      if (list) list.innerHTML = "";
+    });
+
+    if (Array.isArray(weekObj.groupes)) {
+      weekObj.groupes.forEach(g => {
+        if (!g || typeof g.titre !== "string") return;
+
+        let groupId = "";
+        if (g.titre.includes("EAJ1")) groupId = "EAJ1";
+        else if (g.titre.includes("EAJ2")) groupId = "EAJ2";
+        else if (g.titre.includes("EAJ3")) groupId = "EAJ3";
+
+        const groupDiv = groupDivById[groupId];
+        if (!groupDiv) return;
+
+        const enabledCb = groupDiv.querySelector(".group-enabled");
+        if (enabledCb) enabledCb.checked = true;
+
+        if (g.lieu)      groupDiv.querySelector(".group-lieu").value      = g.lieu;
+        if (g.horaire)   groupDiv.querySelector(".group-horaire").value   = g.horaire;
+        if (g.tenue)     groupDiv.querySelector(".group-tenue").value     = g.tenue;
+        if (g.materiel)  groupDiv.querySelector(".group-materiel").value  = g.materiel;
+        if (g.encadrant) groupDiv.querySelector(".group-encadrant").value = g.encadrant;
+        if (g.tag)       groupDiv.querySelector(".group-tag").value       = g.tag;
+
+        const list = groupDiv.querySelector(".activities-list");
+        if (!list) return;
+
+        (g.activites || []).forEach(act => {
+          if (!act) return;
+          const row = createActivityRow();
+          const select = row.querySelector("select");
+          const mainInput = row.querySelector('input[type="text"]');
+
+          if (select && act.type)   select.value  = act.type;
+          if (mainInput && act.texte) mainInput.value = act.texte;
+
+          if (act.horaire)   row.querySelector(".act-horaire").value   = act.horaire;
+          if (act.lieu)      row.querySelector(".act-lieu").value      = act.lieu;
+          if (act.tenue)     row.querySelector(".act-tenue").value     = act.tenue;
+          if (act.materiel)  row.querySelector(".act-materiel").value  = act.materiel;
+          if (act.encadrant) row.querySelector(".act-encadrant").value = act.encadrant;
+
+          list.appendChild(row);
+        });
+      });
+    }
+
+    // ---- Activités communes ----
+    const commonList = weekDiv.querySelector(".common-list");
+    if (commonList && Array.isArray(weekObj.activitesCommunes)) {
+      weekObj.activitesCommunes.forEach(entry => {
+        if (!entry) return;
+        const commonDiv = createCommonForm();
+
+        // Groupes concernés
+        const groupes = Array.isArray(entry.groupes) ? entry.groupes : [];
+        const cbs = commonDiv.querySelectorAll(".common-group-checkbox");
+        if (groupes.length > 0) {
+          cbs.forEach(cb => {
+            cb.checked = groupes.includes(cb.value);
+          });
+        }
+
+        if (entry.lieu)      commonDiv.querySelector(".common-lieu").value      = entry.lieu;
+        if (entry.horaire)   commonDiv.querySelector(".common-horaire").value   = entry.horaire;
+        if (entry.tenue)     commonDiv.querySelector(".common-tenue").value     = entry.tenue;
+        if (entry.materiel)  commonDiv.querySelector(".common-materiel").value  = entry.materiel;
+        if (entry.encadrant) commonDiv.querySelector(".common-encadrant").value = entry.encadrant;
+        if (entry.tag)       commonDiv.querySelector(".common-tag").value       = entry.tag;
+
+        const list = commonDiv.querySelector(".activities-list-common");
+        (entry.activites || []).forEach(act => {
+          if (!act) return;
+          const row = createActivityRow();
+          const select = row.querySelector("select");
+          const mainInput = row.querySelector('input[type="text"]');
+
+          if (select && act.type)    select.value    = act.type;
+          if (mainInput && act.texte) mainInput.value = act.texte;
+
+          if (act.horaire)   row.querySelector(".act-horaire").value   = act.horaire;
+          if (act.lieu)      row.querySelector(".act-lieu").value      = act.lieu;
+          if (act.tenue)     row.querySelector(".act-tenue").value     = act.tenue;
+          if (act.materiel)  row.querySelector(".act-materiel").value  = act.materiel;
+          if (act.encadrant) row.querySelector(".act-encadrant").value = act.encadrant;
+
+          list.appendChild(row);
+        });
+
+        commonList.appendChild(commonDiv);
+      });
+    }
+
+    // ---- On bascule directement en mode "aperçu" pour cette semaine ----
+    const btnValidate = weekDiv.querySelector(".btn-validate-week");
+    if (btnValidate) {
+      btnValidate.click(); // utilise le même flux que l’utilisateur
+    }
+  });
+
+  // Met à jour le bloc de sortie JS
+  updateOutput();
+  return true;
+}
+
+// ===============================
 //  Initialisation globale
 // ===============================
 
 (function init() {
-  // Date de dernière mise à jour = aujourd’hui
   const lastUpdateInput = document.getElementById("lastupdate-date");
-  if (lastUpdateInput) {
-    lastUpdateInput.value = getTodayFrDate();
-    lastUpdateInput.readOnly = true;
-  }
 
   if (btnAddWeek) {
     btnAddWeek.addEventListener("click", () => {
@@ -886,7 +1095,15 @@ function downloadFile(filename, content) {
     });
   }
 
-  // On commence avec une semaine vide
-  createWeekForm();
-  updateOutput();
+  // 1) On tente de charger le planning existant (planning.js)
+  const ok = chargerPlanningExistant();
+
+  // 2) Si pas de planning.js ou SEMAINES vide, on part sur un formulaire vierge
+  if (!ok) {
+    if (lastUpdateInput) {
+      lastUpdateInput.value = getTodayFrDate();
+    }
+    createWeekForm();
+    updateOutput();
+  }
 })();
