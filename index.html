@@ -123,10 +123,26 @@
    <!-- ⚙️ JS : d’abord planning.js (avec version), puis la logique -->
   <script src="version-loader.js"></script>
 
-  <script>
+<script>
 window.addEventListener("load", () => {
-  // 👉 Mets ici TON webhook (nouveau, régénéré)
+  // 👉 URL de ton Worker Cloudflare
   const webhookUrl = "https://eaj-discord-proxy.yoann-bluestorm.workers.dev";
+
+  // 🛡 Code admin attendu (à adapter)
+  const ADMIN_CODE = "EAJ-ADMIN-2025";
+
+  // Petite fonction utilitaire pour envoyer un message Discord
+  function logToDiscord(lignes) {
+    fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: lignes.join("\n")
+      })
+    }).catch(() => {
+      // On ignore les erreurs, le site ne doit jamais planter pour ça
+    });
+  }
 
   // 1) Détection PWA / navigateur
   const isStandalone =
@@ -160,12 +176,12 @@ window.addEventListener("load", () => {
     if (storedTheme) theme = storedTheme;
   } catch (e) {}
 
-  // 4) User-Agent (raccourci pour ne pas pourrir Discord)
+  // 4) User-Agent (raccourci)
   const ua = navigator.userAgent || "N/A";
   const shortUA = ua.length > 120 ? ua.substring(0, 120) + "…" : ua;
 
-  // 5) Message final
-  const lignes = [
+  // 🛰 Log visite “classique”
+  const lignesVisite = [
     "🛬 Nouvelle visite sur EAJ – BA 116",
     "📅 " + new Date().toLocaleString(),
     "",
@@ -174,21 +190,58 @@ window.addEventListener("load", () => {
     "🎨 Thème : " + theme,
     "🎯 Filtre actif : " + filtre,
     "",
+    "🌐 Page : " + window.location.href,
     "🧭 User-Agent :",
     shortUA
   ];
 
-  fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      content: lignes.join("\n")
-    })
-  }).catch(() => {
-    // On ne bloque surtout pas le chargement du site si Discord ne répond pas
-  });
+  logToDiscord(lignesVisite);
+
+  // 🔐 Détection tentative d’accès admin
+
+  const adminInput = document.getElementById("admin-code-input");
+  const adminValidateBtn = document.getElementById("admin-validate");
+  const adminError = document.getElementById("admin-error");
+
+  if (adminValidateBtn && adminInput && adminError) {
+    adminValidateBtn.addEventListener("click", () => {
+      const entered = adminInput.value || "";
+      const isOk = entered === ADMIN_CODE;
+
+      if (!isOk) {
+        // Affichage message erreur
+        adminError.style.display = "block";
+
+        // On masque le code saisi (même longueur mais pas lisible)
+        const masked = entered.length ? "•".repeat(entered.length) : "(vide)";
+
+        const lignesAdmin = [
+          "🚫 Tentative d’accès ADMIN échouée",
+          "📅 " + new Date().toLocaleString(),
+          "",
+          "💻 Appareil : " + deviceType,
+          "🌐 Page : " + window.location.href,
+          "🔑 Code saisi (masqué) : " + masked,
+          "",
+          "🧭 User-Agent :",
+          shortUA
+        ];
+
+        logToDiscord(lignesAdmin);
+      } else {
+        // Ici tu mets ce qui se passe quand le code est bon :
+        // - fermer la modale
+        // - rediriger vers une page admin
+        // etc.
+        adminError.style.display = "none";
+        // Exemple : alert("Accès admin OK");
+      }
+    });
+  }
 });
 </script>
+
+
 
 
 </body>
