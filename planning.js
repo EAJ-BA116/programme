@@ -118,7 +118,7 @@ const SEMAINES = [
             "horaire": "Dans l'après-midi (10minutes)"
           }
         ],
-        "tenue": "Tenue de Vol"
+        "tenue": "Tenue de Vol + Parka"
       },
       {
         "titre": "Groupe 2 – EAJ2",
@@ -143,7 +143,7 @@ const SEMAINES = [
             "encadrant": "Personnel de l'EP"
           }
         ],
-        "tenue": "Tenue de Vol"
+        "tenue": "Tenue de Vol + Parka"
       },
       {
         "titre": "Groupe 3 – EAJ3",
@@ -158,7 +158,7 @@ const SEMAINES = [
           }
         ],
         "horaire": "14h-16h",
-        "tenue": "Tenue de Vol",
+        "tenue": "Tenue de Vol + Parka",
         "materiel": "Chéque CSA (50€) + caution (150€)"
       }
     ]
