@@ -204,11 +204,10 @@ function createActivityRow() {
     select.appendChild(opt);
   });
 
-const inputTexte = document.createElement("input");
-inputTexte.type = "text";
-inputTexte.className = "activity-main-text";   // 👈 nouvelle classe
-inputTexte.placeholder = "Texte de l'activité (ex : Cours BIA : météo)";
-
+  const inputTexte = document.createElement("input");
+  inputTexte.type = "text";
+  inputTexte.className = "act-texte";  // ⬅⬅ IMPORTANT
+  inputTexte.placeholder = "Texte de l'activité (ex : Cours BIA : météo)";
 
   const btnRemove = document.createElement("button");
   btnRemove.type = "button";
@@ -234,6 +233,7 @@ inputTexte.placeholder = "Texte de l'activité (ex : Cours BIA : météo)";
   row.appendChild(extra);
   return row;
 }
+
 
 // ===============================
 //  Formulaires groupes & communs
@@ -630,6 +630,7 @@ function createWeekForm() {
 // ===============================
 
 function getWeekDataFromForm(weekDiv, showAlertOnError = false) {
+  // -------- Date et statut --------
   const dateFrInput = weekDiv.querySelector(".week-date-fr");
   const dateFr = dateFrInput ? dateFrInput.value.trim() : "";
   const parsed = parseDateFr(dateFr);
@@ -651,73 +652,70 @@ function getWeekDataFromForm(weekDiv, showAlertOnError = false) {
     isoDate: parsed.iso,
     date: parsed.label,
     statut: isSession ? "session" : "off",
-    note: isSession ? (noteInput.value.trim() || "") : "",
-    messageOff: !isSession ? (messageOffInput.value.trim() || "") : "",
+    note: isSession ? (noteInput?.value.trim() || "") : "",
+    messageOff: !isSession ? (messageOffInput?.value.trim() || "") : "",
     activitesCommunes: [],
     groupes: []
   };
 
-  // Groupes
+  // -------- Groupes (EAJ1 / EAJ2 / EAJ3) --------
   const groupForms = weekDiv.querySelectorAll(".group-form");
   groupForms.forEach(groupDiv => {
-    const enabled = groupDiv.querySelector(".group-enabled").checked;
+    const enabled = groupDiv.querySelector(".group-enabled")?.checked;
     if (!enabled) return;
 
     const groupId = groupDiv.dataset.group;
     const meta = GROUPS.find(g => g.id === groupId);
-    const titre = meta ? meta.label : groupId;
+    const titre = meta ? meta.label : (groupId || "Groupe");
 
-    const lieu     = groupDiv.querySelector(".group-lieu").value.trim();
-    const horaire  = groupDiv.querySelector(".group-horaire").value.trim();
-    const tenue    = groupDiv.querySelector(".group-tenue").value.trim();
-    const materiel = groupDiv.querySelector(".group-materiel").value.trim();
-    const encadrant= groupDiv.querySelector(".group-encadrant").value.trim();
-    const tag      = groupDiv.querySelector(".group-tag").value.trim();
+    const lieu      = groupDiv.querySelector(".group-lieu")?.value.trim()      || "";
+    const horaire   = groupDiv.querySelector(".group-horaire")?.value.trim()   || "";
+    const tenue     = groupDiv.querySelector(".group-tenue")?.value.trim()     || "";
+    const materiel  = groupDiv.querySelector(".group-materiel")?.value.trim()  || "";
+    const encadrant = groupDiv.querySelector(".group-encadrant")?.value.trim() || "";
+    const tag       = groupDiv.querySelector(".group-tag")?.value.trim()       || "";
 
     const activitiesRows = groupDiv.querySelectorAll(".activity-row");
-const activites = [];
-activitiesRows.forEach(row => {
-  const select = row.querySelector("select");
-  const inputText = row.querySelector(".activity-main-text");  // 👈 ici
-  if (!select || !inputText) return;
+    const activites = [];
 
-  const type = select.value;
-  const texte = inputText.value.trim();
-  if (!texte) return;
+    activitiesRows.forEach(row => {
+      const select = row.querySelector("select");
+      const inputText = row.querySelector(".act-texte");   // ⬅ texte principal
 
-  const actHoraire  = row.querySelector(".act-horaire")?.value.trim() || "";
-  const actLieu     = row.querySelector(".act-lieu")?.value.trim() || "";
-  const actTenue    = row.querySelector(".act-tenue")?.value.trim() || "";
-  const actMateriel = row.querySelector(".act-materiel")?.value.trim() || "";
-  const actEncadrant= row.querySelector(".act-encadrant")?.value.trim() || "";
+      if (!select || !inputText) return;
 
-  const act = { type, texte };
-  if (actHoraire)  act.horaire  = actHoraire;
-  if (actLieu)     act.lieu     = actLieu;
-  if (actTenue)    act.tenue    = actTenue;
-  if (actMateriel) act.materiel = actMateriel;
-  if (actEncadrant)act.encadrant= actEncadrant;
+      const type = select.value;
+      const texte = inputText.value.trim();
+      if (!texte) return;
 
-  activites.push(act);
-});
+      const actHoraire   = row.querySelector(".act-horaire")?.value.trim()   || "";
+      const actLieu      = row.querySelector(".act-lieu")?.value.trim()      || "";
+      const actTenue     = row.querySelector(".act-tenue")?.value.trim()     || "";
+      const actMateriel  = row.querySelector(".act-materiel")?.value.trim()  || "";
+      const actEncadrant = row.querySelector(".act-encadrant")?.value.trim() || "";
 
+      const act = { type, texte };
+      if (actHoraire)   act.horaire  = actHoraire;
+      if (actLieu)      act.lieu     = actLieu;
+      if (actTenue)     act.tenue    = actTenue;
+      if (actMateriel)  act.materiel = actMateriel;
+      if (actEncadrant) act.encadrant= actEncadrant;
 
-    const groupObj = {
-      titre,
-      activites
-    };
+      activites.push(act);
+    });
 
-    if (horaire)  groupObj.horaire  = horaire;
-    if (lieu)     groupObj.lieu     = lieu;
-    if (tenue)    groupObj.tenue    = tenue;
-    if (materiel) groupObj.materiel = materiel;
-    if (encadrant)groupObj.encadrant= encadrant;
-    if (tag)      groupObj.tag      = tag;
+    const groupObj = { titre, activites };
+    if (horaire)   groupObj.horaire   = horaire;
+    if (lieu)      groupObj.lieu      = lieu;
+    if (tenue)     groupObj.tenue     = tenue;
+    if (materiel)  groupObj.materiel  = materiel;
+    if (encadrant) groupObj.encadrant = encadrant;
+    if (tag)       groupObj.tag       = tag;
 
     weekObj.groupes.push(groupObj);
   });
 
-  // Activités communes
+  // -------- Activités communes --------
   const commonForms = weekDiv.querySelectorAll(".common-form");
   commonForms.forEach(commonDiv => {
     const groupCheckboxes = commonDiv.querySelectorAll(".common-group-checkbox:checked");
@@ -726,63 +724,64 @@ activitiesRows.forEach(row => {
       if (cb.value) groupes.push(cb.value);
     });
 
-    const lieu     = commonDiv.querySelector(".common-lieu").value.trim();
-    const horaire  = commonDiv.querySelector(".common-horaire").value.trim();
-    const tenue    = commonDiv.querySelector(".common-tenue").value.trim();
-    const materiel = commonDiv.querySelector(".common-materiel").value.trim();
-    const encadrant= commonDiv.querySelector(".common-encadrant").value.trim();
-    const tag      = commonDiv.querySelector(".common-tag").value.trim();
+    const lieu      = commonDiv.querySelector(".common-lieu")?.value.trim()      || "";
+    const horaire   = commonDiv.querySelector(".common-horaire")?.value.trim()   || "";
+    const tenue     = commonDiv.querySelector(".common-tenue")?.value.trim()     || "";
+    const materiel  = commonDiv.querySelector(".common-materiel")?.value.trim()  || "";
+    const encadrant = commonDiv.querySelector(".common-encadrant")?.value.trim() || "";
+    const tag       = commonDiv.querySelector(".common-tag")?.value.trim()       || "";
 
     const activitiesRows = commonDiv.querySelectorAll(".activity-row");
     const activites = [];
+
     activitiesRows.forEach(row => {
       const select = row.querySelector("select");
-      const inputText = row.querySelector('input[type="text"]');
+      const inputText = row.querySelector(".act-texte");   // ⬅ même classe
+
       if (!select || !inputText) return;
 
       const type = select.value;
       const texte = inputText.value.trim();
       if (!texte) return;
 
-      const actHoraire  = row.querySelector(".act-horaire")?.value.trim() || "";
-      const actLieu     = row.querySelector(".act-lieu")?.value.trim() || "";
-      const actTenue    = row.querySelector(".act-tenue")?.value.trim() || "";
-      const actMateriel = row.querySelector(".act-materiel")?.value.trim() || "";
-      const actEncadrant= row.querySelector(".act-encadrant")?.value.trim() || "";
+      const actHoraire   = row.querySelector(".act-horaire")?.value.trim()   || "";
+      const actLieu      = row.querySelector(".act-lieu")?.value.trim()      || "";
+      const actTenue     = row.querySelector(".act-tenue")?.value.trim()     || "";
+      const actMateriel  = row.querySelector(".act-materiel")?.value.trim()  || "";
+      const actEncadrant = row.querySelector(".act-encadrant")?.value.trim() || "";
 
       const act = { type, texte };
-      if (actHoraire)  act.horaire  = actHoraire;
-      if (actLieu)     act.lieu     = actLieu;
-      if (actTenue)    act.tenue    = actTenue;
-      if (actMateriel) act.materiel = actMateriel;
-      if (actEncadrant)act.encadrant= actEncadrant;
+      if (actHoraire)   act.horaire  = actHoraire;
+      if (actLieu)      act.lieu     = actLieu;
+      if (actTenue)     act.tenue    = actTenue;
+      if (actMateriel)  act.materiel = actMateriel;
+      if (actEncadrant) act.encadrant= actEncadrant;
 
       activites.push(act);
     });
 
+    // Si vraiment rien de rempli, on n'ajoute pas l'entrée
     if (
       activites.length === 0 &&
-      !lieu && !tenue && !materiel && !encadrant && !tag
+      !lieu && !horaire && !tenue && !materiel && !encadrant && !tag
     ) {
       return;
     }
 
-    const commonObj = {
-      groupes,
-      activites
-    };
-    if (horaire)  commonObj.horaire  = horaire;
-    if (lieu)     commonObj.lieu     = lieu;
-    if (tenue)    commonObj.tenue    = tenue;
-    if (materiel) commonObj.materiel = materiel;
-    if (encadrant)commonObj.encadrant= encadrant;
-    if (tag)      commonObj.tag      = tag;
+    const commonObj = { groupes, activites };
+    if (horaire)   commonObj.horaire   = horaire;
+    if (lieu)      commonObj.lieu      = lieu;
+    if (tenue)     commonObj.tenue     = tenue;
+    if (materiel)  commonObj.materiel  = materiel;
+    if (encadrant) commonObj.encadrant = encadrant;
+    if (tag)       commonObj.tag       = tag;
 
     weekObj.activitesCommunes.push(commonObj);
   });
 
   return weekObj;
 }
+
 
 // Récupérer toutes les semaines
 function getWeeksData() {
