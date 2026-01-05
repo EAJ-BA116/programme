@@ -1,7 +1,7 @@
 // ⚠️ Bannière d’alerte globale
 const ALERT_BANNER = {
   "actif": true,
-  "texte": "Pour les retardataires : merci de nous transmettre au plus vite le chèque de caution de 150 € ainsi que la cotisation CSA de 50 € (réglable via le Pass’Sport CAF), impérativement dans les 15 prochains jours"
+  "texte": "Bonne année à tous"
 };
 
 // 📝 Dernière mise à jour (affichée dans le footer)
@@ -12,81 +12,6 @@ const LAST_UPDATE = {
 
 // 🗓️ LISTE DES SEMAINES / ÉVÉNEMENTS (isoDate au format AAAA-MM-JJ)
 const SEMAINES = [
-  {
-    "isoDate": "2026-01-07",
-    "date": "7 janvier 2026",
-    "statut": "session",
-    "note": "",
-    "messageOff": "",
-    "activitesCommunes": [],
-    "groupes": [
-      {
-        "titre": "Groupe 1 – EAJ1",
-        "activites": [
-          {
-            "type": "bia",
-            "texte": "Moteur",
-            "horaire": "14h - 15h30",
-            "materiel": "Manuel BIA, trousse"
-          }
-        ],
-        "tenue": "Tenue de vol"
-      }
-    ]
-  },
-  {
-    "isoDate": "2026-01-14",
-    "date": "14 janvier 2026",
-    "statut": "session",
-    "note": "",
-    "messageOff": "",
-    "activitesCommunes": [
-      {
-        "groupes": [
-          "EAJ2",
-          "EAJ3"
-        ],
-        "activites": [
-          {
-            "type": "devoirMemoire",
-            "texte": "Présentation patchs, traditions",
-            "horaire": "14h-17h",
-            "encadrant": "ADJ Grany"
-          }
-        ],
-        "tenue": "Tenue de vol"
-      }
-    ],
-    "groupes": [
-      {
-        "titre": "Groupe 1 – EAJ1",
-        "activites": [
-          {
-            "type": "bia",
-            "texte": "Conduite de Vol",
-            "horaire": "14h-15h30",
-            "materiel": "Manuel BIA, trousse"
-          },
-          {
-            "type": "drone",
-            "texte": "Réglementation",
-            "horaire": "15h30-17h00",
-            "tenue": "Manuel BIA, trousse",
-            "encadrant": "ADJ Yoann"
-          }
-        ],
-        "tenue": "Tenue de Vol"
-      },
-      {
-        "titre": "Groupe 2 – EAJ2",
-        "activites": []
-      },
-      {
-        "titre": "Groupe 3 – EAJ3",
-        "activites": []
-      }
-    ]
-  },
   {
     "isoDate": "2025-12-03",
     "date": "3 décembre 2025",
@@ -105,7 +30,7 @@ const SEMAINES = [
             "materiel": "Manuel BIA, trousse",
             "encadrant": "CNE Gigi"
           },
-            {
+          {
             "type": "aeromodelisme",
             "texte": "Aéromodélisme",
             "horaire": "15h30 à 17h00",
@@ -305,6 +230,81 @@ const SEMAINES = [
       {
         "titre": "Groupe 1 – EAJ1",
         "activites": []
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": []
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-01-07",
+    "date": "7 janvier 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Aérodunamique",
+            "horaire": "14h - 15 h",
+            "materiel": "Manuel BIA, trousse"
+          },
+          {
+            "type": "drone",
+            "texte": "Réglementation",
+            "horaire": "15h -15h30"
+          }
+        ],
+        "tenue": "Tenue de vol",
+        "encadrant": "ADJ Yoann"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-01-14",
+    "date": "14 janvier 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [
+      {
+        "groupes": [
+          "EAJ2",
+          "EAJ3"
+        ],
+        "activites": [
+          {
+            "type": "devoirMemoire",
+            "texte": "Présentation patchs, traditions",
+            "horaire": "14h-17h",
+            "encadrant": "ADJ Grany"
+          }
+        ],
+        "tenue": "Tenue de vol"
+      }
+    ],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Aérodynamique",
+            "horaire": "14h-17h",
+            "materiel": "Manuel BIA, trousse",
+            "encadrant": "CNE Gigi"
+          }
+        ],
+        "tenue": "Tenue de Vol"
       },
       {
         "titre": "Groupe 2 – EAJ2",
