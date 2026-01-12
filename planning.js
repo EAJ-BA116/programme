@@ -1,7 +1,7 @@
 // ⚠️ Bannière d’alerte globale
 const ALERT_BANNER = {
   "actif": true,
-  "texte": "Bonne année à tous"
+  "texte": "Bonne année à toutes et à tous. Nous avons une réunion la semaine prochiane pour le planning des prochaines semaines. Le site sera alors mis à jour. Yoann"
 };
 
 // 📝 Dernière mise à jour (affichée dans le footer)
@@ -254,7 +254,7 @@ const SEMAINES = [
         "activites": [
           {
             "type": "bia",
-            "texte": "Aérodunamique",
+            "texte": "Aérodynamique",
             "horaire": "14h - 15 h",
             "materiel": "Manuel BIA, trousse"
           },
@@ -286,6 +286,8 @@ const SEMAINES = [
             "type": "devoirMemoire",
             "texte": "Présentation patchs, traditions",
             "horaire": "14h-17h",
+            "lieu": "Cristal",
+            "tenue": "Tenue de Vol",
             "encadrant": "ADJ Grany"
           }
         ],
@@ -308,11 +310,69 @@ const SEMAINES = [
       },
       {
         "titre": "Groupe 2 – EAJ2",
-        "activites": []
+        "activites": [],
+        "horaire": "14h00-17h00",
+        "lieu": "Cristal",
+        "tenue": "Tenue de Vol",
+        "encadrant": "ADJ Grany"
       },
       {
         "titre": "Groupe 3 – EAJ3",
-        "activites": []
+        "activites": [],
+        "horaire": "14h00-17h00",
+        "lieu": "Cristal",
+        "tenue": "Tenue de Vol",
+        "encadrant": "ADJ Grany"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-01-21",
+    "date": "21 janvier 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Aérodynamique",
+            "lieu": "Salle de Cours",
+            "tenue": "Tenue de Vol",
+            "materiel": "Manuel BIA, Trousse",
+            "encadrant": "CNE Gigi"
+          }
+        ]
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": [
+          {
+            "type": "ceremonie",
+            "texte": "Voeux du prefet",
+            "horaire": "16h30",
+            "lieu": "Devant le base",
+            "tenue": "Tenue de Vol",
+            "encadrant": "Major Laurent, SGC Maxime"
+          }
+        ],
+        "tag": "Pour les 4 personnes désignées"
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": [
+          {
+            "type": "projet",
+            "texte": "80 ans Tony Papin",
+            "lieu": "T19",
+            "tenue": "Tenue de Vol",
+            "encadrant": "ADC Anthony, ADJ Yoann, ADJ Henri, ADC Will, ADJ Laurent"
+          }
+        ],
+        "tag": "Maquette + Texte 80 ans Tony Papin"
       }
     ]
   }
