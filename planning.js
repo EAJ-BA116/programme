@@ -7,7 +7,7 @@ const ALERT_BANNER = {
 // 📝 Dernière mise à jour (affichée dans le footer)
 const LAST_UPDATE = {
   "auteur": "Yoann",
-  "dateTexte": "03/12/2025"
+  "dateTexte": "12/01/2026"
 };
 
 // 🗓️ LISTE DES SEMAINES / ÉVÉNEMENTS (isoDate au format AAAA-MM-JJ)
