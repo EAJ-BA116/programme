@@ -278,6 +278,7 @@ const SEMAINES = [
     "activitesCommunes": [
       {
         "groupes": [
+          "EAJ1",
           "EAJ2",
           "EAJ3"
         ],
@@ -285,10 +286,17 @@ const SEMAINES = [
           {
             "type": "devoirMemoire",
             "texte": "Présentation patchs, traditions",
-            "horaire": "14h-17h",
+            "horaire": "14h-16h",
             "lieu": "Cristal",
             "tenue": "Tenue de Vol",
             "encadrant": "ADJ Grany"
+          },
+          {
+            "type": "rencontres",
+            "texte": "Galette des Rois",
+            "horaire": "16h-17h",
+            "lieu": "UIS",
+            "encadrant": "Ensemble des encadrants"
           }
         ],
         "tenue": "Tenue de vol"
