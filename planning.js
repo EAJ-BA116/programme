@@ -1,13 +1,13 @@
 // ⚠️ Bannière d’alerte globale
 const ALERT_BANNER = {
   "actif": true,
-  "texte": "Bonne année à toutes et à tous. Nous avons une réunion la semaine prochiane pour le planning des prochaines semaines. Le site sera alors mis à jour. Yoann"
+  "texte": "Bonne année à toutes et à tous. Nous avons une réunion le 22 janvier 2026 pour le planning des prochaines semaines. Le site sera alors mis à jour. N’hésitez pas à nous faire part de vos suggestions pour améliorer le site. Yoann"
 };
 
 // 📝 Dernière mise à jour (affichée dans le footer)
 const LAST_UPDATE = {
   "auteur": "Yoann",
-  "dateTexte": "12/01/2026"
+  "dateTexte": "14/01/2026"
 };
 
 // 🗓️ LISTE DES SEMAINES / ÉVÉNEMENTS (isoDate au format AAAA-MM-JJ)
@@ -279,7 +279,6 @@ const SEMAINES = [
       {
         "groupes": [
           "EAJ1",
-          "EAJ2",
           "EAJ3"
         ],
         "activites": [
@@ -309,9 +308,16 @@ const SEMAINES = [
           {
             "type": "bia",
             "texte": "Aérodynamique",
-            "horaire": "14h-17h",
+            "horaire": "14h-16h",
             "materiel": "Manuel BIA, trousse",
             "encadrant": "CNE Gigi"
+          },
+          {
+            "type": "rencontres",
+            "texte": "Galettes des Rois",
+            "horaire": "16h-17h",
+            "lieu": "UIS",
+            "encadrant": "Ensemble des encadrants"
           }
         ],
         "tenue": "Tenue de Vol"
