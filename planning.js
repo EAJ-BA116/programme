@@ -278,7 +278,7 @@ const SEMAINES = [
     "activitesCommunes": [
       {
         "groupes": [
-          "EAJ1",
+          "EAJ2",
           "EAJ3"
         ],
         "activites": [
