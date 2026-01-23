@@ -51,7 +51,7 @@ body[data-theme="dark"] {
 
 /* ⚠️ Bannière d’alerte */
 #alert-banner {
-  display: none !important;
+  display: none;
   /* Conteneur neutre : chaque ligne porte sa propre couleur */
   background: transparent;
   color: inherit;
