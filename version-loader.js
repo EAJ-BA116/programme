@@ -7,7 +7,8 @@
       pad(now.getMonth() + 1) +
       pad(now.getDate()) +
       pad(now.getHours()) +
-      pad(now.getMinutes())
+      pad(now.getMinutes()) +
+      pad(now.getSeconds())
     );
   }
 
@@ -20,13 +21,20 @@
   }
 
   const version = generateVersion();
-  console.log("Chargement planning.js version :", version);
+  console.log("Chargement version :", version);
+
+  // ✅ Cache-bust CSS (utile sur GitHub Pages + cache navigateur)
+  const cssLink = document.getElementById("main-style")
+    || document.querySelector('link[rel="stylesheet"][href^="style.css"]');
+  if (cssLink) {
+    cssLink.href = `style.css?v=${version}`;
+  }
 
   // 1) On charge d’abord planning.js avec le paramètre de version
   loadScript(`planning.js?v=${version}`, function () {
     console.log("planning.js chargé, chargement de script.js…");
-    // 2) Puis seulement après, on charge script.js
-    loadScript("script.js", function () {
+    // 2) Puis seulement après, on charge script.js (aussi versionné)
+    loadScript(`script.js?v=${version}`, function () {
       console.log("script.js chargé et initialisé");
     });
   });

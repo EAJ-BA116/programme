@@ -51,6 +51,10 @@ const btnGenerate    = document.getElementById("btn-generate");
 const btnSave        = document.getElementById("btn-save");
 const output         = document.getElementById("output");
 
+// Bannières (multi)
+const bannersContainer = document.getElementById("banners-container");
+const btnAddBanner     = document.getElementById("btn-add-banner");
+
 // ===============================
 //  Utilitaires dates
 // ===============================
@@ -118,6 +122,230 @@ function parseDateFr(str) {
 
   const label = `${day} ${MOIS_FR[month - 1]} ${year}`;
   return { iso, label };
+}
+
+// ===============================
+//  Bannières (multi)
+// ===============================
+
+const BANNER_EMOJI_OPTIONS = [
+  { value: "⚠️", label: "⚠️ Attention" },
+  { value: "ℹ️", label: "ℹ️ Information" },
+  { value: "✅", label: "✅ Confirmation" },
+  { value: "📢", label: "📢 Annonce" },
+  { value: "🚫", label: "🚫 Important" }
+];
+
+// On déduit le type de bannière depuis l’emoji choisi.
+// L’utilisateur choisit "Attention/Information/Confirmation/Annonce/Important"
+// via l’emoji, et le style/couleur s’aligne automatiquement.
+const BANNER_TYPE_FROM_EMOJI = {
+  "⚠️": "attention",
+  "ℹ️": "information",
+  "✅": "confirmation",
+  "📢": "annonce",
+  "🚫": "important"
+};
+
+function bannerTypeFromEmoji(emoji) {
+  return BANNER_TYPE_FROM_EMOJI[emoji] || "annonce";
+}
+
+function createBannerItem(initial = {}) {
+  if (!bannersContainer) return null;
+
+  const div = document.createElement("div");
+  div.className = "banner-item";
+
+  const emojiSelect = document.createElement("select");
+  emojiSelect.className = "banner-item-emoji";
+  BANNER_EMOJI_OPTIONS.forEach(opt => {
+    const o = document.createElement("option");
+    o.value = opt.value;
+    o.textContent = opt.label;
+    emojiSelect.appendChild(o);
+  });
+  emojiSelect.value = initial.emoji || "⚠️";
+
+  const actifWrap = document.createElement("label");
+  actifWrap.style.display = "inline-flex";
+  actifWrap.style.gap = "0.35rem";
+  actifWrap.style.alignItems = "center";
+  const actif = document.createElement("input");
+  actif.type = "checkbox";
+  actif.className = "banner-item-actif";
+  actif.checked = (initial.actif !== false);
+  const actifTxt = document.createElement("span");
+  actifTxt.textContent = "Actif";
+  actifWrap.appendChild(actif);
+  actifWrap.appendChild(actifTxt);
+
+  const btnRemove = document.createElement("button");
+  btnRemove.type = "button";
+  btnRemove.className = "btn btn-small btn-danger";
+  btnRemove.textContent = "🗑️ Supprimer";
+
+  const row1 = document.createElement("div");
+  row1.className = "banner-row";
+  row1.appendChild(emojiSelect);
+  row1.appendChild(actifWrap);
+  row1.appendChild(btnRemove);
+
+  const targets = document.createElement("div");
+  targets.className = "banner-targets";
+
+  function mkTarget(id, label, cls) {
+    const lab = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.value = id;
+    cb.className = cls;
+    lab.appendChild(cb);
+    lab.appendChild(document.createTextNode(label));
+    return { lab, cb };
+  }
+
+  const tAll = mkTarget("all", "Tous", "banner-target-all");
+  const t1 = mkTarget("EAJ1", "EAJ1", "banner-target");
+  const t2 = mkTarget("EAJ2", "EAJ2", "banner-target");
+  const t3 = mkTarget("EAJ3", "EAJ3", "banner-target");
+
+  targets.appendChild(document.createTextNode("Cibles :"));
+  targets.appendChild(tAll.lab);
+  targets.appendChild(t1.lab);
+  targets.appendChild(t2.lab);
+  targets.appendChild(t3.lab);
+
+  const row2 = document.createElement("div");
+  row2.className = "banner-row";
+  row2.appendChild(targets);
+
+  const textarea = document.createElement("textarea");
+  textarea.className = "banner-item-text banner-textarea";
+  textarea.placeholder = "Message…";
+  textarea.value = initial.texte || "";
+
+  div.appendChild(row1);
+  div.appendChild(row2);
+  div.appendChild(textarea);
+
+  // Valeurs initiales cibles
+  const cibles = Array.isArray(initial.cibles) ? initial.cibles : (Array.isArray(initial.cible) ? initial.cible : []);
+  if (!cibles.length || cibles.includes("all")) {
+    tAll.cb.checked = true;
+  } else {
+    t1.cb.checked = cibles.includes("EAJ1");
+    t2.cb.checked = cibles.includes("EAJ2");
+    t3.cb.checked = cibles.includes("EAJ3");
+  }
+
+  // Si "Tous" coche → on désactive les autres (et inversement)
+  function syncTargets() {
+    const allChecked = tAll.cb.checked;
+    [t1.cb, t2.cb, t3.cb].forEach(cb => {
+      cb.disabled = allChecked;
+      if (allChecked) cb.checked = false;
+    });
+  }
+  tAll.cb.addEventListener("change", syncTargets);
+  [t1.cb, t2.cb, t3.cb].forEach(cb => cb.addEventListener("change", () => {
+    if (cb.checked) {
+      tAll.cb.checked = false;
+    }
+    syncTargets();
+  }));
+  syncTargets();
+
+  // Réactivité : dès qu’on change quelque chose → mise à jour du code
+  [emojiSelect, actif, textarea, tAll.cb, t1.cb, t2.cb, t3.cb].forEach(el => {
+    el.addEventListener("input", updateOutput);
+    el.addEventListener("change", updateOutput);
+  });
+
+  btnRemove.addEventListener("click", () => {
+    div.remove();
+    // Toujours garder au moins 1 bannière (si l’utilisateur supprime tout)
+    if (bannersContainer && !bannersContainer.querySelector(".banner-item")) {
+      createBannerItem({
+        actif: true,
+        emoji: "⚠️",
+        texte: "",
+        cibles: ["all"]
+      });
+    }
+    updateOutput();
+  });
+
+  bannersContainer.appendChild(div);
+  return div;
+}
+
+function getBannersDataFromForm() {
+  const globalActif = document.getElementById("banner-actif")?.checked ?? false;
+  const items = Array.from(document.querySelectorAll(".banner-item")).map(item => {
+    const actif = item.querySelector(".banner-item-actif")?.checked ?? true;
+    const emoji = item.querySelector(".banner-item-emoji")?.value || "⚠️";
+    const texte = (item.querySelector(".banner-item-text")?.value || "").trim();
+
+    const allChecked = item.querySelector(".banner-target-all")?.checked ?? false;
+    const checkedTargets = Array.from(item.querySelectorAll(".banner-target:checked")).map(cb => cb.value);
+    const cibles = allChecked ? ["all"] : (checkedTargets.length ? checkedTargets : ["all"]);
+
+    return {
+      actif: globalActif && actif,
+      emoji,
+      type: bannerTypeFromEmoji(emoji),
+      texte,
+      cibles
+    };
+  });
+
+  // On garde aussi les bannières vides (pour que l’utilisateur puisse juste préparer),
+  // mais côté site public elles ne s’afficheront pas.
+  return { globalActif, ALERT_BANNERS: items };
+}
+
+function setBannersInFormFromData(bannersArray, globalActif = true) {
+  const bannerActifInput = document.getElementById("banner-actif");
+  if (bannerActifInput) bannerActifInput.checked = !!globalActif;
+
+  if (bannersContainer) bannersContainer.innerHTML = "";
+
+  const arr = Array.isArray(bannersArray) ? bannersArray : [];
+  if (!arr.length) {
+    createBannerItem({ actif: true, emoji: "⚠️", texte: "", cibles: ["all"] });
+    return;
+  }
+
+  arr.forEach(b => {
+    createBannerItem({
+      actif: b.actif !== false,
+      emoji: b.emoji || "⚠️",
+      texte: b.texte || "",
+      cibles: Array.isArray(b.cibles) ? b.cibles : ["all"]
+    });
+  });
+}
+
+/* ---------- Bouton retour haut (patch ✈️) ---------- */
+
+function initialiserBackToTop() {
+  const btn = document.getElementById("back-to-top");
+  if (!btn) return;
+
+  function toggleVisibility() {
+    if (window.scrollY > 150) {
+      btn.classList.add("show");
+    } else {
+      btn.classList.remove("show");
+    }
+  }
+
+  window.addEventListener("scroll", toggleVisibility);
+  btn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  toggleVisibility();
 }
 
 function attachDateFrBehavior(dateFrInput) {
@@ -803,8 +1031,7 @@ function getWeeksData() {
 // ===============================
 
 function getConfigData() {
-  const bannerActif = document.getElementById("banner-actif")?.checked ?? false;
-  const bannerText  = document.getElementById("banner-text")?.value.trim() || "";
+  const { globalActif, ALERT_BANNERS } = getBannersDataFromForm();
   const auteur      = document.getElementById("lastupdate-auteur")?.value.trim() || "Yoann";
   const dateInput   = document.getElementById("lastupdate-date");
 
@@ -814,9 +1041,15 @@ function getConfigData() {
     dateTexte = getTodayFrDate();
   }
 
+  // Compat : on garde un "ALERT_BANNER" simple (ancien format)
+  // en concaténant les messages (utile si un ancien script ignore ALERT_BANNERS).
+  const messagesNonVides = (ALERT_BANNERS || [])
+    .filter(b => b && b.actif && String(b.texte || "").trim().length > 0)
+    .map(b => `${b.emoji ? b.emoji + " " : ""}${String(b.texte).trim()}`);
+
   const ALERT_BANNER_CFG = {
-    actif: bannerActif,
-    texte: bannerText
+    actif: !!globalActif,
+    texte: messagesNonVides.join("\n")
   };
 
   const LAST_UPDATE_CFG = {
@@ -824,20 +1057,26 @@ function getConfigData() {
     dateTexte
   };
 
-  return { ALERT_BANNER: ALERT_BANNER_CFG, LAST_UPDATE: LAST_UPDATE_CFG };
+  return {
+    ALERT_BANNER: ALERT_BANNER_CFG,
+    ALERT_BANNERS: Array.isArray(ALERT_BANNERS) ? ALERT_BANNERS : [],
+    LAST_UPDATE: LAST_UPDATE_CFG
+  };
 }
 
 
 function buildPlanningJs() {
   const weeks = getWeeksData();
-  const { ALERT_BANNER, LAST_UPDATE } = getConfigData();
+  const { ALERT_BANNER, ALERT_BANNERS, LAST_UPDATE } = getConfigData();
 
   if (weeks.length === 0) {
     return "// Aucune semaine valide (renseigner au moins une date JJ/MM/AAAA correcte).";
   }
 
   const parts = [];
-  parts.push("// ⚠️ Bannière d’alerte globale");
+  parts.push("// ⚠️ Bannières d’alerte (multi-cibles : all / EAJ1 / EAJ2 / EAJ3)");
+  parts.push("const ALERT_BANNERS = " + JSON.stringify(ALERT_BANNERS, null, 2) + ";\n");
+  parts.push("// ⚠️ Compat (ancien format) : concaténation des bannières");
   parts.push("const ALERT_BANNER = " + JSON.stringify(ALERT_BANNER, null, 2) + ";\n");
   parts.push("// 📝 Dernière mise à jour (affichée dans le footer)");
   parts.push("const LAST_UPDATE = " + JSON.stringify(LAST_UPDATE, null, 2) + ";\n");
@@ -879,15 +1118,29 @@ function chargerPlanningExistant() {
     return false;
   }
 
-  // Config générale : bannière + dernière MAJ
+  // Config générale : bannières + dernière MAJ
   const bannerActifInput   = document.getElementById("banner-actif");
-  const bannerTextArea     = document.getElementById("banner-text");
   const lastUpdateAuteur   = document.getElementById("lastupdate-auteur");
   const lastUpdateDate     = document.getElementById("lastupdate-date");
 
-  if (typeof ALERT_BANNER !== "undefined" && ALERT_BANNER) {
-    if (bannerActifInput) bannerActifInput.checked = !!ALERT_BANNER.actif;
-    if (bannerTextArea && ALERT_BANNER.texte) bannerTextArea.value = ALERT_BANNER.texte;
+  // Nouveau format : ALERT_BANNERS (multi)
+  if (typeof ALERT_BANNERS !== "undefined" && Array.isArray(ALERT_BANNERS)) {
+    const anyActive = ALERT_BANNERS.some(b => b && b.actif);
+    if (bannerActifInput) bannerActifInput.checked = anyActive;
+    setBannersInFormFromData(ALERT_BANNERS, anyActive);
+  }
+  // Ancien format : ALERT_BANNER (simple)
+  else if (typeof ALERT_BANNER !== "undefined" && ALERT_BANNER) {
+    const isOn = !!ALERT_BANNER.actif;
+    if (bannerActifInput) bannerActifInput.checked = isOn;
+    setBannersInFormFromData([
+      {
+        actif: isOn,
+        emoji: "⚠️",
+        texte: ALERT_BANNER.texte || "",
+        cibles: ["all"]
+      }
+    ], isOn);
   }
 
   if (typeof LAST_UPDATE !== "undefined" && LAST_UPDATE) {
@@ -1071,12 +1324,43 @@ function chargerPlanningExistant() {
 
 (function init() {
   const lastUpdateInput = document.getElementById("lastupdate-date");
+  const bannerActifInput = document.getElementById("banner-actif");
+
+  // Permet de taper la date facilement (ex: 23012026 -> 23/01/2026)
+  if (lastUpdateInput) {
+    lastUpdateInput.addEventListener("input", () => {
+      const formatted = formatDateFrValue(lastUpdateInput.value || "");
+      if (formatted !== lastUpdateInput.value) {
+        lastUpdateInput.value = formatted;
+      }
+    });
+  }
 
   if (btnAddWeek) {
     btnAddWeek.addEventListener("click", () => {
       createWeekForm();
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     });
+  }
+
+  // Bannières (multi)
+  if (btnAddBanner) {
+    btnAddBanner.addEventListener("click", () => {
+      const node = createBannerItem({ actif: true, emoji: "⚠️", texte: "", cibles: ["all"] });
+      if (node && node.scrollIntoView) {
+        node.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      updateOutput();
+    });
+  }
+
+  if (bannerActifInput) {
+    bannerActifInput.addEventListener("change", updateOutput);
+  }
+
+  // Toujours au moins 1 bannière au démarrage
+  if (bannersContainer && !bannersContainer.querySelector(".banner-item")) {
+    createBannerItem({ actif: true, emoji: "⚠️", texte: "", cibles: ["all"] });
   }
 
   if (btnGenerate) {
@@ -1096,6 +1380,9 @@ function chargerPlanningExistant() {
 
   // 1) On tente de charger le planning existant (planning.js)
   const ok = chargerPlanningExistant();
+
+  // Bouton retour haut
+  initialiserBackToTop();
 
   // 2) Si pas de planning.js ou SEMAINES vide, on part sur un formulaire vierge
   if (!ok) {

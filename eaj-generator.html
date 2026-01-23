@@ -4,11 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Générateur de programme EAJ – BA 116</title>
-  <link rel="stylesheet" href="style.css">
+  <link id="main-style" rel="stylesheet" href="style.css">
   <link rel="icon" type="image/x-icon" href="images/eaj.ico">
 <link rel="shortcut icon" type="image/x-icon" href="images/eaj.ico">
   <!-- On réutilise ton style principal -->
-  <link rel="stylesheet" href="style.css">
   <style>
     main.generator-main {
       max-width: 1000px;
@@ -112,6 +111,49 @@
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
       gap: 0.7rem;
       margin-bottom: 0.5rem;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    .banners-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: 0.2rem;
+    }
+
+    .banner-item {
+      border: 1px dashed var(--border-soft);
+      border-radius: 0.75rem;
+      padding: 0.6rem;
+      background: var(--bg-card-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .banner-row {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .banner-targets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      font-size: 0.8rem;
+    }
+
+    .banner-targets label {
+      display: inline-flex;
+      gap: 0.25rem;
+      align-items: center;
+      color: var(--text-main);
     }
 
     .field {
@@ -508,28 +550,17 @@
     <section class="config-block">
       <div class="config-title">Configuration générale</div>
       <div class="config-grid">
-        <div class="field">
-          <label>Bannière d’alerte</label>
+        <div class="field full">
+          <label>Bannières d’alerte</label>
           <div class="field-inline">
             <input type="checkbox" id="banner-actif" checked />
-            <span>Activer la bannière</span>
+            <span>Activer les bannières</span>
           </div>
-        </div>
-
-        <div class="field">
-          <label>Icône / ton de la bannière</label>
-          <select id="banner-emoji">
-            <option value="⚠️">⚠️ Attention</option>
-            <option value="ℹ️">ℹ️ Information</option>
-            <option value="✅">✅ Confirmation</option>
-            <option value="📢">📢 Annonce</option>
-            <option value="🚫">🚫 Important</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Texte de la bannière</label>
-          <textarea id="banner-text" class="banner-textarea">Prochaine séance : seuls les EAJ1 et EAJ3 sont convoqués, pas de EAJ2 ce jour-là.</textarea>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; margin-top:0.35rem;">
+            <button class="btn btn-small" type="button" id="btn-add-banner">➕ Ajouter une bannière</button>
+            <span class="note">Chaque bannière peut viser EAJ1, EAJ2, EAJ3, ou une combinaison.</span>
+          </div>
+          <div id="banners-container" class="banners-container"></div>
         </div>
 
         <div class="field">
@@ -538,8 +569,8 @@
         </div>
        <div class="field">
   <label>Dernière mise à jour – Date</label>
-  <input type="text" id="lastupdate-date" readonly />
-  <span class="note">Remplie automatiquement avec la date du jour.</span>
+  <input type="text" id="lastupdate-date" placeholder="JJ/MM/AAAA" maxlength="10" />
+  <span class="note">Saisis une date (ou laisse vide = date du jour).</span>
 </div>
 
       </div>
@@ -575,6 +606,10 @@
     <div class="footer-line">Outil interne – EAJ BA 116</div>
     
   </footer>
+
+  <button id="back-to-top" class="back-to-top air-patch" type="button" aria-label="Retour en haut">
+    ✈️
+  </button>
 
   <!-- Modal de confirmation -->
   <div id="modal-overlay" class="modal-overlay hidden">

@@ -25,7 +25,7 @@
   <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="images/eaj.ico">
 
-  <link rel="stylesheet" href="style.css">
+  <link id="main-style" rel="stylesheet" href="style.css">
 </head>
 
 
@@ -40,7 +40,10 @@
       <img src="images/logo_eaj.png" alt="Logo Escadrilles Air Jeunesse">
       <div class="site-title-text">
         <h1>Escadrilles Air Jeunesse</h1>
-        <p>BA 116 – Programme des activités</p>
+        <p>
+          BA 116 – Programme des activités
+          <span class="app-version">Version 1.1 du 23/01/2026</span>
+        </p>
         <div class="badge-time">
           ⏱ Mercredi après-midi • 14h–17h (et événements ponctuels)
         </div>
@@ -56,7 +59,21 @@
       <button class="btn-filter" data-filter="EAJ2">EAJ2</button>
       <button class="btn-filter" data-filter="EAJ3">EAJ3</button>
     </div>
-    <button id="theme-toggle" class="btn-theme" type="button">
+
+    <!-- 🔽 Menu "Nos projets" -->
+    <div class="projects-dropdown" title="Accès rapide aux projets EAJ">
+      <select id="projects-select" aria-label="Nos projets">
+        <option value="" selected>Nos projets</option>
+        <option value="https://eaj-ba116.github.io/HenriFertet2025/">2025 - Henri Fertet</option>
+        <option value="https://eaj-ba116.github.io/operationsagittaire/">2025 - Opération Sagittaire</option>
+      </select>
+    </div>
+    
+    <label class="toggle-banners" title="Masquer/afficher les bannières (non mémorisé)">
+      <input type="checkbox" id="banner-toggle" checked>
+      <span>Afficher bannières</span>
+    </label>
+<button id="theme-toggle" class="btn-theme" type="button">
       🌙 Mode sombre
     </button>
   </div>

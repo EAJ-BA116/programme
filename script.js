@@ -385,6 +385,8 @@ function initialiserFiltres() {
 
   // Appliquer au démarrage
   appliquerFiltre(filtreActuel);
+  // 🔔 Bannière filtrée (EAJ1/2/3)
+  renderAlert(filtreActuel);
 
   // Etat visuel
   boutons.forEach(btn => {
@@ -405,6 +407,7 @@ function initialiserFiltres() {
       btn.classList.add("active");
 
       appliquerFiltre(filter);
+      renderAlert(filter);
 
       try {
         localStorage.setItem("eaj_filter", filter);
@@ -454,11 +457,91 @@ function renderLastUpdate() {
   el.textContent = `Programme mis à jour par ${LAST_UPDATE.auteur} le ${LAST_UPDATE.dateTexte}`;
 }
 
-function renderAlert() {
+function renderAlert(filtreActuel = "all") {
   const banner = document.getElementById("alert-banner");
-  if (!banner || typeof ALERT_BANNER === "undefined") return;
-  if (!ALERT_BANNER || !ALERT_BANNER.actif) return;
-  banner.textContent = ALERT_BANNER.texte;
+  if (!banner) return;
+
+  const TYPE_META = {
+    information: { label: "Information", cls: "info" },
+    attention:   { label: "Attention",   cls: "attention" },
+    confirmation:{ label: "Confirmation",cls: "confirmation" },
+    annonce:     { label: "Annonce",     cls: "annonce" },
+    important:   { label: "Important",   cls: "important" }
+  };
+
+  const TYPE_FROM_EMOJI = {
+    "⚠️": "attention",
+    "ℹ️": "information",
+    "✅": "confirmation",
+    "📢": "annonce",
+    "🚫": "important"
+  };
+
+  function normalizeType(b) {
+    const t = (b && b.type) ? String(b.type).toLowerCase() : "";
+    if (TYPE_META[t]) return t;
+    const emoji = (b && b.emoji) ? String(b.emoji) : "";
+    return TYPE_FROM_EMOJI[emoji] || "annonce";
+  }
+
+  function formatTargets(ciblesArr) {
+    const cibles = Array.isArray(ciblesArr) ? ciblesArr : [];
+    if (!cibles.length || cibles.includes("all")) return "Tous";
+    const pretty = cibles.map(c => {
+      if (c === "EAJ1") return "EAJ 1";
+      if (c === "EAJ2") return "EAJ 2";
+      if (c === "EAJ3") return "EAJ 3";
+      return c;
+    });
+    return pretty.join(" + ");
+  }
+
+  // 🧩 Compat : ancien format (ALERT_BANNER) / nouveau format (ALERT_BANNERS)
+  let banners = [];
+
+  if (typeof ALERT_BANNERS !== "undefined" && Array.isArray(ALERT_BANNERS)) {
+    banners = ALERT_BANNERS;
+  } else if (typeof ALERT_BANNER !== "undefined" && ALERT_BANNER) {
+    banners = [{
+      actif: !!ALERT_BANNER.actif,
+      emoji: "⚠️",
+      texte: ALERT_BANNER.texte || "",
+      cibles: ["all"]
+    }];
+  }
+
+  // Nettoyage
+  banner.innerHTML = "";
+  banner.style.display = "none";
+
+  // Filtrage
+  const visibles = (banners || [])
+    .filter(b => b && b.actif && String(b.texte || "").trim().length > 0)
+    .filter(b => {
+      const cibles = Array.isArray(b.cibles) ? b.cibles : [];
+      if (!cibles.length) return true; // si non précisé → visible pour tous
+      if (cibles.includes("all")) return true;
+      if (filtreActuel === "all") return true; // en vue "Tous" on affiche tout
+      return cibles.includes(filtreActuel);
+    });
+
+  if (!visibles.length) return;
+
+  // Affichage : une ligne = une bannière, avec couleur selon le type.
+  visibles.forEach(b => {
+    const type = normalizeType(b);
+    const meta = TYPE_META[type] || TYPE_META.annonce;
+    const targets = formatTargets(b.cibles);
+    const message = String(b.texte || "").trim();
+    const emoji = b.emoji ? String(b.emoji) : "";
+
+    const line = document.createElement("div");
+    line.className = `alert-line alert-line--${meta.cls}`;
+    // Format demandé : [emoji] Annonce [EAJ 3] : [message]
+    line.textContent = `${emoji ? emoji + " " : ""}${meta.label} [${targets}] : ${message}`;
+    banner.appendChild(line);
+  });
+
   banner.style.display = "block";
 }
 
@@ -542,6 +625,40 @@ function initialiserAdminModal() {
   });
 }
 
+
+
+/* ---------- Toggle affichage bannières (non mémorisé) ---------- */
+
+function initialiserBannerToggle() {
+  const cb = document.getElementById("banner-toggle");
+  const banner = document.getElementById("alert-banner");
+  if (!cb || !banner) return;
+
+  const apply = () => {
+    banner.classList.toggle("is-hidden", !cb.checked);
+  };
+
+  cb.addEventListener("change", apply);
+  apply(); // état par défaut (visible)
+}
+
+
+/* ---------- Menu déroulant "Nos projets" ---------- */
+
+function initialiserProjectsMenu() {
+  const select = document.getElementById("projects-select");
+  if (!select) return;
+
+  select.addEventListener("change", () => {
+    const url = (select.value || "").trim();
+    if (!url) return;
+    // Ouvre dans un nouvel onglet et revient sur "Nos projets"
+    window.open(url, "_blank", "noopener,noreferrer");
+    select.value = "";
+  });
+}
+
+
 /* ---------- Init globale ---------- */
 
 renderToutesLesSemaines();
@@ -549,5 +666,7 @@ initialiserFiltres();
 initialiserThemeToggle();
 renderLastUpdate();
 renderAlert();
+initialiserBannerToggle();
+initialiserProjectsMenu();
 initialiserBackToTop();
 initialiserAdminModal();
