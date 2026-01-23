@@ -1,13 +1,13 @@
 // ⚠️ Bannière d’alerte globale
 const ALERT_BANNER = {
   "actif": true,
-  "texte": "Bonne année à toutes et à tous. Nous avons une réunion le 22 janvier 2026 pour le planning des prochaines semaines. Le site sera alors mis à jour. N’hésitez pas à nous faire part de vos suggestions pour améliorer le site. Yoann"
+  "texte": "EAJ 1  : N'oubliez pas de vous inscrire au BIA auprès de vos établissements scolaires."
 };
 
 // 📝 Dernière mise à jour (affichée dans le footer)
 const LAST_UPDATE = {
   "auteur": "Yoann",
-  "dateTexte": "14/01/2026"
+  "dateTexte": "23/01/2026"
 };
 
 // 🗓️ LISTE DES SEMAINES / ÉVÉNEMENTS (isoDate au format AAAA-MM-JJ)
@@ -387,6 +387,699 @@ const SEMAINES = [
           }
         ],
         "tag": "Maquette + Texte 80 ans Tony Papin"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-01-28",
+    "date": "28 janvier 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Aérodynamique : Aérospatial",
+            "encadrant": "CNE Gigi"
+          }
+        ],
+        "horaire": "14h-17h",
+        "lieu": "T19",
+        "tag": "BIA + Révision module Aérodynamique"
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": [
+          {
+            "type": "projet",
+            "texte": "Projet Tomy Papin",
+            "encadrant": "ADC Anthony, ADJ Yoann, ADJ Henri"
+          }
+        ],
+        "horaire": "14h-17h",
+        "lieu": "T19",
+        "tag": "Maquette, texte"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-02-04",
+    "date": "4 février 2026",
+    "statut": "session",
+    "note": "Attention, il faudra surement arriver avant l'heure prévu.",
+    "messageOff": "",
+    "activitesCommunes": [
+      {
+        "groupes": [
+          "EAJ1",
+          "EAJ3"
+        ],
+        "activites": [
+          {
+            "type": "ceremonie",
+            "texte": "Cérémonie des 80 ans de Tomy Papin, parrain de la BA 116"
+          }
+        ],
+        "horaire": "14h - 16h",
+        "lieu": "BA 116",
+        "tenue": "Tenue de vol"
+      }
+    ],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": []
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-02-10",
+    "date": "10 février 2026",
+    "statut": "off",
+    "note": "",
+    "messageOff": "Vacances de février",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": []
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-02-18",
+    "date": "18 février 2026",
+    "statut": "off",
+    "note": "",
+    "messageOff": "Vacances de février",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": []
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-02-25",
+    "date": "25 février 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Météo",
+            "horaire": "14h - 15h30",
+            "materiel": "Manuel BIA, Trousse",
+            "encadrant": "CNE Gigi"
+          },
+          {
+            "type": "aeromodelisme",
+            "texte": "Maquette",
+            "horaire": "15h30-17h",
+            "lieu": "T19",
+            "encadrant": "ADC Alex"
+          }
+        ],
+        "horaire": "14h - 17h",
+        "tenue": "Tenue de vol"
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": [
+          {
+            "type": "aeromodelisme",
+            "texte": "Maquette",
+            "horaire": "14h - 15h30",
+            "lieu": "T19",
+            "tenue": "Tenue de vol",
+            "encadrant": "ADC Alex"
+          },
+          {
+            "type": "visite",
+            "texte": "SEO(essence) ou Pompier de l'air",
+            "horaire": "15h30 - 17h"
+          }
+        ],
+        "horaire": "14h - 17h",
+        "tenue": "Tenue de vol"
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": [
+          {
+            "type": "projet",
+            "texte": "Henri Fertet Prix Armée Jeunesse",
+            "materiel": "Trousse",
+            "encadrant": "ADC Anthony, ADJ Yoann, ADJ Henri"
+          }
+        ],
+        "horaire": "14h00 - 17h",
+        "tenue": "Tenue de vol"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-03-04",
+    "date": "4 mars 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Météo",
+            "encadrant": "SLT Daniel"
+          }
+        ],
+        "horaire": "14h - 16h",
+        "tenue": "Tenue de Vol",
+        "materiel": "Manuel BIA, Trousse"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-03-11",
+    "date": "11 mars 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [
+      {
+        "groupes": [
+          "EAJ2",
+          "EAJ3"
+        ],
+        "activites": [
+          {
+            "type": "sport",
+            "texte": "Challenge EAJ2 - EAJ3"
+          }
+        ],
+        "horaire": "14h - 17h",
+        "lieu": "Gymnase",
+        "tenue": "Tenue de sport",
+        "materiel": "Gourde",
+        "encadrant": "Moniteurs de sports"
+      }
+    ],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Météo",
+            "horaire": "14h00 15h30",
+            "tenue": "Tenue de Vol",
+            "materiel": "Manuel BIA, trousse",
+            "encadrant": "CNE Gigi"
+          },
+          {
+            "type": "sport",
+            "texte": "Scéance de sport",
+            "horaire": "5h30 - 17h",
+            "lieu": "Gymanse",
+            "tenue": "Tenue de sport",
+            "materiel": "Gourde",
+            "encadrant": "Moniteurs de sports"
+          }
+        ],
+        "tenue": "Tenue de vol, Tenue de sport",
+        "materiel": "Manuel Bia, Trousse, Gourde"
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": [],
+        "tenue": "Tenue de sport",
+        "materiel": "Gourde"
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": [],
+        "tenue": "Tenue de sport",
+        "materiel": "Gourde"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-03-18",
+    "date": "18 mars 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Météo",
+            "horaire": "14h - 16h",
+            "encadrant": "CNE Gigi"
+          },
+          {
+            "type": "drone",
+            "texte": "Réglementation",
+            "horaire": "16h - 17h",
+            "materiel": "Trousse",
+            "encadrant": "ADJ Yoann, ADC William"
+          }
+        ],
+        "horaire": "14h - 17h",
+        "tenue": "Tenue de Vol",
+        "materiel": "Manuel BIA, Trousse"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-03-25",
+    "date": "25 mars 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Météo",
+            "horaire": "14h - 15h30",
+            "materiel": "Manuel BIA, Trousse"
+          },
+          {
+            "type": "aeromodelisme",
+            "texte": "Maquette",
+            "horaire": "15h30 - 17h",
+            "lieu": "T19",
+            "encadrant": "ADC Alex"
+          }
+        ],
+        "horaire": "14h - 17h",
+        "tenue": "Tenue de vol"
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": [
+          {
+            "type": "aeromodelisme",
+            "texte": "Maquette",
+            "horaire": "14h - 15h30",
+            "encadrant": "ADC Alex"
+          },
+          {
+            "type": "visite",
+            "texte": "SEO ou pompier",
+            "horaire": "15h30 - 17h"
+          }
+        ],
+        "horaire": "14h - 17h",
+        "tenue": "Tenue de vol"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-04-01",
+    "date": "1 avril 2026",
+    "statut": "off",
+    "note": "",
+    "messageOff": "BASEX. Peut-être cours  BIA en Visio conférence pour les EAJ 1",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": []
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-04-08",
+    "date": "8 avril 2026",
+    "statut": "off",
+    "note": "",
+    "messageOff": "Vacances de Pâques",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": []
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-04-15",
+    "date": "15 avril 2026",
+    "statut": "off",
+    "note": "",
+    "messageOff": "Vacances de Pâques",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": []
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-04-22",
+    "date": "22 avril 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "rencontres",
+            "texte": "Présentation métier du BIA",
+            "horaire": "14h- 15h30",
+            "lieu": "HM10",
+            "tenue": "Tenue de vol",
+            "encadrant": "Encadrant EAJ"
+          },
+          {
+            "type": "bia",
+            "texte": "Circulation aérienne",
+            "horaire": "15h30 - 17h",
+            "tenue": "Tenue de vol",
+            "materiel": "Manuel BIA, Trousse",
+            "encadrant": "CNE Gigi"
+          }
+        ],
+        "horaire": "14h - 17h"
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": [
+          {
+            "type": "tir",
+            "texte": "Tir à la Carabine",
+            "horaire": "14h - 17h",
+            "tenue": "Tenue de vol",
+            "encadrant": "ADC Franck, ADC Philippe"
+          }
+        ],
+        "horaire": "14h - 17h"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-04-29",
+    "date": "29 avril 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Circulation aérienne",
+            "horaire": "14h - 16h",
+            "materiel": "Trousse, Gourde",
+            "encadrant": "CNE Gigi"
+          }
+        ],
+        "horaire": "14h - 16h"
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": [
+          {
+            "type": "drone",
+            "texte": "Drone",
+            "horaire": "14h - 17h",
+            "tenue": "Tenue de Vol",
+            "encadrant": "ADC William, ADJ Yoann"
+          }
+        ],
+        "horaire": "14h - 17h"
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": [
+          {
+            "type": "rencontres",
+            "texte": "Stand EAJ pour les classes de défense",
+            "horaire": "14h - 17h",
+            "lieu": "HM10",
+            "tenue": "Tenue de Vol",
+            "encadrant": "ADJ Henri"
+          }
+        ],
+        "horaire": "14h - 17h",
+        "tag": "3 - 4 EAJ nécessaire pour présenter les EAJ"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-05-06",
+    "date": "6 mai 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Circulation aérienne",
+            "horaire": "14h 15h30",
+            "materiel": "Trousse, manuel BIA",
+            "encadrant": "CNE Gigi"
+          },
+          {
+            "type": "rencontres",
+            "texte": "CIRFA de Besançon",
+            "horaire": "15h30 - 17h",
+            "encadrant": "Personnel du CIRFA"
+          }
+        ],
+        "horaire": "14h - 17h",
+        "tenue": "Tenue de vol"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-05-13",
+    "date": "13 mai 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "bia",
+            "texte": "Circulation aérienne",
+            "horaire": "14h - 16h",
+            "materiel": "Trousse, Manuel BIA",
+            "encadrant": "CNE Gigi"
+          }
+        ],
+        "horaire": "14h - 16h",
+        "tenue": "Tenue de Vol",
+        "tag": "Dernière séance de BIA avant examen"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-05-14",
+    "date": "14 mai 2026",
+    "statut": "session",
+    "note": "Challenge Inter EAJ sur la BA de Salon. Nous prenons seulement 6 équipiers des EAJ2 et 3 pour y aller. Les EAJ 1 passent leur examen du BIA le 20/05/2026",
+    "messageOff": "",
+    "activitesCommunes": [
+      {
+        "groupes": [
+          "EAJ1",
+          "EAJ2",
+          "EAJ3"
+        ],
+        "activites": [
+          {
+            "type": "rencontres",
+            "texte": "Challenge Inter EAJ"
+          }
+        ],
+        "horaire": "du jeudi 14/05/2026 au dimanche 17/05/2026",
+        "encadrant": "ADC Franck"
+      }
+    ],
+    "groupes": [
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": [
+          {
+            "type": "rencontres",
+            "texte": "Sport, drone..."
+          }
+        ]
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": [
+          {
+            "type": "rencontres",
+            "texte": "Sport, drone..."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-05-20",
+    "date": "20 mai 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "autre",
+            "texte": "Examen BIA"
+          }
+        ],
+        "horaire": "14h - 17h",
+        "lieu": "Lycée Lumiére",
+        "tenue": "Tenue de Vol",
+        "tag": "Examen final BIA. Bon Courage"
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": [
+          {
+            "type": "visite",
+            "texte": "Cimetière Epinal ou  Musée de Vincey",
+            "horaire": "14h - 17h",
+            "lieu": "Epinal ou Vincey",
+            "encadrant": "ADC Anthony"
+          }
+        ],
+        "horaire": "14h - 17h",
+        "tenue": "Tenue de Vol"
+      }
+    ]
+  },
+  {
+    "isoDate": "2026-05-27",
+    "date": "27 mai 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [
+      {
+        "groupes": [
+          "EAJ2",
+          "EAJ3"
+        ],
+        "activites": [
+          {
+            "type": "rencontres",
+            "texte": "Challenge Cérébral (😂) entre les EAJ 2 et 3",
+            "horaire": "14h- 17h",
+            "lieu": "BA 116",
+            "tenue": "Tenue de sport",
+            "materiel": "Gourde"
+          }
+        ],
+        "lieu": "BA 116"
+      }
+    ],
+    "groupes": [
+      {
+        "titre": "Groupe 1 – EAJ1",
+        "activites": [
+          {
+            "type": "sport",
+            "texte": "Sport Armée Jeunesse",
+            "horaire": "14h - 17h",
+            "lieu": "Gymnase",
+            "encadrant": "Moniteurs de sports"
+          }
+        ],
+        "tenue": "Tenue de sport",
+        "materiel": "Gourde",
+        "tag": "Rencontre sportive avec les cadets de la gendarmerie, les pompiers...."
+      },
+      {
+        "titre": "Groupe 2 – EAJ2",
+        "activites": []
+      },
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": []
       }
     ]
   }
