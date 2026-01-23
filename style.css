@@ -51,7 +51,7 @@ body[data-theme="dark"] {
 
 /* ⚠️ Bannière d’alerte */
 #alert-banner {
-  display: none;
+  display: none !important;
   /* Conteneur neutre : chaque ligne porte sa propre couleur */
   background: transparent;
   color: inherit;
@@ -572,7 +572,7 @@ body[data-theme="dark"] .help code {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.65);
-  display: none; /* caché par défaut */
+  display: none !important; /* caché par défaut */
   align-items: center;
   justify-content: center;
   padding: 1rem;
@@ -787,7 +787,7 @@ body[data-theme="dark"] .week-common-title {
 
 /* On n’utilise plus le petit rond */
 .activity-dot {
-  display: none;
+  display: none !important;
 }
 
 .back-to-top {
@@ -801,7 +801,7 @@ body[data-theme="dark"] .week-common-title {
   color: var(--text-main);
   font-size: 0.8rem;
   cursor: pointer;
-  display: none; /* affiché en JS */
+  display: none !important; /* affiché en JS */
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.25);
   z-index: 40;
 }
@@ -823,7 +823,7 @@ body[data-theme="dark"] .week-common-title {
 .admin-modal {
   position: fixed;
   inset: 0;
-  display: none;
+  display: none !important;
   align-items: center;
   justify-content: center;
   z-index: 50;
@@ -927,7 +927,7 @@ body[data-theme="dark"] .week-common-title {
   background: linear-gradient(145deg, #0e1a2b, #1a2c46);
   color: #e5edf8;
   font-size: 1.4rem;
-  display: none; /* affiché par JS */
+  display: none !important; /* affiché par JS */
   align-items: center;
   justify-content: center;
   cursor: pointer;
@@ -1019,7 +1019,7 @@ body[data-theme="light"] .back-to-top.air-patch {
 
 /* ---------- Toggle affichage bannières ---------- */
 #alert-banner.is-hidden {
-  display: none;
+  display: none !important;
 }
 
 .toggle-banners {
