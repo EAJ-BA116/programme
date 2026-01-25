@@ -7,7 +7,9 @@ const ALERT_BANNERS = [
     "texte": "N'oubliez pas de vous inscrire au BIA auprès de vos établissements scolaires. Les inscriptions ont lieu du 28 janvier au 11 mars 2026.",
     "cibles": [
       "EAJ1"
-    ]
+    ],
+    "startDate": "25/01/2026",
+    "endDate": "11/03/2026"
   }
 ];
 
@@ -20,7 +22,7 @@ const ALERT_BANNER = {
 // 📝 Dernière mise à jour (affichée dans le footer)
 const LAST_UPDATE = {
   "auteur": "Yoann",
-  "dateTexte": "23/01/2026"
+  "dateTexte": "25/01/2026"
 };
 
 // 🗓️ LISTE DES SEMAINES / ÉVÉNEMENTS (isoDate au format AAAA-MM-JJ)
@@ -474,8 +476,8 @@ const SEMAINES = [
     ]
   },
   {
-    "isoDate": "2026-02-10",
-    "date": "10 février 2026",
+    "isoDate": "2026-02-11",
+    "date": "11 février 2026",
     "statut": "off",
     "note": "",
     "messageOff": "Vacances de février",
@@ -1093,6 +1095,28 @@ const SEMAINES = [
       {
         "titre": "Groupe 3 – EAJ3",
         "activites": []
+      }
+    ]
+  },
+  {
+    "isoDate": "2028-02-10",
+    "date": "10 février 2028",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": [
+          {
+            "type": "projet",
+            "texte": "Henri Fertet"
+          }
+        ],
+        "horaire": "14h-17h",
+        "lieu": "Lycée Henri Fertet de Gray",
+        "tag": "Départ de la base vers Gray en début d'après midi"
       }
     ]
   }

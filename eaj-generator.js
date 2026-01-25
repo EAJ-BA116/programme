@@ -220,6 +220,41 @@ function createBannerItem(initial = {}) {
   row2.className = "banner-row";
   row2.appendChild(targets);
 
+  // Dates (programmation)
+  const startInput = document.createElement("input");
+  startInput.type = "text";
+  startInput.className = "banner-item-start";
+  startInput.placeholder = "Début (JJ/MM/AAAA)";
+  startInput.value = (String(initial.startDate || initial.dateDebut || initial.debut || "").trim() || getTodayFrDate());
+  attachDateFrBehavior(startInput);
+
+  const endInput = document.createElement("input");
+  endInput.type = "text";
+  endInput.className = "banner-item-end";
+  endInput.placeholder = "Fin (optionnel)";
+  endInput.value = String(initial.endDate || initial.dateFin || initial.fin || "").trim();
+  attachDateFrBehavior(endInput);
+
+  const rowDates = document.createElement("div");
+  rowDates.className = "banner-row banner-dates-row";
+
+  const lbl = document.createElement("span");
+  lbl.className = "banner-dates-label";
+  lbl.textContent = "Dates :";
+  rowDates.appendChild(lbl);
+
+  function mkDateField(labelTxt, inputEl) {
+    const wrap = document.createElement("label");
+    wrap.className = "banner-date-field";
+    const t = document.createElement("span");
+    t.textContent = labelTxt;
+    wrap.appendChild(t);
+    wrap.appendChild(inputEl);
+    return wrap;
+  }
+  rowDates.appendChild(mkDateField("Début", startInput));
+  rowDates.appendChild(mkDateField("Fin", endInput));
+
   const textarea = document.createElement("textarea");
   textarea.className = "banner-item-text banner-textarea";
   textarea.placeholder = "Message…";
@@ -227,6 +262,7 @@ function createBannerItem(initial = {}) {
 
   div.appendChild(row1);
   div.appendChild(row2);
+  div.appendChild(rowDates);
   div.appendChild(textarea);
 
   // Valeurs initiales cibles
@@ -257,7 +293,7 @@ function createBannerItem(initial = {}) {
   syncTargets();
 
   // Réactivité : dès qu’on change quelque chose → mise à jour du code
-  [emojiSelect, actif, textarea, tAll.cb, t1.cb, t2.cb, t3.cb].forEach(el => {
+  [emojiSelect, actif, startInput, endInput, textarea, tAll.cb, t1.cb, t2.cb, t3.cb].forEach(el => {
     el.addEventListener("input", updateOutput);
     el.addEventListener("change", updateOutput);
   });
@@ -291,13 +327,20 @@ function getBannersDataFromForm() {
     const checkedTargets = Array.from(item.querySelectorAll(".banner-target:checked")).map(cb => cb.value);
     const cibles = allChecked ? ["all"] : (checkedTargets.length ? checkedTargets : ["all"]);
 
-    return {
+    const startDateRaw = (item.querySelector(".banner-item-start")?.value || "").trim();
+    const endDateRaw   = (item.querySelector(".banner-item-end")?.value || "").trim();
+    const startDate = startDateRaw || getTodayFrDate();
+
+    const obj = {
       actif: globalActif && actif,
       emoji,
       type: bannerTypeFromEmoji(emoji),
       texte,
-      cibles
+      cibles,
+      startDate
     };
+    if (endDateRaw) obj.endDate = endDateRaw;
+    return obj;
   });
 
   // On garde aussi les bannières vides (pour que l’utilisateur puisse juste préparer),
@@ -313,7 +356,7 @@ function setBannersInFormFromData(bannersArray, globalActif = true) {
 
   const arr = Array.isArray(bannersArray) ? bannersArray : [];
   if (!arr.length) {
-    createBannerItem({ actif: true, emoji: "⚠️", texte: "", cibles: ["all"] });
+    createBannerItem({ actif: true, emoji: "⚠️", texte: "", cibles: ["all"], startDate: getTodayFrDate(), endDate: "" });
     return;
   }
 
@@ -322,7 +365,15 @@ function setBannersInFormFromData(bannersArray, globalActif = true) {
       actif: b.actif !== false,
       emoji: b.emoji || "⚠️",
       texte: b.texte || "",
-      cibles: Array.isArray(b.cibles) ? b.cibles : ["all"]
+      cibles: Array.isArray(b.cibles) ? b.cibles : ["all"],
+      startDate: (function(v){
+        const s = String(v || "").trim();
+        return /^\d{4}-\d{2}-\d{2}$/.test(s) ? isoToFrDate(s) : s;
+      })(b.startDate || b.dateDebut || b.debut || ""),
+      endDate: (function(v){
+        const s = String(v || "").trim();
+        return /^\d{4}-\d{2}-\d{2}$/.test(s) ? isoToFrDate(s) : s;
+      })(b.endDate || b.dateFin || b.fin || "")
     });
   });
 }
@@ -1360,7 +1411,7 @@ function chargerPlanningExistant() {
 
   // Toujours au moins 1 bannière au démarrage
   if (bannersContainer && !bannersContainer.querySelector(".banner-item")) {
-    createBannerItem({ actif: true, emoji: "⚠️", texte: "", cibles: ["all"] });
+    createBannerItem({ actif: true, emoji: "⚠️", texte: "", cibles: ["all"], startDate: getTodayFrDate(), endDate: "" });
   }
 
   if (btnGenerate) {

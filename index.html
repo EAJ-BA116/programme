@@ -28,31 +28,27 @@
   <link id="main-style" rel="stylesheet" href="style.css">
 </head>
 
-
-
 <body data-theme="dark">
-  <!-- ⚠️ Bannière d’alerte -->
+  <!-- ⚠️ Bannières d’alerte -->
   <div id="alert-banner"></div>
 
-  <header>
-    <div class="logo-wrapper">
-      <!-- 💡 Mets ton logo ici : images/logo-eaj.png -->
-      <img src="images/logo_eaj.png" alt="Logo Escadrilles Air Jeunesse">
+  <header class="app-header">
+    <div class="header-left">
+      <img class="app-logo" src="images/logo_eaj.png" alt="Logo Escadrilles Air Jeunesse">
       <div class="site-title-text">
         <h1>Escadrilles Air Jeunesse</h1>
-        <p>
-          BA 116 – Programme des activités
-          <span class="app-version">Version 1.1 du 23/01/2026</span>
-        </p>
-        <div class="badge-time">
-          ⏱ Mercredi après-midi • 14h–17h (et événements ponctuels)
-        </div>
+        <p>BA 116 – Programme des activités</p>
+        <div class="badge-time">⏱ Mercredi après-midi • 14h–17h (et événements ponctuels)</div>
       </div>
     </div>
+
+    <button id="menu-toggle" class="btn-menu" type="button" aria-label="Ouvrir le menu" aria-controls="app-menu" aria-expanded="false">
+      ⋯
+    </button>
   </header>
 
-  <!-- Barre filtres + bouton thème -->
-  <div id="filter-bar">
+  <!-- Barre filtres + options -->
+  <div id="filter-bar" role="navigation" aria-label="Filtres">
     <div id="filter-buttons">
       <button class="btn-filter" data-filter="all">Tous</button>
       <button class="btn-filter" data-filter="EAJ1">EAJ1</button>
@@ -60,27 +56,20 @@
       <button class="btn-filter" data-filter="EAJ3">EAJ3</button>
     </div>
 
-    <!-- 🔽 Menu "Nos projets" -->
-    <div class="projects-dropdown" title="Accès rapide aux projets EAJ">
-      <select id="projects-select" aria-label="Nos projets">
-        <option value="" selected>Nos projets</option>
-        <option value="https://eaj-ba116.github.io/HenriFertet2025/">2025 - Henri Fertet</option>
-        <option value="https://eaj-ba116.github.io/operationsagittaire/">2025 - Opération Sagittaire</option>
-      </select>
+    <div class="filter-actions">
+      <label class="toggle-banners" title="Masquer/afficher les bannières (non mémorisé)">
+        <input type="checkbox" id="banner-toggle" checked>
+        <span>Afficher bannières</span>
+      </label>
+
+      <button id="theme-toggle" class="btn-theme" type="button">🌙 Mode sombre</button>
     </div>
-    
-    <label class="toggle-banners" title="Masquer/afficher les bannières (non mémorisé)">
-      <input type="checkbox" id="banner-toggle" checked>
-      <span>Afficher bannières</span>
-    </label>
-<button id="theme-toggle" class="btn-theme" type="button">
-      🌙 Mode sombre
-    </button>
+    <div class="filter-help">💡 Filtres : sélectionne un groupe pour afficher ses activités. “Tous” affiche tout (y compris les activités communes).</div>
   </div>
 
-  <!-- 🎨 Légende -->
-  <section class="legend">
-    <strong>Légende des activités :</strong>
+  <!-- 🎨 Légende (dépliable, fermée par défaut) -->
+  <details class="legend-details" id="legend">
+    <summary>🎨 Légende des activités</summary>
     <div class="legend-line">
       📘 BIA &nbsp;•&nbsp;
       🏃‍♂️ Sport &nbsp;•&nbsp;
@@ -93,173 +82,133 @@
       🕯️ Devoir de mémoire &nbsp;•&nbsp;
       🎖️ Cérémonie &nbsp;•&nbsp;
       ✨ Autres
-
     </div>
-  </section>
+  </details>
 
   <main class="container">
-    <div id="week-container"></div>
+<div id="week-container"></div>
   </main>
 
   <!-- ✅ Bas de page -->
   <footer>
-    <div class="footer-line">EAJ BA 116 - 2025</div>
+    <div class="footer-line">EAJ BA 116 – 2025</div>
     <div class="footer-line" id="last-update"></div>
-    <!-- 🔧 Lien discret admin -->
+    <div class="footer-line footer-version">Version 1.2.0 du 25/01/2026 • Codé par Yoann</div>
     <div class="footer-line">
-      <a href="#" id="admin-link" class="footer-link footer-link-admin">
-        🔧 Accès administration
-      </a>
+      <a href="#" id="admin-link" class="footer-link footer-link-admin">🔧 Accès administration</a>
     </div>
   </footer>
 
   <!-- 🔐 Fenêtre modale code admin -->
-<div id="admin-modal" class="admin-modal" aria-hidden="true">
-  <div class="admin-modal-backdrop"></div>
-  <div class="admin-modal-dialog">
-    <h2>Accès administrateur</h2>
-    <p class="admin-modal-text">
-      Cette zone est réservée aux encadrants EAJ.<br>
-      Merci de saisir le code d’accès.
-    </p>
-    <input type="password" id="admin-code-input" placeholder="Code d’accès" />
-    <div class="admin-modal-actions">
-      <button type="button" id="admin-cancel" class="btn-admin btn-admin-secondary">Annuler</button>
-      <button type="button" id="admin-validate" class="btn-admin btn-admin-primary">Valider</button>
+  <div id="admin-modal" class="admin-modal" aria-hidden="true">
+    <div class="admin-modal-backdrop"></div>
+    <div class="admin-modal-dialog">
+      <h2>Accès administrateur</h2>
+      <p class="admin-modal-text">
+        <strong>Outil interne : génération du planning.</strong><br>
+        Rien n’est publié automatiquement, rien n’est enregistré côté serveur.<br>
+        Code requis uniquement pour éviter les clics accidentels.
+      </p>
+      <input type="password" id="admin-code-input" placeholder="Code d’accès" />
+      <div class="admin-modal-actions">
+        <button type="button" id="admin-cancel" class="btn-admin btn-admin-secondary">Annuler</button>
+        <button type="button" id="admin-validate" class="btn-admin btn-admin-primary">Valider</button>
+      </div>
+      <p class="admin-error" id="admin-error" style="display:none;">Code incorrect. Merci de vérifier.</p>
     </div>
-    <p class="admin-error" id="admin-error" style="display:none;">
-      Code incorrect. Merci de vérifier.
-    </p>
   </div>
-</div>
 
-<button id="back-to-top" class="back-to-top air-patch" type="button">
-  ✈️
-</button>
+  <!-- ✈️ Retour en haut -->
+  <button id="back-to-top" class="back-to-top air-patch" type="button" aria-label="Retour en haut">✈️</button>
+  <!-- ⋯ Menu compact -->
+  <div id="app-menu" class="menu-popover" aria-hidden="true">
+    <div class="menu-popover-panel" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="menu-popover-header">
+        <div class="menu-popover-title">Menu</div>
+        <button class="menu-popover-close" type="button" data-menu-close aria-label="Fermer le menu">✕</button>
+      </div>
 
-   <!-- ⚙️ JS : d’abord planning.js (avec version), puis la logique -->
+      <label class="menu-field">
+        <span>Nos projets</span>
+        <select id="projects-select" aria-label="Nos projets">
+          <option value="">Ouvrir un projet…</option>
+          <option value="https://eaj-ba116.github.io/HenriFertet2025/">2025 – Henri Fertet</option>
+          <option value="https://eaj-ba116.github.io/operationsagittaire/">2025 – Opération Sagittaire</option>
+        </select>
+      </label>
+
+      <nav class="menu-buttons" aria-label="Actions">
+        <button class="menu-item" type="button" data-action="open-about">ℹ️ Version & changelog</button>
+        <button class="menu-item" type="button" data-action="open-admin">🔧 Accès admin</button>
+        <button class="menu-item" type="button" data-action="open-contact">📲 Bug / Contact</button>
+      </nav>
+
+      <div class="menu-popover-footer muted">Version 1.2.0 • 25/01/2026</div>
+    </div>
+  </div>
+
+  <!-- ℹ️ Modal À propos / Changelog -->
+
+  <div id="about-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-modal-close="about-modal"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-label="Version et changelog">
+      <div class="modal-header">
+        <h2>Version & changelog</h2>
+        <button class="modal-close" type="button" data-modal-close="about-modal" aria-label="Fermer">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.2.0</strong> • 25/01/2026 • Codé par <strong>Yoann</strong></p>
+
+        <div class="changelog">
+          <div class="changelog-title">Dernières modifications</div>
+          <ul>
+            <li>Nouveau header + menu compact (navigation plus claire)</li>
+            <li>“Nos projets” dans le menu déroulant</li>
+            <li>Correctifs : retour haut + accès admin</li>
+            <li>Légende dépliable (fermée par défaut)</li>
+            <li>Bannières programmables (dates début/fin)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✉️ Modal contact -->
+  <div id="contact-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-modal-close="contact-modal"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-label="Contact">
+      <div class="modal-header">
+        <h2>Signaler un bug / Contact</h2>
+        <button class="modal-close" type="button" data-modal-close="contact-modal" aria-label="Fermer">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-meta">Décris le souci : la version et le lien de la page seront ajoutés automatiquement. Tu peux ensuite ouvrir WhatsApp ou copier le message.</p>
+
+        <label class="modal-field">
+          <span>Message</span>
+          <textarea id="contact-message" rows="6" placeholder="Ex: Sur mobile, le filtre EAJ2 ne masque pas les activités communes…
+
+Étapes pour reproduire :
+1) …
+2) …
+Résultat obtenu : …
+Résultat attendu : …"></textarea>
+        </label>
+
+        <div class="modal-actions">
+          <button id="open-whatsapp" class="btn-primary" type="button">Ouvrir WhatsApp</button>
+          <button id="copy-contact" class="btn-secondary" type="button">Copier le message</button>
+          <button class="btn-secondary" type="button" data-modal-close="contact-modal">Fermer</button>
+        </div>
+
+        <p class="modal-hint" id="copy-hint" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⚙️ JS : d’abord planning.js (avec version), puis la logique -->
   <script src="version-loader.js"></script>
-
-<script>
-window.addEventListener("load", () => {
-  // 👉 URL de ton Worker Cloudflare
-  const webhookUrl = "https://eaj-discord-proxy.yoann-bluestorm.workers.dev";
-
-  // 🛡 Code admin attendu (à adapter)
-  const ADMIN_CODE = "EAJ-ADMIN-2025";
-
-  // Petite fonction utilitaire pour envoyer un message Discord
-  function logToDiscord(lignes) {
-    fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        content: lignes.join("\n")
-      })
-    }).catch(() => {
-      // On ignore les erreurs, le site ne doit jamais planter pour ça
-    });
-  }
-
-  // 1) Détection PWA / navigateur
-  const isStandalone =
-    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
-    (window.navigator.standalone === true);
-
-  const mode = isStandalone ? "PWA installée (icône écran d'accueil)" : "Navigation classique";
-
-  // 2) Type d'appareil approximatif
-  const width = window.innerWidth || document.documentElement.clientWidth || screen.width || 0;
-  let deviceType = "inconnu";
-  if (width < 768) {
-    deviceType = "mobile";
-  } else if (width < 1024) {
-    deviceType = "tablette";
-  } else {
-    deviceType = "desktop";
-  }
-
-  // 3) Thème & filtre (issus du localStorage de ton site)
-  let filtre = "all";
-  let theme = document.body.dataset.theme || "default";
-
-  try {
-    const storedFilter = localStorage.getItem("eaj_filter");
-    if (storedFilter) filtre = storedFilter;
-  } catch (e) {}
-
-  try {
-    const storedTheme = localStorage.getItem("eaj_theme");
-    if (storedTheme) theme = storedTheme;
-  } catch (e) {}
-
-  // 4) User-Agent (raccourci)
-  const ua = navigator.userAgent || "N/A";
-  const shortUA = ua.length > 120 ? ua.substring(0, 120) + "…" : ua;
-
-  // 🛰 Log visite “classique”
-  const lignesVisite = [
-    "🛬 Nouvelle visite sur EAJ – BA 116",
-    "📅 " + new Date().toLocaleString(),
-    "",
-    "💻 Appareil : " + deviceType,
-    "📱 Mode : " + mode,
-    "🎨 Thème : " + theme,
-    "🎯 Filtre actif : " + filtre,
-    "",
-    "🌐 Page : " + window.location.href,
-    "🧭 User-Agent :",
-    shortUA
-  ];
-
-  logToDiscord(lignesVisite);
-
-  // 🔐 Détection tentative d’accès admin
-
-  const adminInput = document.getElementById("admin-code-input");
-  const adminValidateBtn = document.getElementById("admin-validate");
-  const adminError = document.getElementById("admin-error");
-
-  if (adminValidateBtn && adminInput && adminError) {
-    adminValidateBtn.addEventListener("click", () => {
-      const entered = adminInput.value || "";
-      const isOk = entered === ADMIN_CODE;
-
-      if (!isOk) {
-        // Affichage message erreur
-        adminError.style.display = "block";
-
-        // On masque le code saisi (même longueur mais pas lisible)
-        const masked = entered.length ? "•".repeat(entered.length) : "(vide)";
-
-        const lignesAdmin = [
-          "🚫 Tentative d’accès ADMIN échouée",
-          "📅 " + new Date().toLocaleString(),
-          "",
-          "💻 Appareil : " + deviceType,
-          "🌐 Page : " + window.location.href,
-          "🔑 Code saisi (masqué) : " + masked,
-          "",
-          "🧭 User-Agent :",
-          shortUA
-        ];
-
-        logToDiscord(lignesAdmin);
-      } else {
-        // Ici tu mets ce qui se passe quand le code est bon :
-        // - fermer la modale
-        // - rediriger vers une page admin
-        // etc.
-        adminError.style.display = "none";
-        // Exemple : alert("Accès admin OK");
-      }
-    });
-  }
-});
-</script>
-
-
-
-
 </body>
 </html>

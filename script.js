@@ -13,6 +13,14 @@ const TYPES_ACTIVITE = {
   autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
 };
 
+// v1.2.0 — Meta
+const APP_VERSION = "1.2.0";
+
+// 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
+// Laisse vide si tu ne veux pas afficher le bouton.
+const WHATSAPP_PHONE = "33614732790";
+
+
 /* ---------- Petits helpers HTML ---------- */
 
 /**
@@ -512,11 +520,56 @@ function renderAlert(filtreActuel = "all") {
 
   // Nettoyage
   banner.innerHTML = "";
-  banner.style.display = "none";
+  banner.classList.remove("has-banners");
+
+  // Date window (programmable banners)
+  function parseDateLike(value) {
+    if (!value) return null;
+    const s = String(value).trim();
+    if (!s) return null;
+
+    // ISO: YYYY-MM-DD
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (iso) {
+      const y = Number(iso[1]);
+      const m = Number(iso[2]);
+      const d = Number(iso[3]);
+      const dt = new Date(y, m - 1, d);
+      dt.setHours(0, 0, 0, 0);
+      return isNaN(dt) ? null : dt;
+    }
+
+    // FR: DD/MM/YYYY or DD-MM-YYYY
+    const fr = s.match(/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/);
+    if (fr) {
+      const d = Number(fr[1]);
+      const m = Number(fr[2]);
+      const y = Number(fr[3]);
+      const dt = new Date(y, m - 1, d);
+      dt.setHours(0, 0, 0, 0);
+      return isNaN(dt) ? null : dt;
+    }
+
+    return null;
+  }
+
+  function isInDateWindow(b) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const start = parseDateLike(b.startDate || b.dateDebut || b.debut || "");
+    const end = parseDateLike(b.endDate || b.dateFin || b.fin || "");
+
+    if (start && today < start) return false;
+    if (end && today > end) return false; // end is inclusive
+    return true;
+  }
+
 
   // Filtrage
   const visibles = (banners || [])
     .filter(b => b && b.actif && String(b.texte || "").trim().length > 0)
+    .filter(b => isInDateWindow(b))
     .filter(b => {
       const cibles = Array.isArray(b.cibles) ? b.cibles : [];
       if (!cibles.length) return true; // si non précisé → visible pour tous
@@ -542,8 +595,9 @@ function renderAlert(filtreActuel = "all") {
     banner.appendChild(line);
   });
 
-  banner.style.display = "block";
+  banner.classList.add("has-banners");
 }
+
 
 /* ---------- Bouton retour haut (patch ✈️) ---------- */
 
@@ -659,6 +713,172 @@ function initialiserProjectsMenu() {
 }
 
 
+
+/* ---------- Menu + modales (v1.2.0) ---------- */
+
+function openModalById(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.classList.add("open");
+  el.setAttribute("aria-hidden","false");
+}
+
+function closeModalById(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.classList.remove("open");
+  el.setAttribute("aria-hidden","true");
+}
+
+function initialiserModales(){
+  document.querySelectorAll("[data-modal-close]").forEach((btn)=>{
+    btn.addEventListener("click",()=>closeModalById(btn.getAttribute("data-modal-close")));
+  });
+  document.addEventListener("keydown",(e)=>{
+    if(e.key!=="Escape") return;
+    document.querySelectorAll(".modal.open").forEach((m)=>{
+      m.classList.remove("open");
+      m.setAttribute("aria-hidden","true");
+    });
+  });
+}
+
+function initialiserMenu(){
+  const btn = document.getElementById("menu-toggle");
+  const menu = document.getElementById("app-menu");
+  if(!btn || !menu) return;
+
+  const panel = menu.querySelector(".menu-popover-panel");
+  const closeEls = menu.querySelectorAll("[data-menu-close]");
+  const items = menu.querySelectorAll("[data-action]");
+
+  const open = () => {
+    menu.classList.add("open");
+    menu.setAttribute("aria-hidden","false");
+    btn.setAttribute("aria-expanded","true");
+  };
+
+  const close = () => {
+    menu.classList.remove("open");
+    menu.setAttribute("aria-hidden","true");
+    btn.setAttribute("aria-expanded","false");
+  };
+
+  btn.addEventListener("click",(e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    menu.classList.contains("open") ? close() : open();
+  });
+
+  closeEls.forEach(el => el.addEventListener("click",(e)=>{ e.preventDefault(); close(); }));
+
+  // Click outside => close
+  document.addEventListener("click",(e)=>{
+    if(!menu.classList.contains("open")) return;
+    const target = e.target;
+    if(target === btn) return;
+    if(panel && panel.contains(target)) return;
+    close();
+  });
+
+  // Stop bubbling inside panel
+  if(panel){
+    panel.addEventListener("click",(e)=>e.stopPropagation());
+  }
+
+  items.forEach((it)=>{
+    it.addEventListener("click",()=>{
+      const act = it.getAttribute("data-action") || "";
+      close();
+
+      if(act === "open-about"){ openModalById("about-modal"); return; }
+      if(act === "open-contact"){ openModalById("contact-modal"); return; }
+      if(act === "open-admin"){ const a=document.getElementById("admin-link"); if(a) a.click(); return; }
+    });
+  });
+
+  document.addEventListener("keydown",(e)=>{
+    if(e.key === "Escape" && menu.classList.contains("open")) close();
+  });
+}
+
+function initialiserContactCopy(){
+  const btnCopy=document.getElementById("copy-contact");
+  const btnWa=document.getElementById("open-whatsapp");
+  const ta=document.getElementById("contact-message");
+  const hint=document.getElementById("copy-hint");
+
+  if(!ta) return;
+
+  const setHint=(msg)=>{ if(hint) hint.textContent=msg; };
+
+  const getCurrentFilter=()=>{
+    const a=document.querySelector(".btn-filter.active");
+    return (a && a.dataset && a.dataset.filter) ? a.dataset.filter : "all";
+  };
+
+  const prettyFilter=(f)=>{
+    if(f==="all") return "Tous";
+    return f;
+  };
+
+  const buildPayload=()=>{
+    const details=(ta.value||"").trim();
+    const f=getCurrentFilter();
+    const base =
+`Bonjour Yoann, j'ai un bug sur Programme EAJ BA 116 (v${APP_VERSION}).\n` +
+`Filtre: ${prettyFilter(f)}\n` +
+`Page: ${location.href}\n\n` +
+`Détails:\n${details || "(à compléter)"}`;
+    return base;
+  };
+
+  // Copier
+  if(btnCopy){
+    btnCopy.addEventListener("click",async()=>{
+      const payload=buildPayload();
+      try{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(payload);
+        }else{
+          // fallback old-school
+          const old = ta.value;
+          ta.value = payload;
+          ta.focus();
+          ta.select();
+          document.execCommand("copy");
+          ta.value = old;
+          ta.blur();
+        }
+        setHint("Message copié. ✅");
+      }catch(e){
+        setHint("Impossible de copier automatiquement.");
+      }
+    });
+  }
+
+  // WhatsApp
+  if(btnWa){
+    const phone = String(WHATSAPP_PHONE||"").trim();
+    const phoneOk = /^\d{8,15}$/.test(phone);
+
+    if(!phoneOk){
+      // Bouton désactivé tant que le numéro n'est pas configuré
+      btnWa.disabled = true;
+      btnWa.title = "Numéro WhatsApp non configuré (WHATSAPP_PHONE dans script.js)";
+      btnWa.style.opacity = "0.55";
+      btnWa.style.cursor = "not-allowed";
+    }else{
+      btnWa.addEventListener("click",()=>{
+        const payload=buildPayload();
+        const waUrl=`https://wa.me/${phone}?text=${encodeURIComponent(payload)}`;
+        window.open(waUrl,"_blank","noopener,noreferrer");
+        setHint("WhatsApp ouvert. 📲");
+      });
+    }
+  }
+}
+
 /* ---------- Init globale ---------- */
 
 renderToutesLesSemaines();
@@ -667,6 +887,10 @@ initialiserThemeToggle();
 renderLastUpdate();
 renderAlert();
 initialiserBannerToggle();
+initialiserMenu();
+initialiserModales();
+initialiserContactCopy();
+
 initialiserProjectsMenu();
 initialiserBackToTop();
 initialiserAdminModal();
