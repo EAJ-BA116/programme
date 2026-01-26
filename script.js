@@ -378,7 +378,11 @@ function appliquerFiltre(nomGroupe) {
 
 function initialiserFiltres() {
   const boutons = document.querySelectorAll(".btn-filter");
-  if (!boutons.length) return;
+  // Sécurité : si les boutons n'existent pas, on affiche quand même les bannières "Tous".
+  if (!boutons.length) {
+    renderAlert("all");
+    return;
+  }
 
   const FILTERS_VALIDES = ["all", "EAJ1", "EAJ2", "EAJ3"];
   let filtreActuel = "all";
@@ -712,17 +716,70 @@ function initialiserBannerToggle() {
 /* ---------- Menu déroulant "Nos projets" ---------- */
 
 function initialiserProjectsMenu() {
-  const select = document.getElementById("projects-select");
-  if (!select) return;
+  const btn = document.getElementById("projects-btn");
+  const list = document.getElementById("projects-list");
+  if (!btn || !list) return;
 
-  select.addEventListener("change", () => {
-    const url = (select.value || "").trim();
-    if (!url) return;
-    // Ouvre dans un nouvel onglet et revient sur "Nos projets"
-    window.open(url, "_blank", "noopener,noreferrer");
-    select.value = "";
+  const menu = document.getElementById("app-menu");
+  const menuBtn = document.getElementById("menu-toggle");
+
+  const closeList = () => {
+    list.hidden = true;
+    btn.setAttribute("aria-expanded", "false");
+  };
+
+  const openList = () => {
+    list.hidden = false;
+    btn.setAttribute("aria-expanded", "true");
+  };
+
+  const toggleList = () => (list.hidden ? openList() : closeList());
+
+  // ✅ Toggle sur toute la ligne (desktop + mobile)
+  // (on gère pointerup + click sans double déclenchement)
+  let __projectsPointerLock = false;
+  btn.addEventListener("pointerup", (e) => {
+    __projectsPointerLock = true;
+    e.preventDefault();
+    toggleList();
+    setTimeout(() => { __projectsPointerLock = false; }, 350);
   });
+
+  btn.addEventListener("click", (e) => {
+    if (__projectsPointerLock) return;
+    e.preventDefault();
+    toggleList();
+  });
+
+  // Click sur un projet (liens)
+  list.querySelectorAll("a[href]").forEach((a) => {
+    a.addEventListener("click", () => {
+      // on ferme les UI, puis le navigateur ouvrira le lien (target=_blank)
+      closeList();
+      if (menu && menu.classList.contains("open")) {
+        menu.classList.remove("open");
+        menu.setAttribute("aria-hidden", "true");
+        if (menuBtn) menuBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+  });
+
+  // Click dehors => ferme la liste
+  document.addEventListener("click", (e) => {
+    if (list.hidden) return;
+    const t = e.target;
+    if (btn.contains(t) || list.contains(t)) return;
+    closeList();
+  });
+
+  // Si le menu se ferme, on ferme aussi la liste
+  if (menu) {
+    const obs = new MutationObserver(() => {
+      closeList();});
+    obs.observe(menu, { attributes: true, attributeFilter: ["class"] });
+  }
 }
+
 
 
 
@@ -740,6 +797,85 @@ function closeModalById(id){
   if(!el) return;
   el.classList.remove("open");
   el.setAttribute("aria-hidden","true");
+}
+
+/* ---------- Fermer les overlays au scroll ---------- */
+
+function closeOverlaysOnScroll(){
+  // Menu compact
+  const menu = document.getElementById("app-menu");
+  const menuBtn = document.getElementById("menu-toggle");
+  if(menu && menu.classList.contains("open")){
+    menu.classList.remove("open");
+    menu.setAttribute("aria-hidden","true");
+    if(menuBtn) menuBtn.setAttribute("aria-expanded","false");
+  }
+
+  // Sous-liste "Nos projets"
+  const pbtn = document.getElementById("projects-btn");
+  const plist = document.getElementById("projects-list");
+  if(pbtn && plist && !plist.hidden){
+    plist.hidden = true;
+    pbtn.setAttribute("aria-expanded","false");
+  }
+
+  // Modales standard
+  closeModalById("about-modal");
+  closeModalById("contact-modal");
+
+  // Modale admin
+  const admin = document.getElementById("admin-modal");
+  if(admin && admin.classList.contains("open")){
+    admin.classList.remove("open");
+    admin.setAttribute("aria-hidden","true");
+  }
+}
+
+function isTargetInsideOverlay(target){
+  const menuPanel = document.querySelector("#app-menu.open .menu-popover-panel");
+  if(menuPanel && menuPanel.contains(target)) return true;
+
+  const modalDialog = document.querySelector(".modal.open .modal-dialog");
+  if(modalDialog && modalDialog.contains(target)) return true;
+
+  const adminDialog = document.querySelector("#admin-modal.open .admin-modal-dialog");
+  if(adminDialog && adminDialog.contains(target)) return true;
+
+  return false;
+}
+
+function anyOverlayOpen(){
+  const menuOpen = document.getElementById("app-menu")?.classList.contains("open");
+  const modalOpen = !!document.querySelector(".modal.open");
+  const adminOpen = document.getElementById("admin-modal")?.classList.contains("open");
+  const plist = document.getElementById("projects-list");
+  const projectsOpen = !!(plist && !plist.hidden);
+  return !!(menuOpen || modalOpen || adminOpen || projectsOpen);
+}
+
+function initialiserCloseOnScroll(){
+  let lastY = window.scrollY;
+
+  window.addEventListener("scroll", () => {
+    const y = window.scrollY;
+    if(y !== lastY && anyOverlayOpen()){
+      closeOverlaysOnScroll();
+    }
+    lastY = y;
+  }, { passive: true });
+
+  // Mobile (swipe) + desktop (wheel) : on ferme si le geste n'est pas dans un overlay
+  document.addEventListener("touchmove", (e) => {
+    if(!anyOverlayOpen()) return;
+    if(isTargetInsideOverlay(e.target)) return;
+    closeOverlaysOnScroll();
+  }, { passive: true });
+
+  document.addEventListener("wheel", (e) => {
+    if(!anyOverlayOpen()) return;
+    if(isTargetInsideOverlay(e.target)) return;
+    closeOverlaysOnScroll();
+  }, { passive: true });
 }
 
 function initialiserModales(){
@@ -894,15 +1030,22 @@ function initialiserContactCopy(){
 /* ---------- Init globale ---------- */
 
 renderToutesLesSemaines();
+
+// Toggle bannières d'abord, pour que le premier renderAlert (appelé par initialiserFiltres)
+// respecte l'état "Afficher bannières".
+initialiserBannerToggle();
+
+// Filtre (lit localStorage) + rend la bannière filtrée au bon groupe dès l'initialisation.
 initialiserFiltres();
+
 initialiserThemeToggle();
 renderLastUpdate();
-renderAlert();
-initialiserBannerToggle();
+
 initialiserMenu();
 initialiserModales();
+initialiserCloseOnScroll();
 initialiserContactCopy();
-
 initialiserProjectsMenu();
+
 initialiserBackToTop();
 initialiserAdminModal();

@@ -854,6 +854,9 @@ function createWeekForm() {
   sessionCheckbox.addEventListener("change", updateSessionFields);
   attachDateFrBehavior(dateFrInput);
 
+  // Affiche la date dans le titre dès la saisie (utile avant même de "Valider").
+  dateFrInput.addEventListener("input", updateWeekTitlesWithDates);
+
   // Réorganisation automatique lorsque la date change
   dateFrInput.addEventListener("change", reorderWeekFormsByDate);
   dateFrInput.addEventListener("blur", reorderWeekFormsByDate);
@@ -877,6 +880,7 @@ function createWeekForm() {
     if (confirm("Supprimer cette semaine ?")) {
       weekDiv.remove();
       updateOutput();
+      updateWeekTitlesWithDates();
     }
   });
 
@@ -894,6 +898,9 @@ function createWeekForm() {
     btnValidate.style.display = "none";
     btnEdit.style.display = "inline-flex";
 
+    // Met à jour le titre avec la date (ex : "Semaine n°2 — 10 février 2026").
+    updateWeekTitlesWithDates();
+
     updateOutput();
   });
 
@@ -907,6 +914,7 @@ function createWeekForm() {
   });
 
   weeksContainer.appendChild(weekDiv);
+  updateWeekTitlesWithDates();
   return weekDiv;
 }
 
@@ -1082,6 +1090,24 @@ function getWeeksData() {
   weeks.sort((a, b) => (a.isoDate < b.isoDate ? -1 : a.isoDate > b.isoDate ? 1 : 0));
   return weeks;
 }
+
+// Met à jour les titres des semaines en incluant la date (si disponible).
+// Objectif : dans la liste/preview du générateur, éviter l'effet "Semaine 1, Semaine 2" sans date.
+function updateWeekTitlesWithDates() {
+  const forms = Array.from(document.querySelectorAll(".week-form"));
+  forms.forEach((form, i) => {
+    const t = form.querySelector(".week-title");
+    if (!t) return;
+
+    const raw = form.querySelector(".week-date-fr")?.value.trim() || "";
+    const parsed = parseDateFr(raw);
+    const dateLabel = parsed ? parsed.label : "";
+
+    t.textContent = dateLabel
+      ? `Semaine n°${i + 1} — ${dateLabel}`
+      : `Semaine n°${i + 1}`;
+  });
+}
 // Réordonne les formulaires "semaine" par date (pour éviter l’effet "ajout en bas").
 function reorderWeekFormsByDate() {
   if (!weeksContainer) return;
@@ -1101,10 +1127,8 @@ function reorderWeekFormsByDate() {
 
   keyed.forEach(k => weeksContainer.appendChild(k.el));
 
-  // Renumérote l’affichage (sans toucher aux IDs internes)
-  Array.from(document.querySelectorAll(".week-form .week-title")).forEach((t, i) => {
-    t.textContent = `Semaine n°${i + 1}`;
-  });
+  // Renumérote + affiche la date (sans toucher aux IDs internes)
+  updateWeekTitlesWithDates();
 }
 
 

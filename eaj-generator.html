@@ -2,6 +2,9 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Générateur de programme EAJ – BA 116</title>
   <link id="main-style" rel="stylesheet" href="style.css">
@@ -645,79 +648,22 @@
   </div>
 
   <!-- D'abord les données existantes -->
-<script src="planning.js"></script>
-
-<!-- Puis la logique du générateur -->
-<script src="eaj-generator.js?v=20251202"></script>
 <script>
-window.addEventListener("load", () => {
-  // 👉 Mets ici TON webhook (nouveau, régénéré)
-  const webhookUrl = "https://discord.com/api/webhooks/1445335099574063145/hiQw0T48RJqQSMdGKqA1gez-YQZpFQGOyWBsHZ7Yhi6OhbiwtiVYc9gNebx1Zr4akf4T/github";
-
-  // ---------------------------------
-  // 1) PWA ou mode navigateur
-  // ---------------------------------
-  const isStandalone =
-    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
-    (window.navigator.standalone === true);
-
-  const mode = isStandalone
-    ? "PWA installée (icône écran d'accueil)"
-    : "Navigation classique";
-
-  // ---------------------------------
-  // 2) Type d'appareil
-  // ---------------------------------
-  const width = window.innerWidth || document.documentElement.clientWidth || screen.width || 0;
-  let deviceType = "inconnu";
-  if (width < 768)      deviceType = "mobile";
-  else if (width < 1024) deviceType = "tablette";
-  else                  deviceType = "desktop";
-
-  // ---------------------------------
-  // 3) Thème utilisé dans le generator
-  // ---------------------------------
-  let theme = document.body.dataset.theme || "default";
-  try {
-    const storedTheme = localStorage.getItem("eaj_theme");
-    if (storedTheme) theme = storedTheme;
-  } catch (e) {}
-
-  // ---------------------------------
-  // 4) User-agent (court)
-  // ---------------------------------
-  const ua = navigator.userAgent || "N/A";
-  const shortUA = ua.length > 120 ? ua.substring(0, 120) + "…" : ua;
-
-  // ---------------------------------
-  // 5) Message Discord
-  // ---------------------------------
-  const lignes = [
-    "🛠️ Nouvelle utilisation du **Générateur EAJ**",
-    "📅 " + new Date().toLocaleString(),
-    "",
-    "💻 Appareil : " + deviceType,
-    "📱 Mode : " + mode,
-    "🎨 Thème : " + theme,
-    "",
-    "🧭 User-Agent :",
-    shortUA
-  ];
-
-  // ---------------------------------
-  // 6) Envoi Discord
-  // ---------------------------------
-  fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      content: lignes.join("\n")
-    })
-  }).catch(() => {
-    // On ignore l’erreur pour ne pas impacter l’usage du générateur
-  });
-});
+  // Cache-buster (générateur)
+  window.EAJ_BUILD = "1.2.1";
+  (function () {
+    const bust = Date.now();
+    const load = (src, cb) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = () => cb && cb();
+      s.onerror = () => console.error("Erreur de chargement :", src);
+      document.body.appendChild(s);
+    };
+    load(`planning.js?v=1.2.1-${bust}`, function () {
+      load(`eaj-generator.js?v=1.2.1-${bust}`);
+    });
+  })();
 </script>
-
 </body>
 </html>

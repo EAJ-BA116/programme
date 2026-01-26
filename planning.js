@@ -22,7 +22,7 @@ const ALERT_BANNER = {
 // 📝 Dernière mise à jour (affichée dans le footer)
 const LAST_UPDATE = {
   "auteur": "Yoann",
-  "dateTexte": "25/01/2026"
+  "dateTexte": "26/01/2026"
 };
 
 // 🗓️ LISTE DES SEMAINES / ÉVÉNEMENTS (isoDate au format AAAA-MM-JJ)
@@ -945,17 +945,17 @@ const SEMAINES = [
         "titre": "Groupe 1 – EAJ1",
         "activites": [
           {
-            "type": "bia",
-            "texte": "Circulation aérienne",
-            "horaire": "14h 15h30",
-            "materiel": "Trousse, manuel BIA",
-            "encadrant": "CNE Gigi"
-          },
-          {
             "type": "rencontres",
             "texte": "CIRFA de Besançon",
-            "horaire": "15h30 - 17h",
+            "horaire": "14h - 15h30",
             "encadrant": "Personnel du CIRFA"
+          },
+          {
+            "type": "bia",
+            "texte": "Circulation aérienne",
+            "horaire": "15h30 - 17h",
+            "materiel": "Trousse, manuel BIA",
+            "encadrant": "CNE Gigi"
           }
         ],
         "horaire": "14h - 17h",

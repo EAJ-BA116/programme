@@ -2,7 +2,10 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
   <title>Programme EAJ – BA 116</title>
 
@@ -10,22 +13,22 @@
   <meta name="theme-color" content="#0053a6">
 
   <!-- PWA Android -->
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json?v=1.2.1">
 
   <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="EAJ 116">
-  <link rel="apple-touch-icon" href="images/logo_eaj192.png">
+  <link rel="apple-touch-icon" href="images/logo_eaj192.png?v=1.2.1">
 
   <!-- Icônes Android -->
-  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png?v=1.2.1">
+  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png?v=1.2.1">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="images/eaj.ico">
+  <link rel="icon" type="image/x-icon" href="images/eaj.ico?v=1.2.1">
 
-  <link id="main-style" rel="stylesheet" href="style.css">
+  <link id="main-style" rel="stylesheet" href="style.css?v=1.2.1">
 </head>
 
 <body data-theme="dark">
@@ -93,7 +96,7 @@
   <footer>
     <div class="footer-line">EAJ BA 116 – 2025</div>
     <div class="footer-line" id="last-update"></div>
-    <div class="footer-line footer-version">Version 1.2.0 du 25/01/2026 • Codé par Yoann</div>
+    <div class="footer-line footer-version">Version 1.2.1 du 25/01/2026 • Codé par Yoann</div>
     <div class="footer-line">
       <a href="#" id="admin-link" class="footer-link footer-link-admin">🔧 Accès administration</a>
     </div>
@@ -128,14 +131,17 @@
         <button class="menu-popover-close" type="button" data-menu-close aria-label="Fermer le menu">✕</button>
       </div>
 
-      <label class="menu-field">
-        <span>Nos projets</span>
-        <select id="projects-select" aria-label="Nos projets">
-          <option value="">Ouvrir un projet…</option>
-          <option value="https://eaj-ba116.github.io/HenriFertet2025/">2025 – Henri Fertet</option>
-          <option value="https://eaj-ba116.github.io/operationsagittaire/">2025 – Opération Sagittaire</option>
-        </select>
-      </label>
+      <div class="menu-group">
+        <button id="projects-btn" class="menu-item menu-item-accordion" type="button" aria-expanded="false" aria-controls="projects-list">
+          🗂️ Nos projets
+          <span class="menu-chevron" aria-hidden="true">▾</span>
+        </button>
+
+        <div id="projects-list" class="menu-sublist" hidden>
+          <a class="menu-subitem" href="https://eaj-ba116.github.io/HenriFertet2025/" target="_blank" rel="noopener noreferrer">2025 – Henri Fertet <span aria-hidden="true">↗</span></a>
+          <a class="menu-subitem" href="https://eaj-ba116.github.io/operationsagittaire/" target="_blank" rel="noopener noreferrer">2025 – Opération Sagittaire <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
 
       <nav class="menu-buttons" aria-label="Actions">
         <button class="menu-item" type="button" data-action="open-about">ℹ️ Version & changelog</button>
@@ -143,7 +149,7 @@
         <button class="menu-item" type="button" data-action="open-contact">📲 Bug / Contact</button>
       </nav>
 
-      <div class="menu-popover-footer muted">Version 1.2.0 • 25/01/2026</div>
+      <div class="menu-popover-footer muted">Version 1.2.1 • 25/01/2026</div>
     </div>
   </div>
 
@@ -158,17 +164,17 @@
       </div>
 
       <div class="modal-body">
-        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.2.0</strong> • 25/01/2026 • Codé par <strong>Yoann</strong></p>
+        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.2.1</strong> • 25/01/2026 • Codé par <strong>Yoann</strong></p>
 
         <div class="changelog">
           <div class="changelog-title">Dernières modifications</div>
           <ul>
-            <li>Nouveau header + menu compact (navigation plus claire)</li>
-            <li>“Nos projets” dans le menu déroulant</li>
-            <li>Correctifs : retour haut + accès admin</li>
-            <li>Légende dépliable (fermée par défaut)</li>
-            <li>Bannières programmables (dates début/fin)</li>
-          </ul>
+            <li>Correctif : “Afficher bannières” masque/affiche vraiment</li>
+            <li>Générateur : semaines réordonnées par date (ajout → bon endroit)</li>
+            <li>Générateur : bannières avec dates début (auto = aujourd’hui) / fin (optionnel)</li>
+            <li>Mobile : zoom désactivé + fin du “scroll à droite”</li>
+            <li>Correctif : fenêtre admin au-dessus des autres éléments</li>
+</ul>
         </div>
       </div>
     </div>
@@ -209,6 +215,15 @@ Résultat attendu : …"></textarea>
   </div>
 
   <!-- ⚙️ JS : d’abord planning.js (avec version), puis la logique -->
-  <script src="version-loader.js"></script>
+  <script>
+  // Cache-buster global (évite les "versions fantômes" sur GitHub Pages)
+  window.EAJ_BUILD = "1.2.1";
+  (function () {
+    const bust = Date.now();
+    const s = document.createElement('script');
+    s.src = `version-loader.js?v=1.2.1-${bust}`;
+    document.head.appendChild(s);
+  })();
+</script>
 </body>
 </html>

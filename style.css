@@ -1,4 +1,6 @@
 :root {
+  color-scheme: light;
+
   /* Couleurs de base (light) */
   --blue-main: #0053a6;
   --blue-light: #e4effb;
@@ -16,6 +18,8 @@
 
 /* Thème sombre : on redéfinit les variables */
 body[data-theme="dark"] {
+  color-scheme: dark;
+
   --bg-page: #050816;
   --bg-card: #101827;
   --bg-card-soft: #161d2f;
@@ -46,6 +50,8 @@ body {
 }
 
 body[data-theme="dark"] {
+  color-scheme: dark;
+
   background: radial-gradient(circle at top, #0b1730 0, #050816 45%, #020617 100%);
 }
 
@@ -789,6 +795,18 @@ body[data-theme="dark"] .week-common-title {
   color: inherit;           /* même couleur que le texte principal */
 }
 
+/* 📱 Mobile : éviter les lignes “qui ne reviennent jamais” (flex + contenu long)
+   Le span est un item flex → on force la largeur et on autorise la césure. */
+@media (max-width: 720px) {
+  .activity-chip { max-width: 100%; }
+  .activity-chip > span { display: block; width: 100%; min-width: 0; }
+  .activity-chip small {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
 /* On n’utilise plus le petit rond */
 .activity-dot {
   display: none;
@@ -1495,31 +1513,67 @@ header.app-header .btn-menu{
   background: var(--bg-card-soft);
 }
 
-.menu-field{
+
+/* --- Menu compact : bloc "Nos projets" cohérent avec l'UI --- */
+.menu-group{
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.5rem;
   margin-bottom: 0.65rem;
 }
 
-.menu-field span{
-  font-size: 0.85rem;
-  color: var(--text-muted);
+.menu-item-accordion{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  touch-action: manipulation;
 }
 
-.menu-field select{
+/* Sur certains navigateurs, des sous-éléments peuvent capter le tap/clic.
+   On force l'évènement à tomber sur le bouton entier. */
+.menu-item-accordion > *{
+  pointer-events: none;
+}
+
+.menu-chevron{
+  opacity: 0.85;
+  transition: transform .18s ease;
+}
+
+.menu-item-accordion[aria-expanded="true"] .menu-chevron{
+  transform: rotate(180deg);
+}
+
+.menu-sublist{
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: 0.35rem;
+}
+
+.menu-sublist[hidden]{
+  display: none !important;
+}
+
+
+.menu-subitem{
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   padding: 0.65rem 0.75rem;
-  border-radius: 0.9rem;
+  border-radius: 0.95rem;
   border: 1px solid var(--border-soft);
   background: var(--bg-card-soft);
   color: var(--text-main);
-  outline: none;
+  text-decoration: none;
+  font-size: 0.92rem;
 }
 
-.menu-field select:focus{
-  border-color: var(--blue-main);
-  box-shadow: 0 0 0 3px rgba(0,83,166,.18);
+.menu-subitem:hover{
+  background: var(--bg-card);
 }
 
 .menu-buttons{

@@ -20,7 +20,8 @@
     document.head.appendChild(s);
   }
 
-  const version = generateVersion();
+  const build = (window.EAJ_BUILD || "").toString();
+  const version = (build ? `${build}-${generateVersion()}` : generateVersion());
   console.log("Chargement version :", version);
 
   // ✅ Cache-bust CSS (utile sur GitHub Pages + cache navigateur)
