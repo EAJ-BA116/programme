@@ -1556,3 +1556,44 @@ header.app-header .btn-menu{
     width: auto;
   }
 }
+
+
+/* =============================
+   v1.2.1 – Correctifs affichage
+   ============================= */
+
+/* Empêche le décalage horizontal (mobile) */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Centre la légende (PC) comme le reste de la page */
+.legend-details {
+  width: min(960px, calc(100% - 2rem));
+  margin: 0.6rem auto 0.2rem;
+}
+
+/* Admin modal au-dessus du menu */
+.admin-modal { z-index: 220 !important; }
+.admin-modal-dialog { z-index: 221 !important; }
+.admin-modal-backdrop { z-index: 220 !important; }
+
+/* Bannières : le toggle doit toujours gagner */
+#alert-banner.is-hidden { display: none !important; }
+
+
+/* Generator – bannières (dates début/fin) */
+.banners-container{display:flex;flex-direction:column;gap:.6rem;margin-top:.6rem;}
+.banner-item{border:1px solid rgba(0,83,166,.25);background:var(--bg-card);border-radius:1rem;padding:.75rem;display:flex;flex-direction:column;gap:.55rem;}
+.banner-row{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
+.banner-item-emoji{height:40px;border-radius:.8rem;border:1px solid var(--border-soft);background:var(--bg-card-soft);padding:.2rem .6rem;}
+.banner-textarea{width:100%;min-height:72px;border-radius:.8rem;border:1px solid var(--border-soft);background:var(--bg-card-soft);color:var(--text-main);padding:.6rem;resize:vertical;}
+.banner-targets{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.9rem;}
+.banner-targets label{display:inline-flex;align-items:center;gap:.25rem;padding:.25rem .45rem;border-radius:.7rem;border:1px solid var(--border-soft);background:var(--bg-card-soft);}
+.banner-dates-row{gap:.8rem;}
+.banner-dates-label{font-weight:600;color:var(--text-muted);}
+.banner-date-field{display:flex;align-items:center;gap:.35rem;}
+.banner-date-field input{width:130px;max-width:42vw;height:38px;border-radius:.8rem;border:1px solid var(--border-soft);background:var(--bg-card-soft);color:var(--text-main);padding:.2rem .55rem;}
+
+.app-menu{overflow:hidden;}

@@ -14,7 +14,7 @@ const TYPES_ACTIVITE = {
 };
 
 // v1.2.0 — Meta
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.2.1";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -596,6 +596,11 @@ function renderAlert(filtreActuel = "all") {
   });
 
   banner.classList.add("has-banners");
+
+  // Respecte le toggle "Afficher bannières"
+  if (typeof window.__applyBannerVisibility === "function") {
+    window.__applyBannerVisibility();
+  }
 }
 
 
@@ -686,14 +691,21 @@ function initialiserAdminModal() {
 function initialiserBannerToggle() {
   const cb = document.getElementById("banner-toggle");
   const banner = document.getElementById("alert-banner");
-  if (!cb || !banner) return;
+  if (!banner) return;
 
   const apply = () => {
-    banner.classList.toggle("is-hidden", !cb.checked);
+    const visible = !cb ? true : !!cb.checked;
+    banner.classList.toggle("is-hidden", !visible);
+    banner.toggleAttribute("hidden", !visible);
   };
 
-  cb.addEventListener("change", apply);
-  apply(); // état par défaut (visible)
+  if (cb) {
+    cb.addEventListener("change", apply);
+  }
+  // Expose pour les autres fonctions (renderAlert) ✅
+  window.__applyBannerVisibility = apply;
+
+  apply(); // état par défaut
 }
 
 

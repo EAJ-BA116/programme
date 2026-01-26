@@ -476,6 +476,28 @@ const SEMAINES = [
     ]
   },
   {
+    "isoDate": "2026-02-10",
+    "date": "10 février 2026",
+    "statut": "session",
+    "note": "",
+    "messageOff": "",
+    "activitesCommunes": [],
+    "groupes": [
+      {
+        "titre": "Groupe 3 – EAJ3",
+        "activites": [
+          {
+            "type": "projet",
+            "texte": "Henri Fertet"
+          }
+        ],
+        "horaire": "14h-17h",
+        "lieu": "Lycée Henri Fertet de Gray",
+        "tag": "Départ de la base vers Gray en début d'après midi"
+      }
+    ]
+  },
+  {
     "isoDate": "2026-02-11",
     "date": "11 février 2026",
     "statut": "off",
@@ -1095,28 +1117,6 @@ const SEMAINES = [
       {
         "titre": "Groupe 3 – EAJ3",
         "activites": []
-      }
-    ]
-  },
-  {
-    "isoDate": "2028-02-10",
-    "date": "10 février 2028",
-    "statut": "session",
-    "note": "",
-    "messageOff": "",
-    "activitesCommunes": [],
-    "groupes": [
-      {
-        "titre": "Groupe 3 – EAJ3",
-        "activites": [
-          {
-            "type": "projet",
-            "texte": "Henri Fertet"
-          }
-        ],
-        "horaire": "14h-17h",
-        "lieu": "Lycée Henri Fertet de Gray",
-        "tag": "Départ de la base vers Gray en début d'après midi"
       }
     ]
   }

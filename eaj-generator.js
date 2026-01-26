@@ -90,7 +90,8 @@ function parseDateFr(str) {
   const clean = (str || "").trim();
   if (!clean) return null;
 
-  const parts = clean.split("/");
+  const norm = clean.replace(/-/g, "/");
+  const parts = norm.split("/");
   if (parts.length !== 3) return null;
 
   const day = parseInt(parts[0], 10);
@@ -853,6 +854,11 @@ function createWeekForm() {
   sessionCheckbox.addEventListener("change", updateSessionFields);
   attachDateFrBehavior(dateFrInput);
 
+  // Réorganisation automatique lorsque la date change
+  dateFrInput.addEventListener("change", reorderWeekFormsByDate);
+  dateFrInput.addEventListener("blur", reorderWeekFormsByDate);
+
+
   // Groupes
   const groupsWrapper = weekDiv.querySelector(".groups-wrapper");
   GROUPS.forEach(g => {
@@ -1076,6 +1082,31 @@ function getWeeksData() {
   weeks.sort((a, b) => (a.isoDate < b.isoDate ? -1 : a.isoDate > b.isoDate ? 1 : 0));
   return weeks;
 }
+// Réordonne les formulaires "semaine" par date (pour éviter l’effet "ajout en bas").
+function reorderWeekFormsByDate() {
+  if (!weeksContainer) return;
+  const items = Array.from(document.querySelectorAll(".week-form"));
+  const keyed = items.map((el, idx) => {
+    const v = el.querySelector(".week-date-fr")?.value.trim() || "";
+    const p = parseDateFr(v);
+    return { el, idx, iso: p ? p.iso : null };
+  });
+
+  keyed.sort((a, b) => {
+    if (a.iso && b.iso) return a.iso.localeCompare(b.iso);
+    if (a.iso && !b.iso) return -1;
+    if (!a.iso && b.iso) return 1;
+    return a.idx - b.idx;
+  });
+
+  keyed.forEach(k => weeksContainer.appendChild(k.el));
+
+  // Renumérote l’affichage (sans toucher aux IDs internes)
+  Array.from(document.querySelectorAll(".week-form .week-title")).forEach((t, i) => {
+    t.textContent = `Semaine n°${i + 1}`;
+  });
+}
+
 
 // ===============================
 //  Config générale + build JS
@@ -1431,6 +1462,8 @@ function chargerPlanningExistant() {
 
   // 1) On tente de charger le planning existant (planning.js)
   const ok = chargerPlanningExistant();
+  // Trie visuellement les semaines chargées
+  reorderWeekFormsByDate();
 
   // Bouton retour haut
   initialiserBackToTop();
