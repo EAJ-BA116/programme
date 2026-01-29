@@ -13,8 +13,8 @@ const TYPES_ACTIVITE = {
   autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
 };
 
-// v1.2.0 — Meta
-const APP_VERSION = "1.2.1";
+// v1.3.0 — Meta
+const APP_VERSION = "1.3.0";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -822,6 +822,7 @@ function closeOverlaysOnScroll(){
   // Modales standard
   closeModalById("about-modal");
   closeModalById("contact-modal");
+  closeModalById("clothes-modal");
 
   // Modale admin
   const admin = document.getElementById("admin-modal");
@@ -942,6 +943,7 @@ function initialiserMenu(){
       if(act === "open-about"){ openModalById("about-modal"); return; }
       if(act === "open-contact"){ openModalById("contact-modal"); return; }
       if(act === "open-admin"){ const a=document.getElementById("admin-link"); if(a) a.click(); return; }
+      if(act === "open-clothes"){ openModalById("clothes-modal"); return; }
     });
   });
 
@@ -1027,6 +1029,257 @@ function initialiserContactCopy(){
   }
 }
 
+
+
+function initialiserClothesExchange(){
+  const modalId = "clothes-modal";
+  const first = document.getElementById("clothes-firstname");
+  const eaj = document.getElementById("clothes-eaj");
+  const type = document.getElementById("clothes-type"); // hidden input (valeur)
+  const typeTrigger = document.getElementById("clothes-type-trigger");
+  const typeMenu = document.getElementById("clothes-type-menu");
+  const typeTriggerIcon = typeTrigger ? typeTrigger.querySelector(".dd-trigger-icon") : null;
+  const typeTriggerLabel = typeTrigger ? typeTrigger.querySelector(".dd-trigger-label") : null;
+  const size = document.getElementById("clothes-size");
+  const sizeWantedField = document.getElementById("clothes-size-wanted-field");
+  const sizeWanted = document.getElementById("clothes-size-wanted");
+  const btnWa = document.getElementById("clothes-whatsapp");
+  const btnCopy = document.getElementById("clothes-copy");
+  const hint = document.getElementById("clothes-hint");
+
+  if(!first || !eaj || !type || !btnWa || !btnCopy || !size || !sizeWantedField || !sizeWanted) return;
+
+  const phone = String(WHATSAPP_PHONE||"").trim();
+  const phoneOk = /^\d{8,15}$/.test(phone);
+
+  const getReason = ()=>{
+    const r = document.querySelector('input[name="clothes-reason"]:checked');
+    return r ? r.value : "";
+  };
+
+  const setType = (val, iconSrc)=>{
+    type.value = val || "";
+
+    // UI trigger
+    if(typeTriggerLabel){
+      typeTriggerLabel.textContent = type.value ? type.value : "Choisir un vêtement…";
+    }
+    if(typeTriggerIcon){
+      typeTriggerIcon.innerHTML = "";
+      if(iconSrc){
+        const img = document.createElement("img");
+        img.src = iconSrc;
+        img.alt = "";
+        typeTriggerIcon.appendChild(img);
+      }
+    }
+
+    // Fermer menu
+    if(typeMenu && !typeMenu.hidden){
+      typeMenu.hidden = true;
+      if(typeTrigger) typeTrigger.setAttribute("aria-expanded","false");
+    }
+  };
+
+  const updateReasonUI = ()=>{
+    const reason = getReason();
+    const showWanted = reason === 'taille';
+    sizeWantedField.hidden = !showWanted;
+    if(!showWanted) sizeWanted.value = "";
+  };
+
+  const setHint = (msg)=>{ if(hint) hint.textContent = msg || ""; };
+
+  const resetForm = ()=>{
+    first.value = "";
+    eaj.value = "";
+    setType("");
+    size.value = "";
+    sizeWanted.value = "";
+    document.querySelectorAll('input[name="clothes-reason"]').forEach(i=> i.checked=false);
+    updateReasonUI();
+    setHint("");
+    updateButtons();
+  };
+
+  const buildPayload = ()=>{
+    const prenom = (first.value||"").trim();
+    const groupe = (eaj.value||"").trim();
+    const vetement = (type.value||"").trim();
+    const reason = getReason();
+    const taille = (size.value||"").trim();
+    const tailleVoulue = (sizeWanted.value||"").trim();
+
+    const reasonLabel = reason === "taille"
+      ? "Échange de taille"
+      : "Échange car cassé / abîmé";
+
+    const intro = reason === 'taille'
+      ? "Je souhaite faire un échange de taille pour un vêtement."
+      : "Je souhaite faire un échange de vêtements (cassé / abîmé).";
+
+    let msg =
+`Bonjour Yoann,\n\n` +
+`${intro}\n\n` +
+`• Prénom : ${prenom || "(à compléter)"}\n` +
+`• Groupe : ${groupe || "(à choisir)"}\n` +
+`• Vêtement : ${vetement || "(à choisir)"}\n` +
+`• Motif : ${reason ? reasonLabel : "(à choisir)"}\n`;
+
+    msg += `• Taille du vêtement à échanger : ${taille || "(à compléter)"}\n`;
+
+    if(reason === 'taille'){
+      msg += `• Taille voulue : ${tailleVoulue || "(à compléter)"}\n`;
+    }
+
+    msg += `\nMerci.`;
+    return msg;
+  };
+
+  const isValid = ()=>{
+    const prenomOk = (first.value||"").trim().length > 0;
+    const eajOk = (eaj.value||"").trim().length > 0;
+    const typeOk = (type.value||"").trim().length > 0;
+    const reason = getReason();
+    if(!prenomOk || !eajOk || !typeOk || !reason) return false;
+
+    // taille obligatoire dans tous les cas
+    const sizeOk = (size.value||"").trim().length > 0;
+    if(!sizeOk) return false;
+
+    // si échange de taille, taille voulue obligatoire
+    if(reason === 'taille'){
+      const wantedOk = (sizeWanted.value||"").trim().length > 0;
+      return wantedOk;
+    }
+    return true;
+  };
+
+  const updateButtons = ()=>{
+    const ok = isValid();
+    const canWa = phoneOk && ok;
+
+    btnCopy.disabled = !ok;
+    btnCopy.style.opacity = ok ? "" : "0.55";
+    btnCopy.style.cursor = ok ? "" : "not-allowed";
+
+    btnWa.disabled = !canWa;
+    btnWa.style.opacity = canWa ? "" : "0.55";
+    btnWa.style.cursor = canWa ? "" : "not-allowed";
+    if(!phoneOk){
+      btnWa.title = "Numéro WhatsApp non configuré (WHATSAPP_PHONE dans script.js)";
+    }else if(!ok){
+      btnWa.title = "Complète les champs obligatoires";
+    }else{
+      btnWa.title = "";
+    }
+  };
+
+
+  // Dropdown type de vêtement
+  const closeTypeMenu = ()=>{
+    if(typeMenu && !typeMenu.hidden){
+      typeMenu.hidden = true;
+      if(typeTrigger) typeTrigger.setAttribute("aria-expanded","false");
+    }
+  };
+
+  if(typeTrigger && typeMenu){
+    typeTrigger.addEventListener("click", (e)=>{
+      e.preventDefault();
+      const willOpen = typeMenu.hidden;
+      // fermer les autres menus
+      closeTypeMenu();
+      if(willOpen){
+        typeMenu.hidden = false;
+        typeTrigger.setAttribute("aria-expanded","true");
+      }
+    });
+
+    typeMenu.querySelectorAll(".dd-item").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const val = btn.getAttribute("data-value") || "";
+        const ico = btn.querySelector("img") ? btn.querySelector("img").getAttribute("src") : "";
+        setType(val, ico);
+        updateButtons();
+      });
+    });
+
+    // click dehors / ESC
+    document.addEventListener("click", (e)=>{
+      if(!typeMenu.hidden){
+        const t = e.target;
+        if(typeTrigger.contains(t) || typeMenu.contains(t)) return;
+        closeTypeMenu();
+      }
+    });
+    document.addEventListener("keydown", (e)=>{
+      if(e.key === "Escape") closeTypeMenu();
+    });
+  }
+
+  // Mise à jour temps réel
+  ["input","change"].forEach(evt=>{
+    first.addEventListener(evt, updateButtons);
+    eaj.addEventListener(evt, updateButtons);
+    size.addEventListener(evt, updateButtons);
+    sizeWanted.addEventListener(evt, updateButtons);
+    document.querySelectorAll('input[name="clothes-reason"]').forEach(i=> i.addEventListener(evt, updateButtons));
+  });
+
+
+  // Motif -> afficher/masquer "taille voulue"
+  document.querySelectorAll('input[name="clothes-reason"]').forEach(i=>{
+    i.addEventListener('change', ()=>{
+      updateReasonUI();
+      updateButtons();
+    });
+  });
+
+  // Copier
+  btnCopy.addEventListener("click", async ()=>{
+    if(!isValid()) { setHint("Complète les champs obligatoires."); return; }
+    const payload = buildPayload();
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(payload);
+      }else{
+        const tmp = document.createElement("textarea");
+        tmp.value = payload;
+        document.body.appendChild(tmp);
+        tmp.select();
+        document.execCommand("copy");
+        tmp.remove();
+      }
+      setHint("Message copié. ✅");
+    }catch(e){
+      setHint("Impossible de copier automatiquement.");
+    }
+  });
+
+  // WhatsApp
+  btnWa.addEventListener("click", ()=>{
+    if(!isValid()) { setHint("Complète les champs obligatoires."); return; }
+    if(!phoneOk) { setHint("Numéro WhatsApp non configuré."); return; }
+    const payload = buildPayload();
+    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(payload)}`;
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+    setHint("WhatsApp ouvert. 📲");
+  });
+
+  // Reset à l'ouverture/fermeture de la modale
+  const modal = document.getElementById(modalId);
+  if(modal){
+    // Quand on ouvre
+    const obs = new MutationObserver(()=>{
+      if(modal.classList.contains("open")) resetForm();
+    });
+    obs.observe(modal, { attributes:true, attributeFilter:["class"] });
+  }
+
+  updateButtons();
+}
+
 /* ---------- Init globale ---------- */
 
 renderToutesLesSemaines();
@@ -1045,6 +1298,7 @@ initialiserMenu();
 initialiserModales();
 initialiserCloseOnScroll();
 initialiserContactCopy();
+initialiserClothesExchange();
 initialiserProjectsMenu();
 
 initialiserBackToTop();
