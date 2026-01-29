@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -13,22 +15,22 @@
   <meta name="theme-color" content="#0053a6">
 
   <!-- PWA Android -->
-  <link rel="manifest" href="manifest.json?v=1.3.0">
+  <link rel="manifest" href="manifest.json?v=1.3.1">
 
   <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="EAJ 116">
-  <link rel="apple-touch-icon" href="images/logo_eaj192.png?v=1.3.0">
+  <link rel="apple-touch-icon" href="images/logo_eaj192.png?v=1.3.1">
 
   <!-- Icônes Android -->
-  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png?v=1.3.0">
-  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png?v=1.3.0">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png?v=1.3.1">
+  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png?v=1.3.1">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="images/eaj.ico?v=1.3.0">
+  <link rel="icon" type="image/x-icon" href="images/eaj.ico?v=1.3.1">
 
-  <link id="main-style" rel="stylesheet" href="style.css?v=1.3.0">
+  <link id="main-style" rel="stylesheet" href="style.css?v=1.3.1">
 </head>
 
 <body data-theme="dark">
@@ -65,7 +67,7 @@
         <span>Afficher bannières</span>
       </label>
 
-      <button id="theme-toggle" class="btn-theme" type="button">🌙 Mode sombre</button>
+      <button id="theme-toggle" class="btn-theme" type="button">ð Mode sombre</button>
     </div>
     <div class="filter-help">💡 Filtres : sélectionne un groupe pour afficher ses activités. “Tous” affiche tout (y compris les activités communes).</div>
   </div>
@@ -94,9 +96,9 @@
 
   <!-- ✅ Bas de page -->
   <footer>
-    <div class="footer-line">EAJ BA 116 – 2025</div>
+    <div class="footer-line">EAJ BA 116 – 2026</div>
     <div class="footer-line" id="last-update"></div>
-    <div class="footer-line footer-version">Version 1.3.0 du 29/01/2026 • Codé par Yoann</div>
+    <div class="footer-line footer-version">Version 1.3.1 du 29/01/2026 • Codé par Yoann</div>
     <div class="footer-line">
       <a href="#" id="admin-link" class="footer-link footer-link-admin">🔧 Accès administration</a>
     </div>
@@ -133,7 +135,7 @@
 
       <div class="menu-group">
         <button id="projects-btn" class="menu-item menu-item-accordion" type="button" aria-expanded="false" aria-controls="projects-list">
-          🗂️ Nos projets
+          🛩️ Nos projets
           <span class="menu-chevron" aria-hidden="true">▾</span>
         </button>
 
@@ -144,13 +146,13 @@
       </div>
 
       <nav class="menu-buttons" aria-label="Actions">
-        <button class="menu-item" type="button" data-action="open-about">ℹ️ Version & changelog</button>
+        <button class="menu-item" type="button" data-action="open-clothes">🧥 Échange vêtements</button>
+        <button class="menu-item" type="button" data-action="open-contact">📲 Bug / Contact</button>
         <button class="menu-item" type="button" data-action="open-admin">🔧 Accès admin</button>
-                <button class="menu-item" type="button" data-action="open-clothes">🧥 Échange vêtements</button>
-<button class="menu-item" type="button" data-action="open-contact">📲 Bug / Contact</button>
+        <button class="menu-item" type="button" data-action="open-about">ℹ️ À propos</button>
       </nav>
 
-      <div class="menu-popover-footer muted">Version 1.3.0 • 29/01/2026</div>
+      <div class="menu-popover-footer muted">Version 1.3.1 • 29/01/2026</div>
     </div>
   </div>
 
@@ -158,19 +160,21 @@
 
   <div id="about-modal" class="modal" aria-hidden="true">
     <div class="modal-backdrop" data-modal-close="about-modal"></div>
-    <div class="modal-dialog" role="dialog" aria-modal="true" aria-label="Version et changelog">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-label="À propos">
       <div class="modal-header">
-        <h2>Version & changelog</h2>
+        <h2>À propos</h2>
         <button class="modal-close" type="button" data-modal-close="about-modal" aria-label="Fermer">✕</button>
       </div>
 
       <div class="modal-body">
-        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.3.0</strong> • 29/01/2026 • Codé par <strong>Yoann</strong></p>
+        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.3.1</strong> • 29/01/2026 • Codé par <strong>Yoann</strong></p>
 
         <div class="changelog">
           <div class="changelog-title">Dernières modifications</div>
           <ul>
-            <li>Correctif : “Afficher bannières” masque/affiche vraiment</li>
+                        <li>Échange vêtements : motif en puces (plus lisible)</li>
+            <li>Échange vêtements : le scroll ne ferme plus la fenêtre pendant la saisie</li>
+<li>Correctif : “Afficher bannières” masque/affiche vraiment</li>
             <li>Générateur : semaines réordonnées par date (ajout → bon endroit)</li>
             <li>Générateur : bannières avec dates début (auto = aujourd’hui) / fin (optionnel)</li>
             <li>Mobile : zoom désactivé + fin du “scroll à droite”</li>
@@ -295,17 +299,19 @@ Résultat attendu : …"></textarea>
           <small class="field-hint">Obligatoire.</small>
         </label>
 
-        <fieldset class="modal-field">
-          <legend>Motif</legend>
-          <label class="radio-row">
-            <input type="radio" name="clothes-reason" value="taille">
-            <span>🔁 Échange de taille</span>
-          </label>
-          <label class="radio-row">
-            <input type="radio" name="clothes-reason" value="casse">
-            <span>🛠️ Échange car cassé / abîmé</span>
-          </label>
-        </fieldset>
+        <div class="modal-field">
+          <span class="field-label">Motif</span>
+          <div class="motif-list" role="radiogroup" aria-label="Motif">
+            <label class="motif-item">
+              <input type="radio" name="clothes-reason" value="taille">
+              <span class="motif-text">🔁 Échange de taille</span>
+            </label>
+            <label class="motif-item">
+              <input type="radio" name="clothes-reason" value="casse">
+              <span class="motif-text">🛠️ Échange car cassé / abîmé</span>
+            </label>
+          </div>
+        </div>
 
         <label id="clothes-size-wanted-field" class="modal-field" hidden>
           <span>Taille voulue</span>
@@ -330,11 +336,11 @@ Résultat attendu : …"></textarea>
 <!-- ⚙️ JS : d’abord planning.js (avec version), puis la logique -->
   <script>
   // Cache-buster global (évite les "versions fantômes" sur GitHub Pages)
-  window.EAJ_BUILD = "1.3.0";
+  window.EAJ_BUILD = "1.3.1";
   (function () {
     const bust = Date.now();
     const s = document.createElement('script');
-    s.src = `version-loader.js?v=1.3.0-${bust}`;
+    s.src = `version-loader.js?v=1.3.1-${bust}`;
     document.head.appendChild(s);
   })();
 </script>

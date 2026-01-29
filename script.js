@@ -13,8 +13,8 @@ const TYPES_ACTIVITE = {
   autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
 };
 
-// v1.3.0 — Meta
-const APP_VERSION = "1.3.0";
+// v1.3.1 — Meta
+const APP_VERSION = "1.3.1";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -822,7 +822,7 @@ function closeOverlaysOnScroll(){
   // Modales standard
   closeModalById("about-modal");
   closeModalById("contact-modal");
-  closeModalById("clothes-modal");
+  // ⚠️ v1.3.1 : on ne ferme PAS "Échange vêtements" au scroll
 
   // Modale admin
   const admin = document.getElementById("admin-modal");
@@ -830,6 +830,10 @@ function closeOverlaysOnScroll(){
     admin.classList.remove("open");
     admin.setAttribute("aria-hidden","true");
   }
+}
+
+function isClothesModalOpen(){
+  return !!document.getElementById("clothes-modal")?.classList.contains("open");
 }
 
 function isTargetInsideOverlay(target){
@@ -858,6 +862,11 @@ function initialiserCloseOnScroll(){
   let lastY = window.scrollY;
 
   window.addEventListener("scroll", () => {
+    // v1.3.1 : pendant "Échange vêtements", on désactive la fermeture automatique au scroll
+    if(isClothesModalOpen()){
+      lastY = window.scrollY;
+      return;
+    }
     const y = window.scrollY;
     if(y !== lastY && anyOverlayOpen()){
       closeOverlaysOnScroll();
@@ -867,12 +876,14 @@ function initialiserCloseOnScroll(){
 
   // Mobile (swipe) + desktop (wheel) : on ferme si le geste n'est pas dans un overlay
   document.addEventListener("touchmove", (e) => {
+    if(isClothesModalOpen()) return;
     if(!anyOverlayOpen()) return;
     if(isTargetInsideOverlay(e.target)) return;
     closeOverlaysOnScroll();
   }, { passive: true });
 
   document.addEventListener("wheel", (e) => {
+    if(isClothesModalOpen()) return;
     if(!anyOverlayOpen()) return;
     if(isTargetInsideOverlay(e.target)) return;
     closeOverlaysOnScroll();
@@ -1033,6 +1044,7 @@ function initialiserContactCopy(){
 
 function initialiserClothesExchange(){
   const modalId = "clothes-modal";
+  const modal = document.getElementById(modalId);
   const first = document.getElementById("clothes-firstname");
   const eaj = document.getElementById("clothes-eaj");
   const type = document.getElementById("clothes-type"); // hidden input (valeur)
@@ -1086,6 +1098,14 @@ function initialiserClothesExchange(){
     const showWanted = reason === 'taille';
     sizeWantedField.hidden = !showWanted;
     if(!showWanted) sizeWanted.value = "";
+
+    // Style sélection (2 cartes côte à côte)
+    if(modal){
+      modal.querySelectorAll(".motif-item").forEach(lbl=>{
+        const inp = lbl.querySelector("input");
+        lbl.classList.toggle("is-selected", !!(inp && inp.checked));
+      });
+    }
   };
 
   const setHint = (msg)=>{ if(hint) hint.textContent = msg || ""; };
@@ -1268,7 +1288,6 @@ function initialiserClothesExchange(){
   });
 
   // Reset à l'ouverture/fermeture de la modale
-  const modal = document.getElementById(modalId);
   if(modal){
     // Quand on ouvre
     const obs = new MutationObserver(()=>{

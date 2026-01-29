@@ -1659,6 +1659,59 @@ html, body {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+
+/* Motif : 2 puces + texte (pas de gros cadres) */
+.motif-list{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.motif-item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap: 8px;
+  padding: 12px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: var(--bg-card-soft);
+  cursor: pointer;
+  user-select:none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+.motif-item:hover{ border-color: rgba(30,115,201,0.55); }
+.motif-item:active{ transform: translateY(1px); }
+.motif-item input{
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--blue-soft);
+}
+.motif-item.is-selected{
+  border-color: var(--blue-soft);
+  box-shadow: 0 0 0 2px rgba(30,115,201,0.18);
+  background: var(--bg-card);
+}
+.motif-item::before{
+  content: "•";
+  opacity: .75;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+.motif-item input{ margin-top: 2px; }
+.motif-text{
+  display:block;
+  text-align:center;
+  line-height:1.15;
+  font-weight:600;
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+@media (max-width: 420px){
+  .motif-list{ grid-template-columns: 1fr; }
+}
 @media (max-width: 640px){
   .grid-2{ grid-template-columns: 1fr; }
 }
