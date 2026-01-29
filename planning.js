@@ -2,34 +2,27 @@
 const ALERT_BANNERS = [
   {
     "actif": true,
-    "emoji": "⚠️",
-    "type": "attention",
+    "emoji": "🚫",
+    "type": "important",
     "texte": "N'oubliez pas de vous inscrire au BIA auprès de vos établissements scolaires. Les inscriptions ont lieu du 28 janvier au 11 mars 2026.",
-    "cibles": ["all"],
+    "cibles": [
+      "EAJ1"
+    ],
     "startDate": "25/01/2026",
     "endDate": "11/03/2026"
-  },
-  {
-    "actif": true,
-    "emoji": "📢",
-    "type": "annonce",
-    "texte": "Message programmé : à partir du 15 mars 2026, une nouvelle annonce peut s'afficher ici.",
-    "cibles": ["all"],
-    "startDate": "15/03/2026"
   }
-
 ];
 
 // ⚠️ Compat (ancien format) : concaténation des bannières
 const ALERT_BANNER = {
-  "actif": false,
-  "texte": "⚠️ N'oubliez pas de vous inscrire au BIA auprès de vos établissements scolaires. Les inscriptions ont lieu du 28 janvier au 11 mars 2026."
+  "actif": true,
+  "texte": "🚫 N'oubliez pas de vous inscrire au BIA auprès de vos établissements scolaires. Les inscriptions ont lieu du 28 janvier au 11 mars 2026."
 };
 
 // 📝 Dernière mise à jour (affichée dans le footer)
 const LAST_UPDATE = {
   "auteur": "Yoann",
-  "dateTexte": "25/01/2026"
+  "dateTexte": "29/01/2026"
 };
 
 // 🗓️ LISTE DES SEMAINES / ÉVÉNEMENTS (isoDate au format AAAA-MM-JJ)
