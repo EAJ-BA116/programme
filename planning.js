@@ -4,25 +4,37 @@ const ALERT_BANNERS = [
     "actif": true,
     "emoji": "🚫",
     "type": "important",
-    "texte": "N'oubliez pas de vous inscrire au BIA auprès de vos établissements scolaires. Les inscriptions ont lieu du 28 janvier au 11 mars 2026.",
+    "texte": "Bon courage et bonne révision pour le BIA",
     "cibles": [
       "EAJ1"
     ],
-    "startDate": "25/01/2026",
-    "endDate": "11/03/2026"
+    "startDate": "12/05/2026",
+    "endDate": "20/05/2026"
+  },
+  {
+    "actif": true,
+    "emoji": "📢",
+    "type": "annonce",
+    "texte": "On compte sur vous pour le Challenge inter-EAJ",
+    "cibles": [
+      "EAJ2",
+      "EAJ3"
+    ],
+    "startDate": "14/05/2026",
+    "endDate": "17/05/2026"
   }
 ];
 
 // ⚠️ Compat (ancien format) : concaténation des bannières
 const ALERT_BANNER = {
   "actif": true,
-  "texte": "🚫 N'oubliez pas de vous inscrire au BIA auprès de vos établissements scolaires. Les inscriptions ont lieu du 28 janvier au 11 mars 2026."
+  "texte": "🚫 Bon courage et bonne révision pour le BIA\n📢 On compte sur vous pour le Challenge inter-EAJ"
 };
 
 // 📝 Dernière mise à jour (affichée dans le footer)
 const LAST_UPDATE = {
   "auteur": "Yoann",
-  "dateTexte": "29/01/2026"
+  "dateTexte": "12/05/2026"
 };
 
 // 🗓️ LISTE DES SEMAINES / ÉVÉNEMENTS (isoDate au format AAAA-MM-JJ)
@@ -1053,25 +1065,7 @@ const SEMAINES = [
     "statut": "session",
     "note": "",
     "messageOff": "",
-    "activitesCommunes": [
-      {
-        "groupes": [
-          "EAJ2",
-          "EAJ3"
-        ],
-        "activites": [
-          {
-            "type": "rencontres",
-            "texte": "Challenge Cérébral (😂) entre les EAJ 2 et 3",
-            "horaire": "14h- 17h",
-            "lieu": "BA 116",
-            "tenue": "Tenue de sport",
-            "materiel": "Gourde"
-          }
-        ],
-        "lieu": "BA 116"
-      }
-    ],
+    "activitesCommunes": [],
     "groupes": [
       {
         "titre": "Groupe 1 – EAJ1",
@@ -1087,14 +1081,6 @@ const SEMAINES = [
         "tenue": "Tenue de sport",
         "materiel": "Gourde",
         "tag": "Rencontre sportive avec les cadets de la gendarmerie, les pompiers...."
-      },
-      {
-        "titre": "Groupe 2 – EAJ2",
-        "activites": []
-      },
-      {
-        "titre": "Groupe 3 – EAJ3",
-        "activites": []
       }
     ]
   }
