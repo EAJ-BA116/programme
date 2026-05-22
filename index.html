@@ -15,22 +15,22 @@
   <meta name="theme-color" content="#0053a6">
 
   <!-- PWA Android -->
-  <link rel="manifest" href="manifest.json?v=1.4.1">
+  <link rel="manifest" href="manifest.json?v=1.4.3">
 
   <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="EAJ 116">
-  <link rel="apple-touch-icon" href="images/logo_eaj192.png?v=1.4.1">
+  <link rel="apple-touch-icon" href="images/logo_eaj192.png?v=1.4.3">
 
   <!-- Icônes Android -->
-  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png?v=1.4.1">
-  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png?v=1.4.1">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png?v=1.4.3">
+  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png?v=1.4.3">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="images/eaj.ico?v=1.4.1">
+  <link rel="icon" type="image/x-icon" href="images/eaj.ico?v=1.4.3">
 
-  <link id="main-style" rel="stylesheet" href="style.css?v=1.4.1">
+  <link id="main-style" rel="stylesheet" href="style.css?v=1.4.3">
 </head>
 
 <body data-theme="dark">
@@ -61,6 +61,13 @@
       <button class="btn-filter" data-filter="EAJ3">EAJ3</button>
     </div>
 
+    <label class="activity-filter-control" for="activity-filter">
+      <span>Par activité</span>
+      <select id="activity-filter" aria-label="Filtrer par activité">
+        <option value="all">📋 Toutes les activités</option>
+      </select>
+    </label>
+
     <div class="filter-actions">
       <label class="toggle-banners" title="Masquer/afficher les bannières (non mémorisé)">
         <input type="checkbox" id="banner-toggle" checked>
@@ -69,7 +76,7 @@
 
       <button id="theme-toggle" class="btn-theme" type="button">🌙 Mode sombre</button>
     </div>
-    <div class="filter-help">💡 Filtres : sélectionne un groupe pour afficher ses activités. “Tous” affiche tout (y compris les activités communes).</div>
+    <div class="filter-help">💡 Filtres : choisis un groupe ou une activité. Le filtre “Par activité” repart automatiquement sur Tous les groupes.</div>
   </div>
 
   <!-- 🎨 Légende (dépliable, fermée par défaut) -->
@@ -98,7 +105,7 @@
   <footer>
     <div class="footer-line">EAJ BA 116 – 2026</div>
     <div class="footer-line" id="last-update"></div>
-    <div class="footer-line footer-version">Version 1.4.1 du 22/05/2026 • Codé par Yoann</div>
+    <div class="footer-line footer-version">Version 1.4.3 du 22/05/2026 • Codé par Yoann</div>
     <div class="footer-line">
       <a href="#" id="admin-link" class="footer-link footer-link-admin">🔧 Accès administration</a>
     </div>
@@ -152,7 +159,7 @@
         <button class="menu-item" type="button" data-action="open-about">ℹ️ À propos</button>
       </nav>
 
-      <div class="menu-popover-footer muted">Version 1.4.1 • 22/05/2026</div>
+      <div class="menu-popover-footer muted">Version 1.4.3 • 22/05/2026</div>
     </div>
   </div>
 
@@ -167,7 +174,7 @@
       </div>
 
       <div class="modal-body">
-        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.4.1</strong> • 22/05/2026 • Codé par <strong>Yoann</strong></p>
+        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.4.3</strong> • 22/05/2026 • Codé par <strong>Yoann</strong></p>
 
         <div class="changelog">
           <div class="changelog-title">Dernières modifications</div>
@@ -175,6 +182,8 @@
                         <li>Échange vêtements : motif en puces (plus lisible)</li>
             <li>Échange vêtements : le scroll ne ferme plus la fenêtre pendant la saisie</li>
 <li>Correctif : “Afficher bannières” masque/affiche vraiment</li>
+            <li>Filtres : ajout du menu “Par activité” avec mémorisation locale</li>
+            <li>Filtre activité : affichage uniquement des activités correspondantes</li>
             <li>Générateur : semaines réordonnées par date (ajout → bon endroit)</li>
             <li>Générateur : bannières avec dates début (auto = aujourd’hui) / fin (optionnel)</li>
             <li>Mobile : zoom désactivé + fin du “scroll à droite”</li>
@@ -336,11 +345,11 @@ Résultat attendu : …"></textarea>
 <!-- ⚙️ JS : d’abord planning.js (avec version), puis la logique -->
   <script>
   // Cache-buster global (évite les "versions fantômes" sur GitHub Pages)
-  window.EAJ_BUILD = "1.4.1";
+  window.EAJ_BUILD = "1.4.3";
   (function () {
     const bust = Date.now();
     const s = document.createElement('script');
-    s.src = `version-loader.js?v=1.4.1-${bust}`;
+    s.src = `version-loader.js?v=1.4.3-${bust}`;
     document.head.appendChild(s);
   })();
 </script>

@@ -104,6 +104,12 @@
       box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
     }
 
+    .week-form-highlight {
+      outline: 2px solid var(--blue-main);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16), 0 12px 26px rgba(15, 23, 42, 0.14);
+      transition: box-shadow 0.25s ease, outline-color 0.25s ease;
+    }
+
     .config-title {
       font-size: 1rem;
       font-weight: 600;
@@ -981,7 +987,7 @@
 
   <!-- Scripts : Supabase + données de secours + générateur -->
 <script>
-  window.EAJ_BUILD = "1.4.1";
+  window.EAJ_BUILD = "1.4.3";
   (function () {
     const bust = Date.now();
 
@@ -1043,11 +1049,11 @@
     }
 
     loadClassic("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", function () {
-      loadSafe(`./supabase-config.js?v=1.4.1-${bust}`, function () {
-        loadSafe(`./planning.js?v=1.4.1-${bust}`, function () {
-          loadSafe(`./planning-api.js?v=1.4.1-${bust}`, function (apiOk) {
+      loadSafe(`./supabase-config.js?v=1.4.3-${bust}`, function () {
+        loadSafe(`./planning.js?v=1.4.3-${bust}`, function () {
+          loadSafe(`./planning-api.js?v=1.4.3-${bust}`, function (apiOk) {
             if (!apiOk) return;
-            loadSafe(`./eaj-generator.js?v=1.4.1-${bust}`);
+            loadSafe(`./eaj-generator.js?v=1.4.3-${bust}`);
           });
         }, { optional: true });
       });

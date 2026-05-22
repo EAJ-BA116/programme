@@ -1857,3 +1857,73 @@ html, body {
     max-width: 100%;
   }
 }
+
+/* v1.4.3 — Filtre par activité */
+.activity-filter-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.45rem 0.35rem 0.75rem;
+  border: 1px solid rgba(0, 83, 166, 0.28);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.activity-filter-control span {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.activity-filter-control select {
+  max-width: 230px;
+  min-width: 170px;
+  border: 0;
+  outline: none;
+  border-radius: 999px;
+  padding: 0.42rem 2rem 0.42rem 0.75rem;
+  background: var(--blue-light);
+  color: var(--blue-main);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+body[data-theme="dark"] .activity-filter-control select {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--blue-soft);
+}
+
+@media (max-width: 720px) {
+  .activity-filter-control {
+    width: 100%;
+    justify-content: space-between;
+    border-radius: 1rem;
+  }
+
+  .activity-filter-control select {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+.empty-filter-state {
+  text-align: center;
+  padding: 2rem 1.25rem;
+}
+.empty-filter-icon {
+  font-size: 2rem;
+  margin-bottom: 0.35rem;
+}
+.empty-filter-title {
+  font-weight: 900;
+  color: var(--text-main);
+  font-size: 1.2rem;
+  margin-bottom: 0.25rem;
+}
+.empty-filter-state p {
+  color: var(--text-muted);
+  margin: 0;
+}

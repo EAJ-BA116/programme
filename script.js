@@ -13,8 +13,8 @@ const TYPES_ACTIVITE = {
   autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
 };
 
-// v1.4.1 — Meta
-const APP_VERSION = "1.4.1";
+// v1.4.3 — Meta
+const APP_VERSION = "1.4.3";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -67,8 +67,49 @@ function getFiltreActuel() {
   return "all";
 }
 
+function getActiviteFiltersValides() {
+  return ["all", ...Object.keys(TYPES_ACTIVITE)];
+}
+
+function getFiltreActiviteActuel() {
+  const filtersValides = getActiviteFiltersValides();
+  try {
+    const stored = localStorage.getItem("eaj_activity_filter");
+    if (stored && filtersValides.includes(stored)) return stored;
+  } catch (e) {}
+  return "all";
+}
+
+function getActivityType(activity) {
+  const type = String((activity && activity.type) || "autre").trim();
+  return TYPES_ACTIVITE[type] ? type : "autre";
+}
+
+function getActivityListForFilter(list, activityFilter = getFiltreActiviteActuel()) {
+  const activities = getActivityListSafe(list);
+  if (activityFilter === "all") return activities;
+  return activities.filter(activity => getActivityType(activity) === activityFilter);
+}
+
+function getCurrentGroupFilterFromUiOrStorage() {
+  const active = document.querySelector(".btn-filter.active");
+  if (active && active.dataset && active.dataset.filter) return active.dataset.filter;
+  return getFiltreActuel();
+}
+
+function setGroupFilterUi(filter) {
+  const boutons = document.querySelectorAll(".btn-filter");
+  boutons.forEach(btn => btn.classList.toggle("active", (btn.dataset.filter || "all") === filter));
+}
+
+function getActivityFilterLabel(filter = getFiltreActiviteActuel()) {
+  if (filter === "all") return "toutes les activités";
+  const cfg = TYPES_ACTIVITE[filter] || TYPES_ACTIVITE.autre;
+  return `${cfg.emoji} ${cfg.label}`;
+}
+
 function rafraichirPlanningAffiche() {
-  const filtre = getFiltreActuel();
+  const filtre = getCurrentGroupFilterFromUiOrStorage();
   renderToutesLesSemaines();
   appliquerFiltre(filtre);
   renderAlert(filtre);
@@ -135,6 +176,7 @@ function createActivityChip(activity, groupDefaults = {}) {
 
   const chip = document.createElement("div");
   chip.className = "activity-chip";
+  chip.dataset.activityType = getActivityType(activity);
 
   // 🎨 fond teinté selon l’activité
   const baseColor = typeCfg.color;
@@ -171,6 +213,72 @@ function createActivityChip(activity, groupDefaults = {}) {
   return chip;
 }
 
+
+function getActivityListSafe(list) {
+  return Array.isArray(list) ? list.filter(a => a && String(a.texte || "").trim()) : [];
+}
+
+function hasMeaningfulCommonEntry(entry, activityFilter = "all") {
+  if (!entry) return false;
+  if (getActivityListForFilter(entry.activites, activityFilter).length > 0) return true;
+
+  // En filtre par activité, on ne garde que les blocs qui contiennent réellement cette activité.
+  // Les infos générales seules ne doivent pas ressortir dans un filtre "Sport", "Drone", etc.
+  if (activityFilter !== "all") return false;
+
+  return Boolean(
+    String(entry.horaire || "").trim() ||
+    String(entry.lieu || "").trim() ||
+    String(entry.tenue || "").trim() ||
+    String(entry.materiel || "").trim() ||
+    String(entry.encadrant || "").trim() ||
+    String(entry.tag || "").trim()
+  );
+}
+
+function hasMeaningfulGroupEntry(group, activityFilter = "all") {
+  if (!group) return false;
+  if (getActivityListForFilter(group.activites, activityFilter).length > 0) return true;
+
+  // Même logique : si on filtre par activité, une carte avec seulement des infos générales est masquée.
+  if (activityFilter !== "all") return false;
+
+  return Boolean(
+    String(group.horaire || "").trim() ||
+    String(group.lieu || "").trim() ||
+    String(group.tenue || "").trim() ||
+    String(group.materiel || "").trim() ||
+    String(group.encadrant || "").trim() ||
+    String(group.tag || "").trim()
+  );
+}
+
+function addCommonGroupsToSet(entry, set) {
+  if (!entry || !set) return;
+  const groupes = Array.isArray(entry.groupes) ? entry.groupes.filter(Boolean) : [];
+  if (!groupes.length) {
+    ["EAJ1", "EAJ2", "EAJ3"].forEach(id => set.add(id));
+    return;
+  }
+  groupes.forEach(id => set.add(id));
+}
+
+function appendActivitiesBlock(parent, activities) {
+  const list = getActivityListSafe(activities);
+  if (!parent || !list.length) return;
+
+  const label = document.createElement("p");
+  label.className = "label";
+  label.textContent = "Activités :";
+
+  const container = document.createElement("div");
+  container.className = "activities-list";
+
+  list.forEach(a => container.appendChild(createActivityChip(a)));
+  parent.appendChild(label);
+  parent.appendChild(container);
+}
+
 /* ---------- Prochaine séance ---------- */
 
 // 🔎 Trouver l'indice de la prochaine séance (statut "session" avec date >= aujourd'hui)
@@ -198,6 +306,7 @@ function trouverIndiceProchaineSession() {
 /* ---------- Rendu d’une semaine ---------- */
 
 function renderSemaine(p, index, indexProchaine, estPassee) {
+  const activityFilter = getFiltreActiviteActuel();
   const section = document.createElement("section");
   section.className = "week";
 
@@ -228,6 +337,7 @@ function renderSemaine(p, index, indexProchaine, estPassee) {
 
   // 🛑 Semaine OFF
   if (p.statut === "off") {
+    if (activityFilter !== "all") return null;
     const offDiv = document.createElement("div");
     offDiv.className = "week-off";
     offDiv.innerHTML = `
@@ -242,14 +352,19 @@ function renderSemaine(p, index, indexProchaine, estPassee) {
   }
 
   // 🤝 Activités communes plein écran
-  if (Array.isArray(p.activitesCommunes) && p.activitesCommunes.length > 0) {
-    p.activitesCommunes.forEach(entry => {
-      if (!entry) return;
+  const commonEntries = Array.isArray(p.activitesCommunes)
+    ? p.activitesCommunes.filter(entry => hasMeaningfulCommonEntry(entry, activityFilter))
+    : [];
 
+  const presentGroups = new Set();
+  commonEntries.forEach(entry => addCommonGroupsToSet(entry, presentGroups));
+
+  if (commonEntries.length > 0) {
+    commonEntries.forEach(entry => {
       const card = document.createElement("article");
       card.className = "group-card week-common-card";
 
-      const groupes = Array.isArray(entry.groupes) ? entry.groupes : [];
+      const groupes = Array.isArray(entry.groupes) ? entry.groupes.filter(Boolean) : [];
       card.dataset.groups = groupes.join(",");
 
       const groupesLabel = groupes.length
@@ -261,9 +376,6 @@ function renderSemaine(p, index, indexProchaine, estPassee) {
         <div class="week-common-title">Activité commune</div>
         <div class="week-common-groups">${groupesLabel}</div>
 
-        <p class="label">Activités :</p>
-        <div class="activities-list"></div>
-
         ${buildInfoBlock("Horaire :", entry.horaire || "")}
         ${buildInfoBlock("Lieu :", entry.lieu || "")}
         ${buildInfoBlock("Tenue :", entry.tenue || "")}
@@ -272,11 +384,19 @@ function renderSemaine(p, index, indexProchaine, estPassee) {
         ${buildTagLine(entry.encadrant || "", entry.tag || "Activité commune")}
       `;
 
-      const activitiesList = card.querySelector(".activities-list");
-      (entry.activites || []).forEach(a => {
-        if (!a) return;
-        activitiesList.appendChild(createActivityChip(a, entry));
-      });
+      const infoAnchor = card.querySelector(".label") || card.querySelector(".tag-line");
+      const activities = getActivityListForFilter(entry.activites, activityFilter);
+      card.dataset.activityTypes = activities.map(getActivityType).join(",");
+      if (activities.length) {
+        const frag = document.createElement("div");
+        appendActivitiesBlock(frag, activities);
+        const nodes = Array.from(frag.childNodes);
+        if (infoAnchor) {
+          nodes.forEach(node => card.insertBefore(node, infoAnchor));
+        } else {
+          nodes.forEach(node => card.appendChild(node));
+        }
+      }
 
       section.appendChild(card);
     });
@@ -286,11 +406,9 @@ function renderSemaine(p, index, indexProchaine, estPassee) {
   const groupsContainer = document.createElement("div");
   groupsContainer.className = "groups";
 
-  const presentGroups = new Set();
-
   (p.groupes || []).forEach(g => {
     // sécurité : si g ou son titre est absent, on saute
-    if (!g || typeof g.titre !== "string") {
+    if (!g || typeof g.titre !== "string" || !hasMeaningfulGroupEntry(g, activityFilter)) {
       return;
     }
 
@@ -312,9 +430,6 @@ function renderSemaine(p, index, indexProchaine, estPassee) {
     article.innerHTML = `
       <div class="group-title">${titre}</div>
 
-      <p class="label">Activités :</p>
-      <div class="activities-list"></div>
-
       ${buildInfoBlock("Horaire (général) :", g.horaire || "")}
       ${buildInfoBlock("Lieu (général) :", g.lieu || "")}
       ${buildInfoBlock("Tenue (générale) :", g.tenue || "")}
@@ -323,11 +438,19 @@ function renderSemaine(p, index, indexProchaine, estPassee) {
       ${buildTagLine(g.encadrant || "", g.tag || "")}
     `;
 
-    const activitiesList = article.querySelector(".activities-list");
-    (g.activites || []).forEach(a => {
-      if (!a) return;
-      activitiesList.appendChild(createActivityChip(a, g));
-    });
+    const infoAnchor = article.querySelector(".label") || article.querySelector(".tag-line");
+    const activities = getActivityListForFilter(g.activites, activityFilter);
+    article.dataset.activityTypes = activities.map(getActivityType).join(",");
+    if (activities.length) {
+      const frag = document.createElement("div");
+      appendActivitiesBlock(frag, activities);
+      const nodes = Array.from(frag.childNodes);
+      if (infoAnchor) {
+        nodes.forEach(node => article.insertBefore(node, infoAnchor));
+      } else {
+        nodes.forEach(node => article.appendChild(node));
+      }
+    }
 
     groupsContainer.appendChild(article);
   });
@@ -339,9 +462,10 @@ function renderSemaine(p, index, indexProchaine, estPassee) {
     { id: "EAJ3", titre: "Groupe 3 – EAJ3" }
   ];
 
-  ALL_GROUPS.forEach(gMeta => {
-    if (!presentGroups.has(gMeta.id)) {
-      const article = document.createElement("article");
+  if (activityFilter === "all") {
+    ALL_GROUPS.forEach(gMeta => {
+      if (!presentGroups.has(gMeta.id)) {
+        const article = document.createElement("article");
       article.className = "group-card group-card-off";
       article.dataset.group = gMeta.id;
 
@@ -356,12 +480,17 @@ function renderSemaine(p, index, indexProchaine, estPassee) {
         </div>
       `;
 
-      groupsContainer.appendChild(article);
-    }
-  });
+        groupsContainer.appendChild(article);
+      }
+    });
+  }
 
-  section.appendChild(groupsContainer);
-  return section;
+  if (groupsContainer.children.length > 0) {
+    section.appendChild(groupsContainer);
+  }
+
+  const hasVisibleContent = section.querySelector(".week-off, .group-card");
+  return hasVisibleContent ? section : null;
 }
 
 
@@ -409,11 +538,43 @@ function renderToutesLesSemaines() {
   ordered.forEach(item => {
     const estPassee = item.date < today;
     const section = renderSemaine(item.sem, item.idx, indexProchaine, estPassee);
-    container.appendChild(section);
+    if (section) container.appendChild(section);
   });
+
+  if (!container.children.length) {
+    const activityFilter = getFiltreActiviteActuel();
+    const message = activityFilter === "all"
+      ? "Aucune séance à afficher pour le moment."
+      : `Aucune activité trouvée pour le filtre ${getActivityFilterLabel(activityFilter)}.`;
+
+    container.innerHTML = `
+      <section class="week empty-filter-state">
+        <div class="empty-filter-icon">🔎</div>
+        <div class="empty-filter-title">Aucun résultat</div>
+        <p>${message}</p>
+      </section>
+    `;
+  }
 }
 
 /* ---------- Filtre EAJ1 / EAJ2 / EAJ3 ---------- */
+
+function updateWeekVisibilityAfterFilters() {
+  const activityFilter = getFiltreActiviteActuel();
+
+  document.querySelectorAll(".week").forEach(section => {
+    const offBlock = section.querySelector(".week-off");
+    if (offBlock) {
+      section.style.display = activityFilter === "all" ? "" : "none";
+      return;
+    }
+
+    const visibleCards = Array.from(section.querySelectorAll(".group-card"))
+      .some(card => card.style.display !== "none");
+
+    section.style.display = visibleCards ? "" : "none";
+  });
+}
 
 function appliquerFiltre(nomGroupe) {
   const cartes = document.querySelectorAll(".group-card");
@@ -447,6 +608,50 @@ function appliquerFiltre(nomGroupe) {
     const groupe = carte.dataset.group; // "EAJ1" / "EAJ2" / "EAJ3"
     carte.style.display = (groupe === nomGroupe) ? "" : "none";
   });
+
+  updateWeekVisibilityAfterFilters();
+}
+
+function initialiserFiltreActivite() {
+  const select = document.getElementById("activity-filter");
+  if (!select) return;
+
+  const options = [
+    { value: "all", label: "📋 Toutes les activités" },
+    ...Object.entries(TYPES_ACTIVITE).map(([value, cfg]) => ({
+      value,
+      label: `${cfg.emoji} ${cfg.label}`
+    }))
+  ];
+
+  select.innerHTML = options
+    .map(opt => `<option value="${opt.value}">${opt.label}</option>`)
+    .join("");
+
+  let activityFilter = getFiltreActiviteActuel();
+  if (!getActiviteFiltersValides().includes(activityFilter)) activityFilter = "all";
+  select.value = activityFilter;
+
+  select.addEventListener("change", () => {
+    const nextActivityFilter = getActiviteFiltersValides().includes(select.value) ? select.value : "all";
+
+    try {
+      localStorage.setItem("eaj_activity_filter", nextActivityFilter);
+    } catch (e) {}
+
+    let groupFilter = getCurrentGroupFilterFromUiOrStorage();
+
+    // Quand on passe en mode "par activité", on repart de base sur Tous les groupes.
+    if (nextActivityFilter !== "all") {
+      groupFilter = "all";
+      try { localStorage.setItem("eaj_filter", "all"); } catch (e) {}
+      setGroupFilterUi("all");
+    }
+
+    renderToutesLesSemaines();
+    appliquerFiltre(groupFilter);
+    renderAlert(groupFilter);
+  });
 }
 
 function initialiserFiltres() {
@@ -468,20 +673,19 @@ function initialiserFiltres() {
     }
   } catch (e) {}
 
+  // Si un filtre activité est actif, on démarre toujours sur Tous les groupes.
+  if (getFiltreActiviteActuel() !== "all") {
+    filtreActuel = "all";
+    try { localStorage.setItem("eaj_filter", "all"); } catch (e) {}
+  }
+
   // Appliquer au démarrage
   appliquerFiltre(filtreActuel);
   // 🔔 Bannière filtrée (EAJ1/2/3)
   renderAlert(filtreActuel);
 
   // Etat visuel
-  boutons.forEach(btn => {
-    const val = btn.dataset.filter;
-    if (val === filtreActuel) {
-      btn.classList.add("active");
-    } else {
-      btn.classList.remove("active");
-    }
-  });
+  setGroupFilterUi(filtreActuel);
 
   // Clics
   boutons.forEach(btn => {
@@ -1378,6 +1582,7 @@ async function initApp() {
     await window.EAJPlanning.loadPublicPlanning();
   }
 
+  initialiserFiltreActivite();
   renderToutesLesSemaines();
 
   // Toggle bannières d'abord, pour que le premier renderAlert (appelé par initialiserFiltres)
@@ -1404,6 +1609,7 @@ async function initApp() {
 
 initApp().catch((error) => {
   console.error("Erreur d'initialisation du site EAJ :", error);
+  initialiserFiltreActivite();
   renderToutesLesSemaines();
   initialiserBannerToggle();
   initialiserFiltres();

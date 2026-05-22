@@ -747,6 +747,58 @@ function createActivityChip(activity, groupDefaults = {}) {
   `;
 }
 
+
+function getActivityListSafe(list) {
+  return Array.isArray(list) ? list.filter(a => a && String(a.texte || "").trim()) : [];
+}
+
+function hasMeaningfulCommonEntry(entry) {
+  if (!entry) return false;
+  if (getActivityListSafe(entry.activites).length > 0) return true;
+  return Boolean(
+    String(entry.horaire || "").trim() ||
+    String(entry.lieu || "").trim() ||
+    String(entry.tenue || "").trim() ||
+    String(entry.materiel || "").trim() ||
+    String(entry.encadrant || "").trim() ||
+    String(entry.tag || "").trim()
+  );
+}
+
+function hasMeaningfulGroupEntry(group) {
+  if (!group) return false;
+  if (getActivityListSafe(group.activites).length > 0) return true;
+  return Boolean(
+    String(group.horaire || "").trim() ||
+    String(group.lieu || "").trim() ||
+    String(group.tenue || "").trim() ||
+    String(group.materiel || "").trim() ||
+    String(group.encadrant || "").trim() ||
+    String(group.tag || "").trim()
+  );
+}
+
+function addCommonGroupsToSet(entry, set) {
+  if (!entry || !set) return;
+  const groupes = Array.isArray(entry.groupes) ? entry.groupes.filter(Boolean) : [];
+  if (!groupes.length) {
+    ["EAJ1", "EAJ2", "EAJ3"].forEach(id => set.add(id));
+    return;
+  }
+  groupes.forEach(id => set.add(id));
+}
+
+function buildActivitiesHtml(activities, defaults = {}) {
+  const list = getActivityListSafe(activities);
+  if (!list.length) return "";
+  return `
+    <p class="label">Activités :</p>
+    <div class="activities-list">
+      ${list.map(a => createActivityChip(a, defaults)).join("")}
+    </div>
+  `;
+}
+
 // ===============================
 //  Lignes d’activité (formulaire)
 // ===============================
@@ -965,9 +1017,16 @@ function renderWeekPreview(weekObj) {
   }
 
   // Activités communes
-  if (Array.isArray(weekObj.activitesCommunes) && weekObj.activitesCommunes.length > 0) {
-    weekObj.activitesCommunes.forEach(entry => {
-      const groupes = Array.isArray(entry.groupes) ? entry.groupes : [];
+  const commonEntries = Array.isArray(weekObj.activitesCommunes)
+    ? weekObj.activitesCommunes.filter(hasMeaningfulCommonEntry)
+    : [];
+
+  const presentGroups = new Set();
+  commonEntries.forEach(entry => addCommonGroupsToSet(entry, presentGroups));
+
+  if (commonEntries.length > 0) {
+    commonEntries.forEach(entry => {
+      const groupes = Array.isArray(entry.groupes) ? entry.groupes.filter(Boolean) : [];
       const groupesLabel = groupes.length
         ? "Groupes concernés : " + groupes.join(" + ")
         : "Tous les groupes";
@@ -977,17 +1036,7 @@ function renderWeekPreview(weekObj) {
           <div class="week-common-emoji">🤝</div>
           <div class="week-common-title">Activité commune</div>
           <div class="week-common-groups">${groupesLabel}</div>
-
-          <p class="label">Activités :</p>
-          <div class="activities-list">
-      `;
-
-      (entry.activites || []).forEach(a => {
-        html += createActivityChip(a, entry);
-      });
-
-      html += `
-          </div>
+          ${buildActivitiesHtml(entry.activites, entry)}
           ${buildInfoBlock("Horaire :", entry.horaire || "")}
           ${buildInfoBlock("Lieu :", entry.lieu || "")}
           ${buildInfoBlock("Tenue :", entry.tenue || "")}
@@ -1001,33 +1050,20 @@ function renderWeekPreview(weekObj) {
   // Groupes
   html += `<div class="groups">`;
 
-  const presentGroups = new Set((weekObj.groupes || []).map(g => {
-    if (g.titre.includes("EAJ1")) return "EAJ1";
-    if (g.titre.includes("EAJ2")) return "EAJ2";
-    if (g.titre.includes("EAJ3")) return "EAJ3";
-    return "";
-  }).filter(Boolean));
+  const meaningfulGroups = (weekObj.groupes || []).filter(g => g && g.titre && hasMeaningfulGroupEntry(g));
 
-  (weekObj.groupes || []).forEach(g => {
+  meaningfulGroups.forEach(g => {
     const groupId =
       g.titre.includes("EAJ1") ? "EAJ1" :
       g.titre.includes("EAJ2") ? "EAJ2" :
       g.titre.includes("EAJ3") ? "EAJ3" : "";
 
+    if (groupId) presentGroups.add(groupId);
+
     html += `
       <article class="group-card" data-group="${groupId}">
         <div class="group-title">${g.titre}</div>
-
-        <p class="label">Activités :</p>
-        <div class="activities-list">
-    `;
-
-    (g.activites || []).forEach(a => {
-      html += createActivityChip(a, g);
-    });
-
-    html += `
-        </div>
+        ${buildActivitiesHtml(g.activites, g)}
         ${buildInfoBlock("Horaire (général) :", g.horaire || "")}
         ${buildInfoBlock("Lieu (général) :", g.lieu || "")}
         ${buildInfoBlock("Tenue (générale) :", g.tenue || "")}
@@ -1065,7 +1101,7 @@ function renderWeekPreview(weekObj) {
   return html;
 }
 
-function createWeekForm() {
+function createWeekForm(options = {}) {
   weekCounter += 1;
 
   const weekDiv = document.createElement("div");
@@ -1142,9 +1178,10 @@ function createWeekForm() {
   // Affiche la date dans le titre dès la saisie (utile avant même de "Valider").
   dateFrInput.addEventListener("input", updateWeekTitlesWithDates);
 
-  // Réorganisation automatique lorsque la date change
-  dateFrInput.addEventListener("change", reorderWeekFormsByDate);
-  dateFrInput.addEventListener("blur", reorderWeekFormsByDate);
+  // Réorganisation automatique lorsque la date change, sans "perdre" la fiche :
+  // on la remet à sa bonne place puis on la garde visible à l'écran.
+  dateFrInput.addEventListener("change", () => reorderWeekFormsByDate(weekDiv));
+  dateFrInput.addEventListener("blur", () => reorderWeekFormsByDate(weekDiv));
 
 
   // Groupes
@@ -1198,8 +1235,22 @@ function createWeekForm() {
     btnValidate.style.display = "inline-flex";
   });
 
-  weeksContainer.appendChild(weekDiv);
+  if (options.prepend && weeksContainer.firstElementChild) {
+    weeksContainer.insertBefore(weekDiv, weeksContainer.firstElementChild);
+  } else {
+    weeksContainer.appendChild(weekDiv);
+  }
+
   updateWeekTitlesWithDates();
+
+  if (options.focusDate) {
+    setTimeout(() => {
+      focusWeekForm(weekDiv);
+      const input = weekDiv.querySelector(".week-date-fr");
+      if (input) input.focus();
+    }, 60);
+  }
+
   return weekDiv;
 }
 
@@ -1281,6 +1332,15 @@ function getWeekDataFromForm(weekDiv, showAlertOnError = false) {
 
       activites.push(act);
     });
+
+    // Si le groupe est coché mais vide, on ne l'enregistre pas.
+    // Cela évite d'afficher sur le site des cartes "EAJ1/EAJ2/EAJ3" vides avec seulement "Activités :".
+    if (
+      activites.length === 0 &&
+      !lieu && !horaire && !tenue && !materiel && !encadrant && !tag
+    ) {
+      return;
+    }
 
     const groupObj = { titre, activites };
     if (horaire)   groupObj.horaire   = horaire;
@@ -1392,8 +1452,18 @@ function updateWeekTitlesWithDates() {
       : `Semaine n°${i + 1}`;
   });
 }
+function focusWeekForm(weekDiv) {
+  if (!weekDiv) return;
+  weekDiv.scrollIntoView({ behavior: "smooth", block: "center" });
+  weekDiv.classList.add("week-form-highlight");
+  window.clearTimeout(weekDiv.__highlightTimer);
+  weekDiv.__highlightTimer = window.setTimeout(() => {
+    weekDiv.classList.remove("week-form-highlight");
+  }, 1800);
+}
+
 // Réordonne les formulaires "semaine" par date (pour éviter l’effet "ajout en bas").
-function reorderWeekFormsByDate() {
+function reorderWeekFormsByDate(focusForm = null) {
   if (!weeksContainer) return;
   const items = Array.from(document.querySelectorAll(".week-form"));
   const keyed = items.map((el, idx) => {
@@ -1411,6 +1481,10 @@ function reorderWeekFormsByDate() {
 
   // Renumérote + affiche la date (sans toucher aux IDs internes)
   updateWeekTitlesWithDates();
+
+  if (focusForm) {
+    setTimeout(() => focusWeekForm(focusForm), 60);
+  }
 }
 
 
@@ -1900,8 +1974,10 @@ async function initGeneratorApp() {
 
   if (btnAddWeek) {
     btnAddWeek.addEventListener("click", () => {
-      createWeekForm();
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      const weekDiv = createWeekForm({ prepend: true, focusDate: true });
+      updateOutput();
+      showToast("Nouvelle semaine ajoutée en haut du générateur. Renseigne la date : elle sera automatiquement rangée au bon endroit.", "info");
+      return weekDiv;
     });
   }
 

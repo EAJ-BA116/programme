@@ -2,7 +2,7 @@
 -- SETUP SUPABASE — Planning EAJ BA 116
 -- ======================================================
 -- À lancer dans Supabase > SQL Editor.
--- Version 1.4.1 : ajoute les sauvegardes automatiques / restauration.
+-- Version 1.4.3 : reprend les sauvegardes automatiques / restauration.
 -- Ensuite : crée un utilisateur dans Authentication > Users,
 -- puis ajoute son UUID dans public.eaj_admins.
 

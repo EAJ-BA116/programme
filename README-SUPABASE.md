@@ -126,9 +126,9 @@ Cela veut dire que le navigateur ne reçoit pas le vrai fichier JavaScript. À l
 3. Si tu as extrait le zip, évite de publier un dossier imbriqué du type `programme-main/programme-main/...`.
 4. Ouvre directement dans le navigateur : `https://TON-SITE/planning-api.js`. Tu dois voir du code JavaScript, pas une page HTML.
 
-La version 1.4.1 ajoute un chargeur plus robuste qui évite de tenter d'exécuter une page HTML comme du JavaScript.
+La version 1.4.3 ajoute un chargeur plus robuste qui évite de tenter d'exécuter une page HTML comme du JavaScript.
 
-## Version 1.4.1 — correctifs générateur
+## Version 1.4.3 — correctifs générateur
 
 Cette version ajoute :
 
@@ -138,7 +138,11 @@ Cette version ajoute :
 - page de connexion générateur plus propre ;
 - fin des doublons `Tenue / Matériel / Encadrant` dans chaque activité quand ces infos sont déjà en général ;
 - tags longs qui reviennent à la ligne sur mobile ;
-- zone `Maintenance avancée` avec sauvegardes automatiques, remise à zéro et restauration.
+- zone `Maintenance avancée` avec sauvegardes automatiques, remise à zéro et restauration ;
+- masquage des blocs `Activités :` quand aucune activité n’est renseignée ;
+- les groupes vides ne créent plus de cartes vides sur le site public ;
+- ajout d’une nouvelle semaine en haut du générateur, avec focus automatique sur la date ;
+- après saisie d’une date, la fiche est rangée au bon endroit et reste visible.
 
 ### Important pour la maintenance avancée
 
