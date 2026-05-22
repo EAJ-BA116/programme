@@ -2,6 +2,7 @@
 -- SETUP SUPABASE — Planning EAJ BA 116
 -- ======================================================
 -- À lancer dans Supabase > SQL Editor.
+-- Version 1.4.1 : ajoute les sauvegardes automatiques / restauration.
 -- Ensuite : crée un utilisateur dans Authentication > Users,
 -- puis ajoute son UUID dans public.eaj_admins.
 
@@ -84,6 +85,57 @@ on conflict (id) do nothing;
 -- dans Supabase > Database > Replication / Realtime.
 -- Tu peux aussi essayer cette ligne SQL. Si elle indique que la table est déjà ajoutée, ignore l'erreur.
 -- alter publication supabase_realtime add table public.eaj_planning_state;
+
+-- ======================================================
+-- Sauvegardes automatiques du planning
+-- ======================================================
+-- Utilisé par le générateur avant une remise à zéro ou une restauration.
+
+create extension if not exists pgcrypto;
+
+create table if not exists public.eaj_planning_backups (
+  id uuid primary key default gen_random_uuid(),
+  reason text not null default 'Sauvegarde',
+  planning jsonb not null,
+  source_version integer,
+  created_at timestamptz not null default now(),
+  created_by uuid references auth.users(id),
+  created_by_name text
+);
+
+alter table public.eaj_planning_backups enable row level security;
+
+grant select, insert on public.eaj_planning_backups to authenticated;
+
+drop policy if exists "Seuls les admins peuvent lister les sauvegardes" on public.eaj_planning_backups;
+drop policy if exists "Seuls les admins peuvent créer une sauvegarde" on public.eaj_planning_backups;
+
+create policy "Seuls les admins peuvent lister les sauvegardes"
+on public.eaj_planning_backups
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.eaj_admins a
+    where a.user_id = auth.uid()
+      and a.active = true
+  )
+);
+
+create policy "Seuls les admins peuvent créer une sauvegarde"
+on public.eaj_planning_backups
+for insert
+to authenticated
+with check (
+  created_by = auth.uid()
+  and exists (
+    select 1
+    from public.eaj_admins a
+    where a.user_id = auth.uid()
+      and a.active = true
+  )
+);
 
 -- EXEMPLE : ajouter ton compte admin après création dans Authentication > Users.
 -- Remplace l'UUID par celui de ton utilisateur Supabase.

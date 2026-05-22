@@ -13,8 +13,8 @@ const TYPES_ACTIVITE = {
   autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
 };
 
-// v1.4.0 — Meta
-const APP_VERSION = "1.4.0";
+// v1.4.1 — Meta
+const APP_VERSION = "1.4.1";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -146,13 +146,14 @@ function createActivityChip(activity, groupDefaults = {}) {
 
   let html = `${typeCfg.emoji} <strong>${typeCfg.label}</strong> – ${activity.texte}`;
 
-  // 🔎 Infos spécifiques d’activité, avec fallback sur le groupe
+  // 🔎 Infos spécifiques d’activité uniquement.
+  // Les infos générales du groupe sont affichées sous la carte : pas de doublon sur chaque activité.
   const extras = [];
-  const horaire  = activity.horaire  || groupDefaults.horaire  || "";
-  const lieu     = activity.lieu     || groupDefaults.lieu     || "";
-  const tenue    = activity.tenue    || groupDefaults.tenue    || "";
-  const materiel = activity.materiel || groupDefaults.materiel || "";
-  const encadrant= activity.encadrant|| groupDefaults.encadrant|| "";
+  const horaire  = activity.horaire  || "";
+  const lieu     = activity.lieu     || "";
+  const tenue    = activity.tenue    || "";
+  const materiel = activity.materiel || "";
+  const encadrant= activity.encadrant|| "";
 
   if (horaire)  extras.push(`⏰ ${horaire}`);
   if (lieu)     extras.push(`📍 ${lieu}`);
@@ -893,7 +894,7 @@ function closeOverlaysOnScroll(){
   // Modales standard
   closeModalById("about-modal");
   closeModalById("contact-modal");
-  // ⚠️ v1.4.0 : on ne ferme PAS "Échange vêtements" au scroll
+  // ⚠️ v1.4.1 : on ne ferme PAS "Échange vêtements" au scroll
 
   // Modale admin
   const admin = document.getElementById("admin-modal");
@@ -933,7 +934,7 @@ function initialiserCloseOnScroll(){
   let lastY = window.scrollY;
 
   window.addEventListener("scroll", () => {
-    // v1.4.0 : pendant "Échange vêtements", on désactive la fermeture automatique au scroll
+    // v1.4.1 : pendant "Échange vêtements", on désactive la fermeture automatique au scroll
     if(isClothesModalOpen()){
       lastY = window.scrollY;
       return;

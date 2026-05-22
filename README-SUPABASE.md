@@ -126,4 +126,45 @@ Cela veut dire que le navigateur ne reçoit pas le vrai fichier JavaScript. À l
 3. Si tu as extrait le zip, évite de publier un dossier imbriqué du type `programme-main/programme-main/...`.
 4. Ouvre directement dans le navigateur : `https://TON-SITE/planning-api.js`. Tu dois voir du code JavaScript, pas une page HTML.
 
-La version 1.4.0 ajoute un chargeur plus robuste qui évite de tenter d'exécuter une page HTML comme du JavaScript.
+La version 1.4.1 ajoute un chargeur plus robuste qui évite de tenter d'exécuter une page HTML comme du JavaScript.
+
+## Version 1.4.1 — correctifs générateur
+
+Cette version ajoute :
+
+- retour visuel clair après `Enregistrer dans Supabase` ;
+- tri du générateur avec les dates à venir en premier et les dates passées à la fin ;
+- date de dernière mise à jour plus fiable ;
+- page de connexion générateur plus propre ;
+- fin des doublons `Tenue / Matériel / Encadrant` dans chaque activité quand ces infos sont déjà en général ;
+- tags longs qui reviennent à la ligne sur mobile ;
+- zone `Maintenance avancée` avec sauvegardes automatiques, remise à zéro et restauration.
+
+### Important pour la maintenance avancée
+
+La remise à zéro et la restauration utilisent une nouvelle table :
+
+```txt
+eaj_planning_backups
+```
+
+Si ta base Supabase existe déjà, relance simplement `supabase-setup.sql` dans le SQL Editor. Le script utilise `create table if not exists`, donc il ne supprime pas ton planning actuel. Il ajoute seulement la table de sauvegardes et ses règles de sécurité.
+
+### Utiliser la remise à zéro
+
+Dans le générateur :
+
+1. ouvre `Maintenance avancée` ;
+2. tape le code `MAINTENANCE` ;
+3. clique sur `Déverrouiller` ;
+4. pour vider la base, tape exactement `RINCER LA BASE` ;
+5. recopie le code affiché ;
+6. clique sur `Sauvegarder puis rincer la base`.
+
+Avant de vider le planning, le générateur crée automatiquement une sauvegarde dans Supabase.
+
+### Restaurer une sauvegarde
+
+Dans `Maintenance avancée`, clique sur `Actualiser`, choisis une sauvegarde, puis clique sur `Charger la sauvegarde`.
+
+Le générateur crée aussi une sauvegarde de sécurité de l'état actuel avant de restaurer l'ancienne sauvegarde.

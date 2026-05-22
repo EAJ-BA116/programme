@@ -448,10 +448,12 @@ body[data-theme="dark"] .group-title {
 }
 
 .tag-line {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
   margin-top: 0.3rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .tag {
@@ -461,7 +463,10 @@ body[data-theme="dark"] .group-title {
   background: var(--bg-card);
   border: 1px solid var(--border-soft);
   color: var(--blue-soft);
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .week-off {
@@ -1838,4 +1843,17 @@ html, body {
   background: rgba(34, 197, 94, 0.18);
   border: 1px solid rgba(134, 239, 172, 0.6);
   color: #dcfce7;
+}
+
+/* Tags longs : retour à la ligne propre sur mobile */
+@media (max-width: 720px) {
+  .group-card,
+  .week-common-card,
+  .tag-line,
+  .tag {
+    min-width: 0;
+  }
+  .tag {
+    max-width: 100%;
+  }
 }

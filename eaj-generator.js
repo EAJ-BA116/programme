@@ -52,6 +52,20 @@ const btnSave        = document.getElementById("btn-save");
 const btnExport      = document.getElementById("btn-export");
 const output         = document.getElementById("output");
 const saveStatus     = document.getElementById("save-status");
+const saveStatusTop  = document.getElementById("save-status-top");
+
+const maintenanceUnlockInput = document.getElementById("maintenance-unlock-input");
+const btnMaintenanceUnlock   = document.getElementById("btn-maintenance-unlock");
+const maintenanceLocked      = document.getElementById("maintenance-locked");
+const maintenanceTools       = document.getElementById("maintenance-tools");
+const backupSelect           = document.getElementById("backup-select");
+const btnRefreshBackups      = document.getElementById("btn-refresh-backups");
+const btnRestoreBackup       = document.getElementById("btn-restore-backup");
+const btnResetDb             = document.getElementById("btn-reset-db");
+const resetConfirmPhrase     = document.getElementById("reset-confirm-phrase");
+const resetConfirmCode       = document.getElementById("reset-confirm-code");
+const resetCodeDisplay       = document.getElementById("reset-code-display");
+const maintenanceStatus      = document.getElementById("maintenance-status");
 
 const authPanel      = document.getElementById("auth-panel");
 const authForm       = document.getElementById("auth-form");
@@ -78,11 +92,57 @@ function setAuthStatus(message, type = "info") {
   if (type) authStatus.classList.add(type);
 }
 
-function setSaveStatus(message, type = "info") {
-  if (!saveStatus) return;
-  saveStatus.textContent = message || "";
-  saveStatus.classList.remove("ok", "error", "info");
-  if (type) saveStatus.classList.add(type);
+function ensureToastNode() {
+  let node = document.getElementById("generator-toast");
+  if (!node) {
+    node = document.createElement("div");
+    node.id = "generator-toast";
+    node.className = "generator-toast hidden";
+    document.body.appendChild(node);
+  }
+  return node;
+}
+
+let toastTimer = null;
+function showToast(message, type = "info") {
+  const node = ensureToastNode();
+  node.textContent = message || "";
+  node.className = `generator-toast ${type || "info"}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => node.classList.add("hidden"), type === "error" ? 6500 : 4200);
+}
+
+function setSaveStatus(message, type = "info", toast = false) {
+  [saveStatus, saveStatusTop].forEach(node => {
+    if (!node) return;
+    node.textContent = message || "";
+    node.classList.remove("ok", "error", "info");
+    if (type) node.classList.add(type);
+  });
+  if (toast && message) showToast(message, type);
+}
+
+function setMaintenanceStatus(message, type = "info", toast = false) {
+  if (maintenanceStatus) {
+    maintenanceStatus.textContent = message || "";
+    maintenanceStatus.classList.remove("ok", "error", "info");
+    if (type) maintenanceStatus.classList.add(type);
+  }
+  if (toast && message) showToast(message, type);
+}
+
+function setButtonLoading(button, isLoading, loadingLabel) {
+  if (!button) return;
+  if (isLoading) {
+    button.dataset.originalText = button.textContent;
+    button.textContent = loadingLabel || "Traitement...";
+    button.disabled = true;
+    button.classList.add("is-loading");
+  } else {
+    if (button.dataset.originalText) button.textContent = button.dataset.originalText;
+    button.disabled = false;
+    button.classList.remove("is-loading");
+  }
 }
 
 function showGenerator() {
@@ -202,17 +262,18 @@ async function sauvegarderDansSupabase() {
   const { ALERT_BANNER, ALERT_BANNERS, LAST_UPDATE } = getConfigData();
 
   if (!weeks.length) {
-    setSaveStatus("Aucune semaine valide. Ajoute au moins une date JJ/MM/AAAA correcte.", "error");
+    setSaveStatus("Aucune semaine valide. Ajoute au moins une date JJ/MM/AAAA correcte.", "error", true);
     alert("Aucune semaine valide. Ajoute au moins une date JJ/MM/AAAA correcte.");
     return;
   }
 
   if (!window.EAJPlanning || !window.EAJPlanning.isConfigured()) {
-    setSaveStatus("Supabase n'est pas configuré : impossible d'enregistrer en ligne.", "error");
+    setSaveStatus("Supabase n'est pas configuré : impossible d'enregistrer en ligne.", "error", true);
     return;
   }
 
   try {
+    setButtonLoading(btnSave, true, "⏳ Enregistrement...");
     setSaveStatus("Enregistrement dans Supabase...", "info");
     const saved = await window.EAJPlanning.savePlanning({
       semaines: weeks,
@@ -222,11 +283,13 @@ async function sauvegarderDansSupabase() {
       updatedByName: LAST_UPDATE.auteur
     });
 
-    setSaveStatus(`Planning enregistré dans Supabase ✅ Version ${saved.version || "?"}.`, "ok");
+    setSaveStatus(`Planning enregistré dans Supabase ✅ Version ${saved.version || "?"}.`, "ok", true);
     updateOutput();
   } catch (error) {
-    setSaveStatus("Erreur d'enregistrement : " + (error.message || error), "error");
+    setSaveStatus("Erreur d'enregistrement : " + (error.message || error), "error", true);
     alert("Erreur d'enregistrement Supabase : " + (error.message || error));
+  } finally {
+    setButtonLoading(btnSave, false);
   }
 }
 
@@ -298,6 +361,50 @@ function parseDateFr(str) {
 
   const label = `${day} ${MOIS_FR[month - 1]} ${year}`;
   return { iso, label };
+}
+
+function getTodayIso() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function compareIsoForGenerator(aIso, bIso) {
+  const todayIso = getTodayIso();
+  const aValid = typeof aIso === "string" && /^\d{4}-\d{2}-\d{2}$/.test(aIso);
+  const bValid = typeof bIso === "string" && /^\d{4}-\d{2}-\d{2}$/.test(bIso);
+
+  if (aValid && bValid) {
+    const aFuture = aIso >= todayIso;
+    const bFuture = bIso >= todayIso;
+    if (aFuture !== bFuture) return aFuture ? -1 : 1;
+    // À venir : plus proche en premier. Passées : plus récente en premier.
+    return aFuture ? aIso.localeCompare(bIso) : bIso.localeCompare(aIso);
+  }
+  if (aValid && !bValid) return -1;
+  if (!aValid && bValid) return 1;
+  return 0;
+}
+
+function sortWeeksForGenerator(weeks) {
+  return [...(Array.isArray(weeks) ? weeks : [])].sort((a, b) => compareIsoForGenerator(a?.isoDate, b?.isoDate));
+}
+
+function getWeekFormIso(form) {
+  const raw = form.querySelector(".week-date-fr")?.value.trim() || "";
+  const parsed = parseDateFr(raw);
+  return parsed ? parsed.iso : null;
+}
+
+function normaliserDateFrPourInput(value, useTodayIfEmpty = false) {
+  const raw = String(value || "").trim();
+  if (!raw) return useTodayIfEmpty ? getTodayFrDate() : "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return isoToFrDate(raw);
+  const parsed = parseDateFr(raw);
+  return parsed ? isoToFrDate(parsed.iso) : raw;
 }
 
 // ===============================
@@ -613,11 +720,14 @@ function createActivityChip(activity, groupDefaults = {}) {
   const bgColor = baseColor.length === 7 ? baseColor + "25" : baseColor;
 
   const extras = [];
-  const horaire  = activity.horaire  || groupDefaults.horaire  || "";
-  const lieu     = activity.lieu     || groupDefaults.lieu     || "";
-  const tenue    = activity.tenue    || groupDefaults.tenue    || "";
-  const materiel = activity.materiel || groupDefaults.materiel || "";
-  const encadrant= activity.encadrant|| groupDefaults.encadrant|| "";
+  // Les champs généraux du groupe sont affichés sous la carte.
+  // Ici, on affiche uniquement les infos vraiment spécifiques à CETTE activité,
+  // pour éviter les doublons du type "Tenue de vol" répété sur chaque activité.
+  const horaire  = activity.horaire  || "";
+  const lieu     = activity.lieu     || "";
+  const tenue    = activity.tenue    || "";
+  const materiel = activity.materiel || "";
+  const encadrant= activity.encadrant|| "";
 
   if (horaire)  extras.push(`⏰ ${horaire}`);
   if (lieu)     extras.push(`📍 ${lieu}`);
@@ -1261,9 +1371,8 @@ function getWeeksData() {
     if (week) weeks.push(week);
   });
 
-  // tri par date croissante
-  weeks.sort((a, b) => (a.isoDate < b.isoDate ? -1 : a.isoDate > b.isoDate ? 1 : 0));
-  return weeks;
+  // Dans le générateur : dates à venir d'abord, puis dates passées à la fin.
+  return sortWeeksForGenerator(weeks);
 }
 
 // Met à jour les titres des semaines en incluant la date (si disponible).
@@ -1294,10 +1403,8 @@ function reorderWeekFormsByDate() {
   });
 
   keyed.sort((a, b) => {
-    if (a.iso && b.iso) return a.iso.localeCompare(b.iso);
-    if (a.iso && !b.iso) return -1;
-    if (!a.iso && b.iso) return 1;
-    return a.idx - b.idx;
+    const byDate = compareIsoForGenerator(a.iso, b.iso);
+    return byDate || (a.idx - b.idx);
   });
 
   keyed.forEach(k => weeksContainer.appendChild(k.el));
@@ -1316,11 +1423,9 @@ function getConfigData() {
   const auteur      = document.getElementById("lastupdate-auteur")?.value.trim() || "Yoann";
   const dateInput   = document.getElementById("lastupdate-date");
 
-  // On lit la date affichée dans le champ ; si vide, on met la date du jour
-  let dateTexte = dateInput?.value.trim();
-  if (!dateTexte) {
-    dateTexte = getTodayFrDate();
-  }
+  // On lit la date affichée dans le champ ; si vide, on met la date du jour.
+  let dateTexte = normaliserDateFrPourInput(dateInput?.value || "", true);
+  if (dateInput && dateInput.value !== dateTexte) dateInput.value = dateTexte;
 
   // Compat : on garde un "ALERT_BANNER" simple (ancien format)
   // en concaténant les messages (utile si un ancien script ignore ALERT_BANNERS).
@@ -1396,14 +1501,12 @@ function isoToFrDate(iso) {
 
 function chargerPlanningExistant(sourceData) {
   const planningData = sourceData || getPlanningDataForGenerator();
-  const semainesSource = Array.isArray(planningData.semaines) ? planningData.semaines : [];
+  let semainesSource = Array.isArray(planningData.semaines) ? planningData.semaines : [];
   const alertBannersSource = Array.isArray(planningData.alertBanners) ? planningData.alertBanners : [];
   const alertBannerSource = planningData.alertBanner || { actif: false, texte: "" };
   const lastUpdateSource = planningData.lastUpdate || { auteur: "", dateTexte: "" };
 
-  if (!Array.isArray(semainesSource) || semainesSource.length === 0) {
-    return false;
-  }
+  if (!Array.isArray(semainesSource)) semainesSource = [];
 
   // Config générale : bannières + dernière MAJ
   const bannerActifInput   = document.getElementById("banner-actif");
@@ -1432,7 +1535,7 @@ function chargerPlanningExistant(sourceData) {
 
   if (lastUpdateSource) {
     if (lastUpdateAuteur && lastUpdateSource.auteur)  lastUpdateAuteur.value  = lastUpdateSource.auteur;
-    if (lastUpdateDate && lastUpdateSource.dateTexte) lastUpdateDate.value     = lastUpdateSource.dateTexte;
+    if (lastUpdateDate) lastUpdateDate.value = normaliserDateFrPourInput(lastUpdateSource.dateTexte || "", true);
   } else if (lastUpdateDate) {
     lastUpdateDate.value = getTodayFrDate();
   }
@@ -1441,12 +1544,13 @@ function chargerPlanningExistant(sourceData) {
   weeksContainer.innerHTML = "";
   weekCounter = 0;
 
-  // On trie les semaines par date ISO croissante
-  const weeksSorted = [...semainesSource].sort((a, b) => {
-    if (a.isoDate < b.isoDate) return -1;
-    if (a.isoDate > b.isoDate) return 1;
-    return 0;
-  });
+  if (semainesSource.length === 0) {
+    updateOutput();
+    return false;
+  }
+
+  // On trie comme le site : prochaines dates d'abord, passées à la fin.
+  const weeksSorted = sortWeeksForGenerator(semainesSource);
 
   weeksSorted.forEach(weekObj => {
     const weekDiv = createWeekForm();
@@ -1606,6 +1710,174 @@ function chargerPlanningExistant(sourceData) {
 }
 
 // ===============================
+//  Maintenance : sauvegardes / remise à zéro
+// ===============================
+
+function getGeneratorAdminName() {
+  const auteur = document.getElementById("lastupdate-auteur")?.value.trim();
+  const email = authEmail?.value?.trim();
+  return auteur || email || "Admin EAJ";
+}
+
+function refreshResetCode() {
+  if (!resetCodeDisplay) return "";
+  const code = String(Math.floor(1000 + Math.random() * 9000));
+  resetCodeDisplay.textContent = code;
+  resetCodeDisplay.dataset.code = code;
+  return code;
+}
+
+function unlockMaintenance() {
+  const value = (maintenanceUnlockInput?.value || "").trim().toUpperCase();
+  if (value !== "MAINTENANCE") {
+    setMaintenanceStatus("Code maintenance incorrect.", "error", true);
+    return;
+  }
+  if (maintenanceLocked) maintenanceLocked.classList.add("hidden");
+  if (maintenanceTools) maintenanceTools.classList.remove("hidden");
+  refreshResetCode();
+  setMaintenanceStatus("Zone maintenance déverrouillée. Prudence : les actions ici modifient directement Supabase.", "info");
+  chargerListeSauvegardes();
+}
+
+async function chargerListeSauvegardes() {
+  if (!backupSelect) return;
+  if (!window.EAJPlanning || !window.EAJPlanning.isConfigured()) {
+    setMaintenanceStatus("Supabase n'est pas configuré : sauvegardes indisponibles.", "error", true);
+    return;
+  }
+
+  try {
+    setButtonLoading(btnRefreshBackups, true, "⏳ Chargement...");
+    setMaintenanceStatus("Chargement des sauvegardes...", "info");
+    const backups = await window.EAJPlanning.listBackups(30);
+    backupSelect.innerHTML = "";
+
+    if (!backups.length) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "Aucune sauvegarde disponible";
+      backupSelect.appendChild(opt);
+      setMaintenanceStatus("Aucune sauvegarde trouvée pour l'instant.", "info");
+      return;
+    }
+
+    backups.forEach(b => {
+      const opt = document.createElement("option");
+      opt.value = b.id;
+      const date = b.created_at ? new Date(b.created_at).toLocaleString("fr-FR") : "date inconnue";
+      const version = b.source_version ? `v${b.source_version}` : "version ?";
+      const reason = b.reason || "Sauvegarde";
+      opt.textContent = `${date} — ${version} — ${reason}`;
+      backupSelect.appendChild(opt);
+    });
+
+    setMaintenanceStatus(`${backups.length} sauvegarde(s) chargée(s).`, "ok");
+  } catch (error) {
+    setMaintenanceStatus("Impossible de charger les sauvegardes : " + (error.message || error), "error", true);
+  } finally {
+    setButtonLoading(btnRefreshBackups, false);
+  }
+}
+
+async function remettreBaseAZeroAvecSauvegarde() {
+  const phrase = (resetConfirmPhrase?.value || "").trim().toUpperCase();
+  const code = (resetConfirmCode?.value || "").trim();
+  const expectedCode = resetCodeDisplay?.dataset.code || "";
+
+  if (phrase !== "RINCER LA BASE" || !expectedCode || code !== expectedCode) {
+    setMaintenanceStatus("Sécurité refusée : tape exactement RINCER LA BASE et recopie le code affiché.", "error", true);
+    refreshResetCode();
+    return;
+  }
+
+  const ok = confirm("Dernière confirmation : créer une sauvegarde automatique puis vider le planning Supabase ?");
+  if (!ok) {
+    refreshResetCode();
+    return;
+  }
+
+  try {
+    setButtonLoading(btnResetDb, true, "⏳ Remise à zéro...");
+    setMaintenanceStatus("Sauvegarde automatique en cours, puis remise à zéro...", "info", true);
+
+    const saved = await window.EAJPlanning.resetPlanningWithBackup({
+      updatedByName: getGeneratorAdminName()
+    });
+
+    setSaveStatus(`Base remise à zéro ✅ Version ${saved.version || "?"}. Une sauvegarde automatique a été créée.`, "ok", true);
+    setMaintenanceStatus("Remise à zéro terminée. Tu peux maintenant créer le nouveau programme.", "ok");
+
+    const okLoad = chargerPlanningExistant(saved);
+    if (!okLoad) {
+      createWeekForm();
+      updateOutput();
+    }
+
+    if (resetConfirmPhrase) resetConfirmPhrase.value = "";
+    if (resetConfirmCode) resetConfirmCode.value = "";
+    refreshResetCode();
+    await chargerListeSauvegardes();
+  } catch (error) {
+    setMaintenanceStatus("Erreur pendant la remise à zéro : " + (error.message || error), "error", true);
+    alert("Erreur pendant la remise à zéro : " + (error.message || error));
+  } finally {
+    setButtonLoading(btnResetDb, false);
+  }
+}
+
+async function restaurerSauvegardeSelectionnee() {
+  const backupId = backupSelect?.value || "";
+  if (!backupId) {
+    setMaintenanceStatus("Choisis une sauvegarde à restaurer.", "error", true);
+    return;
+  }
+
+  const ok = confirm("Restaurer cette sauvegarde ? Une sauvegarde automatique de l'état actuel sera créée avant restauration.");
+  if (!ok) return;
+
+  try {
+    setButtonLoading(btnRestoreBackup, true, "⏳ Restauration...");
+    setMaintenanceStatus("Sauvegarde de sécurité puis restauration en cours...", "info", true);
+
+    const restored = await window.EAJPlanning.restoreBackup(backupId, {
+      updatedByName: getGeneratorAdminName()
+    });
+
+    setSaveStatus(`Sauvegarde restaurée ✅ Version ${restored.version || "?"}.`, "ok", true);
+    setMaintenanceStatus("Sauvegarde restaurée dans Supabase.", "ok");
+
+    const okLoad = chargerPlanningExistant(restored);
+    if (!okLoad) {
+      createWeekForm();
+      updateOutput();
+    }
+
+    await chargerListeSauvegardes();
+  } catch (error) {
+    setMaintenanceStatus("Erreur de restauration : " + (error.message || error), "error", true);
+    alert("Erreur de restauration : " + (error.message || error));
+  } finally {
+    setButtonLoading(btnRestoreBackup, false);
+  }
+}
+
+function initialiserMaintenance() {
+  if (btnMaintenanceUnlock) btnMaintenanceUnlock.addEventListener("click", unlockMaintenance);
+  if (maintenanceUnlockInput) {
+    maintenanceUnlockInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        unlockMaintenance();
+      }
+    });
+  }
+  if (btnRefreshBackups) btnRefreshBackups.addEventListener("click", chargerListeSauvegardes);
+  if (btnResetDb) btnResetDb.addEventListener("click", remettreBaseAZeroAvecSauvegarde);
+  if (btnRestoreBackup) btnRestoreBackup.addEventListener("click", restaurerSauvegardeSelectionnee);
+}
+
+// ===============================
 //  Initialisation globale
 // ===============================
 
@@ -1613,13 +1885,16 @@ async function initGeneratorApp() {
   const lastUpdateInput = document.getElementById("lastupdate-date");
   const bannerActifInput = document.getElementById("banner-actif");
 
+  initialiserMaintenance();
+
   // Permet de taper la date facilement (ex: 23012026 -> 23/01/2026)
   if (lastUpdateInput) {
-    lastUpdateInput.addEventListener("input", () => {
-      const formatted = formatDateFrValue(lastUpdateInput.value || "");
-      if (formatted !== lastUpdateInput.value) {
-        lastUpdateInput.value = formatted;
-      }
+    attachDateFrBehavior(lastUpdateInput);
+    lastUpdateInput.addEventListener("input", updateOutput);
+    lastUpdateInput.addEventListener("change", updateOutput);
+    lastUpdateInput.addEventListener("blur", () => {
+      lastUpdateInput.value = normaliserDateFrPourInput(lastUpdateInput.value, true);
+      updateOutput();
     });
   }
 
@@ -1671,6 +1946,9 @@ async function initGeneratorApp() {
 
   const planningData = await chargerPlanningInitial();
   const ok = chargerPlanningExistant(planningData);
+  if (lastUpdateInput && !lastUpdateInput.value.trim()) {
+    lastUpdateInput.value = getTodayFrDate();
+  }
 
   // Trie visuellement les semaines chargées
   reorderWeekFormsByDate();

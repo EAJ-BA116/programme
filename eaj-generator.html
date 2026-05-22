@@ -578,9 +578,221 @@
       font-weight: 700;
     }
 
-    .auth-status.ok, .save-status.ok { color: #86efac; }
-    .auth-status.error, .save-status.error { color: #fca5a5; }
-    .auth-status.info, .save-status.info { color: #bfdbfe; }
+    .auth-status.ok, .save-status.ok, .maintenance-status.ok { color: #86efac; }
+    .auth-status.error, .save-status.error, .maintenance-status.error { color: #fca5a5; }
+    .auth-status.info, .save-status.info, .maintenance-status.info { color: #bfdbfe; }
+
+    .generator-auth-panel {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .generator-auth-panel::before {
+      content: "";
+      position: absolute;
+      inset: -80px -120px auto auto;
+      width: 260px;
+      height: 260px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(56,189,248,.28), rgba(37,99,235,.06) 58%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .auth-hero {
+      position: relative;
+      z-index: 1;
+      padding: .35rem;
+    }
+
+    .auth-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .22rem .65rem;
+      border-radius: 999px;
+      border: 1px solid rgba(147,197,253,.35);
+      background: rgba(59,130,246,.12);
+      color: #bfdbfe;
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-bottom: .75rem;
+    }
+
+    .auth-hero h1 {
+      color: #e0f2fe;
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      line-height: 1.05;
+      margin-bottom: .55rem;
+    }
+
+    .auth-hero p {
+      color: #cbd5e1;
+      max-width: 44rem;
+    }
+
+    .auth-points {
+      display: grid;
+      gap: .45rem;
+      margin: .9rem 0 0;
+      padding: 0;
+      list-style: none;
+      color: #dbeafe;
+      font-size: .88rem;
+    }
+
+    .auth-points li {
+      display: flex;
+      gap: .45rem;
+      align-items: flex-start;
+    }
+
+    .auth-card {
+      position: relative;
+      z-index: 1;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.74);
+      padding: 1rem;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .auth-card-title {
+      font-weight: 900;
+      color: #f8fafc;
+      margin-bottom: .2rem;
+    }
+
+    .auth-card-subtitle {
+      color: #94a3b8;
+      font-size: .82rem;
+      margin-bottom: .65rem;
+    }
+
+    .auth-form input {
+      min-height: 42px;
+      border-radius: 12px;
+    }
+
+    .top-save-status {
+      min-width: min(360px, 100%);
+      margin: 0;
+      align-self: center;
+      font-size: .82rem;
+    }
+
+    .action-pack {
+      display:flex;
+      gap:0.5rem;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+
+    .btn.is-loading {
+      opacity: .75;
+      pointer-events: none;
+    }
+
+    .generator-toast {
+      position: fixed;
+      right: max(1rem, env(safe-area-inset-right));
+      bottom: max(1rem, env(safe-area-inset-bottom));
+      z-index: 100;
+      max-width: min(420px, calc(100vw - 2rem));
+      padding: .75rem .95rem;
+      border-radius: 16px;
+      border: 1px solid rgba(148,163,184,.35);
+      background: rgba(15, 23, 42, .94);
+      color: #e2e8f0;
+      box-shadow: 0 18px 45px rgba(0,0,0,.35);
+      font-weight: 800;
+      animation: toast-pop .18s ease-out;
+    }
+
+    .generator-toast.ok { border-color: rgba(34,197,94,.45); color: #bbf7d0; }
+    .generator-toast.error { border-color: rgba(248,113,113,.55); color: #fecaca; }
+    .generator-toast.info { border-color: rgba(96,165,250,.45); color: #bfdbfe; }
+
+    @keyframes toast-pop {
+      from { transform: translateY(8px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .maintenance-panel {
+      margin-top: 1rem;
+      border: 1px dashed rgba(248,113,113,.38);
+      border-radius: 16px;
+      background: rgba(127, 29, 29, .08);
+      overflow: hidden;
+    }
+
+    .maintenance-panel summary {
+      cursor: pointer;
+      padding: .85rem 1rem;
+      font-weight: 900;
+      color: #fecaca;
+      user-select: none;
+    }
+
+    .maintenance-body {
+      padding: 0 1rem 1rem;
+      display: grid;
+      gap: .8rem;
+    }
+
+    .maintenance-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: .7rem;
+      align-items: end;
+    }
+
+    .danger-mini {
+      font-size: .78rem;
+      color: #fecaca;
+      opacity: .95;
+    }
+
+    .danger-code {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 72px;
+      padding: .2rem .5rem;
+      border-radius: 10px;
+      background: rgba(248,113,113,.14);
+      border: 1px solid rgba(248,113,113,.35);
+      color: #fee2e2;
+      font-weight: 900;
+      letter-spacing: .08em;
+    }
+
+    .maintenance-status {
+      font-weight: 800;
+      min-height: 1.2rem;
+    }
+
+    @media (max-width: 760px) {
+      .generator-auth-panel {
+        grid-template-columns: 1fr;
+      }
+      .action-pack {
+        justify-content: stretch;
+      }
+      .action-pack .btn {
+        flex: 1 1 auto;
+        justify-content: center;
+      }
+      .top-save-status {
+        flex-basis: 100%;
+      }
+    }
 
 
     .hidden {
@@ -609,23 +821,36 @@
   </section>
 
   <section id="auth-panel" class="generator-auth-panel">
-    <h1>Connexion administrateur</h1>
-    <p>Le site public reste accessible sans compte. Cette connexion sert uniquement à modifier le planning.</p>
+    <div class="auth-hero">
+      <div class="auth-badge">🔐 accès interne</div>
+      <h1>Connexion générateur</h1>
+      <p>Le planning public reste visible sans compte. Cette page sert uniquement à modifier les données Supabase.</p>
+      <ul class="auth-points">
+        <li><span>✅</span><span>Lecture publique pour les familles et les jeunes.</span></li>
+        <li><span>🛡️</span><span>Modification réservée aux comptes autorisés dans Supabase.</span></li>
+        <li><span>⚡</span><span>Les changements sont visibles presque immédiatement sur le site.</span></li>
+      </ul>
+    </div>
 
-    <form id="auth-form" class="auth-form">
-      <label>
-        Email Supabase
-        <input type="email" id="auth-email" autocomplete="username" placeholder="prenom.nom@email.fr" required />
-      </label>
-      <label>
-        Mot de passe
-        <input type="password" id="auth-password" autocomplete="current-password" placeholder="Mot de passe" required />
-      </label>
-      <button class="btn btn-primary" type="submit">🔐 Se connecter</button>
-    </form>
+    <div class="auth-card">
+      <div class="auth-card-title">Compte administrateur</div>
+      <div class="auth-card-subtitle">Utilise l’email et le mot de passe créés dans Supabase Auth.</div>
 
-    <div id="auth-status" class="auth-status" aria-live="polite"></div>
-    <button id="auth-logout" class="btn btn-small hidden" type="button">Se déconnecter</button>
+      <form id="auth-form" class="auth-form">
+        <label>
+          Email Supabase
+          <input type="email" id="auth-email" autocomplete="username" placeholder="prenom.nom@email.fr" required />
+        </label>
+        <label>
+          Mot de passe
+          <input type="password" id="auth-password" autocomplete="current-password" placeholder="Mot de passe" required />
+        </label>
+        <button class="btn btn-primary" type="submit">🔐 Se connecter</button>
+      </form>
+
+      <div id="auth-status" class="auth-status" aria-live="polite"></div>
+      <button id="auth-logout" class="btn btn-small hidden" type="button">Se déconnecter</button>
+    </div>
   </section>
 
 
@@ -653,7 +878,7 @@
         </div>
        <div class="field">
   <label>Dernière mise à jour – Date</label>
-  <input type="text" id="lastupdate-date" placeholder="JJ/MM/AAAA" maxlength="10" />
+  <input type="text" id="lastupdate-date" placeholder="JJ/MM/AAAA" maxlength="10" inputmode="numeric" autocomplete="off" />
   <span class="note">Saisis une date (ou laisse vide = date du jour).</span>
 </div>
 
@@ -662,7 +887,8 @@
 
     <div class="bar-actions">
       <button class="btn btn-primary" type="button" id="btn-add-week">➕ Ajouter une semaine</button>
-      <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+      <div class="action-pack">
+        <p id="save-status-top" class="save-status top-save-status" aria-live="polite"></p>
         <button class="btn" type="button" id="btn-generate">🧩 Générer le code JS</button>
         <button class="btn btn-primary" type="button" id="btn-save">💾 Enregistrer dans Supabase</button>
         <button class="btn" type="button" id="btn-export">⬇️ Export planning.js secours</button>
@@ -683,6 +909,51 @@
       </p>
       <p id="save-status" class="save-status" aria-live="polite"></p>
     </div>
+
+    <details class="maintenance-panel">
+      <summary>Maintenance avancée</summary>
+      <div class="maintenance-body">
+        <p class="danger-mini">
+          Zone volontairement cachée : ici tu peux créer/charger des sauvegardes et remettre la base à zéro pour préparer une nouvelle année.
+          L’accès au générateur + les règles Supabase restent la vraie sécurité ; cette zone ajoute une confirmation anti-bêtise.
+        </p>
+
+        <div id="maintenance-locked" class="maintenance-grid">
+          <div class="field">
+            <label>Code d’accès maintenance</label>
+            <input type="password" id="maintenance-unlock-input" placeholder="Indice : MAINTENANCE" autocomplete="off" />
+          </div>
+          <button class="btn btn-secondary" type="button" id="btn-maintenance-unlock">Déverrouiller</button>
+        </div>
+
+        <div id="maintenance-tools" class="hidden">
+          <div class="maintenance-grid">
+            <div class="field">
+              <label>Sauvegardes disponibles</label>
+              <select id="backup-select"></select>
+            </div>
+            <button class="btn btn-secondary" type="button" id="btn-refresh-backups">🔄 Actualiser</button>
+            <button class="btn btn-primary" type="button" id="btn-restore-backup">↩️ Charger la sauvegarde</button>
+          </div>
+
+          <hr style="border:0;border-top:1px dashed rgba(248,113,113,.35);margin:.9rem 0;">
+
+          <div class="maintenance-grid">
+            <div class="field">
+              <label>Confirmation remise à zéro</label>
+              <input type="text" id="reset-confirm-phrase" placeholder="Tape : RINCER LA BASE" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label>Code affiché : <span id="reset-code-display" class="danger-code">----</span></label>
+              <input type="text" id="reset-confirm-code" placeholder="Recopie le code" inputmode="numeric" autocomplete="off" />
+            </div>
+            <button class="btn btn-danger" type="button" id="btn-reset-db">🧨 Sauvegarder puis rincer la base</button>
+          </div>
+        </div>
+
+        <p id="maintenance-status" class="maintenance-status" aria-live="polite"></p>
+      </div>
+    </details>
   </main>
 
   <footer>
@@ -710,7 +981,7 @@
 
   <!-- Scripts : Supabase + données de secours + générateur -->
 <script>
-  window.EAJ_BUILD = "1.4.0";
+  window.EAJ_BUILD = "1.4.1";
   (function () {
     const bust = Date.now();
 
@@ -772,11 +1043,11 @@
     }
 
     loadClassic("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", function () {
-      loadSafe(`./supabase-config.js?v=1.4.0-${bust}`, function () {
-        loadSafe(`./planning.js?v=1.4.0-${bust}`, function () {
-          loadSafe(`./planning-api.js?v=1.4.0-${bust}`, function (apiOk) {
+      loadSafe(`./supabase-config.js?v=1.4.1-${bust}`, function () {
+        loadSafe(`./planning.js?v=1.4.1-${bust}`, function () {
+          loadSafe(`./planning-api.js?v=1.4.1-${bust}`, function (apiOk) {
             if (!apiOk) return;
-            loadSafe(`./eaj-generator.js?v=1.4.0-${bust}`);
+            loadSafe(`./eaj-generator.js?v=1.4.1-${bust}`);
           });
         }, { optional: true });
       });

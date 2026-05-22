@@ -6,6 +6,7 @@
 
 (function () {
   const DEFAULT_TABLE = "eaj_planning_state";
+  const DEFAULT_BACKUPS_TABLE = "eaj_planning_backups";
   const DEFAULT_ROW_ID = "main";
 
   const state = {
@@ -71,6 +72,10 @@
 
   function getTableName() {
     return getConfig().table || DEFAULT_TABLE;
+  }
+
+  function getBackupTableName() {
+    return getConfig().backupsTable || DEFAULT_BACKUPS_TABLE;
   }
 
   function getRowId() {
@@ -266,6 +271,145 @@
     return applyData(normalizeRow(data[0]));
   }
 
+
+  function getTodayFrDate() {
+    const d = new Date();
+    const jj = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    return `${jj}/${mm}/${yyyy}`;
+  }
+
+  function toBackupSnapshot(data) {
+    const normalized = normalizePlanningData(data);
+    return {
+      semaines: clone(normalized.semaines || []),
+      alertBanners: clone(normalized.alertBanners || []),
+      alertBanner: clone(normalized.alertBanner || { actif: false, texte: "" }),
+      lastUpdate: clone(normalized.lastUpdate || { auteur: "", dateTexte: "" }),
+      version: normalized.version,
+      updatedAt: normalized.updatedAt,
+      updatedByName: normalized.updatedByName,
+      source: normalized.source || "supabase"
+    };
+  }
+
+  async function listBackups(limit = 30) {
+    const client = getClient();
+    const { data, error } = await client
+      .from(getBackupTableName())
+      .select("id, reason, created_at, created_by_name, source_version")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function createBackup(reason = "Sauvegarde automatique") {
+    const client = getClient();
+    const session = await getSession();
+    if (!session || !session.user) {
+      throw new Error("Connexion expirée. Reconnecte-toi puis réessaie.");
+    }
+
+    // Sauvegarde l'état réel de la base, pas seulement l'état local de l'écran.
+    const fresh = await fetchPlanningFromSupabase();
+    const snapshot = toBackupSnapshot(fresh);
+    const createdByName = snapshot.lastUpdate?.auteur || session.user.email || "Admin";
+
+    const { data, error } = await client
+      .from(getBackupTableName())
+      .insert({
+        reason,
+        planning: snapshot,
+        source_version: snapshot.version,
+        created_by: session.user.id,
+        created_by_name: createdByName
+      })
+      .select("*")
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async function getBackup(backupId) {
+    const client = getClient();
+    const { data, error } = await client
+      .from(getBackupTableName())
+      .select("*")
+      .eq("id", backupId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Sauvegarde introuvable.");
+    return data;
+  }
+
+  async function replacePlanningSnapshot(snapshot, options = {}) {
+    const client = getClient();
+    const session = await getSession();
+    if (!session || !session.user) {
+      throw new Error("Connexion expirée. Reconnecte-toi puis réessaie.");
+    }
+
+    const current = await fetchPlanningFromSupabase();
+    const currentVersion = typeof current.version === "number" ? current.version : 1;
+    const nextVersion = currentVersion + 1;
+    const normalized = normalizePlanningData(snapshot || {});
+    const updatedByName = options.updatedByName || normalized.lastUpdate?.auteur || session.user.email || "Admin";
+
+    const updatePayload = {
+      semaines: normalized.semaines || [],
+      alert_banners: normalized.alertBanners || [],
+      alert_banner: normalized.alertBanner || { actif: false, texte: "" },
+      last_update: normalized.lastUpdate || { auteur: updatedByName, dateTexte: getTodayFrDate() },
+      version: nextVersion,
+      updated_by: session.user.id,
+      updated_by_name: updatedByName,
+      updated_at: new Date().toISOString()
+    };
+
+    if (!updatePayload.last_update.dateTexte) {
+      updatePayload.last_update.dateTexte = getTodayFrDate();
+    }
+    if (!updatePayload.last_update.auteur) {
+      updatePayload.last_update.auteur = updatedByName;
+    }
+
+    const { data, error } = await client
+      .from(getTableName())
+      .update(updatePayload)
+      .eq("id", getRowId())
+      .eq("version", currentVersion)
+      .select("*");
+
+    if (error) throw error;
+    if (!Array.isArray(data) || data.length === 0) {
+      throw new Error("Conflit : le planning a changé pendant l'opération. Recharge puis réessaie.");
+    }
+
+    return applyData(normalizeRow(data[0]));
+  }
+
+  async function resetPlanningWithBackup(options = {}) {
+    await createBackup("Sauvegarde automatique avant remise à zéro");
+    const updatedByName = options.updatedByName || "Admin EAJ";
+    return replacePlanningSnapshot({
+      semaines: [],
+      alertBanners: [],
+      alertBanner: { actif: false, texte: "" },
+      lastUpdate: { auteur: updatedByName, dateTexte: getTodayFrDate() }
+    }, { updatedByName });
+  }
+
+  async function restoreBackup(backupId, options = {}) {
+    const backup = await getBackup(backupId);
+    await createBackup("Sauvegarde automatique avant restauration");
+    return replacePlanningSnapshot(backup.planning || {}, options);
+  }
+
   function subscribePlanningUpdates(callback) {
     const cfg = getConfig();
     if (!isConfigured() || cfg.realtime === false) return null;
@@ -315,6 +459,10 @@
     signOut,
     getAdminStatus,
     savePlanning,
+    listBackups,
+    createBackup,
+    resetPlanningWithBackup,
+    restoreBackup,
     applyData,
     normalizePlanningData
   };
