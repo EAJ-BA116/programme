@@ -13,12 +13,84 @@ const TYPES_ACTIVITE = {
   autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
 };
 
-// v1.3.1 — Meta
-const APP_VERSION = "1.3.1";
+// v1.4.0 — Meta
+const APP_VERSION = "1.4.0";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
 const WHATSAPP_PHONE = "33614732790";
+
+/* ---------- Source planning Supabase / fallback ---------- */
+
+function getPlanningData() {
+  if (window.EAJPlanning && typeof window.EAJPlanning.getCurrentData === "function") {
+    return window.EAJPlanning.getCurrentData();
+  }
+
+  let semaines = [];
+  let alertBanners = [];
+  let alertBanner = { actif: false, texte: "" };
+  let lastUpdate = { auteur: "", dateTexte: "" };
+
+  try { if (typeof SEMAINES !== "undefined" && Array.isArray(SEMAINES)) semaines = SEMAINES; } catch (e) {}
+  try { if (typeof ALERT_BANNERS !== "undefined" && Array.isArray(ALERT_BANNERS)) alertBanners = ALERT_BANNERS; } catch (e) {}
+  try { if (typeof ALERT_BANNER !== "undefined" && ALERT_BANNER) alertBanner = ALERT_BANNER; } catch (e) {}
+  try { if (typeof LAST_UPDATE !== "undefined" && LAST_UPDATE) lastUpdate = LAST_UPDATE; } catch (e) {}
+
+  return { semaines, alertBanners, alertBanner, lastUpdate };
+}
+
+function getSemainesPlanning() {
+  const data = getPlanningData();
+  return Array.isArray(data.semaines) ? data.semaines : [];
+}
+
+function getLastUpdatePlanning() {
+  return getPlanningData().lastUpdate || { auteur: "", dateTexte: "" };
+}
+
+function getAlertBannersPlanning() {
+  const data = getPlanningData();
+  return Array.isArray(data.alertBanners) ? data.alertBanners : [];
+}
+
+function getAlertBannerPlanning() {
+  return getPlanningData().alertBanner || { actif: false, texte: "" };
+}
+
+function getFiltreActuel() {
+  const filtersValides = ["all", "EAJ1", "EAJ2", "EAJ3"];
+  try {
+    const stored = localStorage.getItem("eaj_filter");
+    if (stored && filtersValides.includes(stored)) return stored;
+  } catch (e) {}
+  return "all";
+}
+
+function rafraichirPlanningAffiche() {
+  const filtre = getFiltreActuel();
+  renderToutesLesSemaines();
+  appliquerFiltre(filtre);
+  renderAlert(filtre);
+  renderLastUpdate();
+}
+
+function initialiserRealtimePlanning() {
+  if (!window.EAJPlanning || typeof window.EAJPlanning.subscribePlanningUpdates !== "function") return;
+
+  window.EAJPlanning.subscribePlanningUpdates(() => {
+    rafraichirPlanningAffiche();
+
+    const banner = document.getElementById("alert-banner");
+    if (banner) {
+      banner.insertAdjacentHTML("beforeend", `<div class="live-update-toast">Planning mis à jour automatiquement ✅</div>`);
+      setTimeout(() => {
+        const toast = banner.querySelector(".live-update-toast");
+        if (toast) toast.remove();
+      }, 3500);
+    }
+  });
+}
 
 
 /* ---------- Petits helpers HTML ---------- */
@@ -108,7 +180,7 @@ function trouverIndiceProchaineSession() {
   let bestIndex = -1;
   let bestTime = Infinity;
 
-  SEMAINES.forEach((sem, idx) => {
+  getSemainesPlanning().forEach((sem, idx) => {
     if (sem.statut !== "session" || !sem.isoDate) return;
     const d = new Date(sem.isoDate);
     if (isNaN(d)) return;
@@ -308,7 +380,7 @@ function renderToutesLesSemaines() {
   const futures = [];
   const past = [];
 
-  SEMAINES.forEach((sem, idx) => {
+  getSemainesPlanning().forEach((sem, idx) => {
     const d = new Date(sem.isoDate);
     if (isNaN(d)) return;
     const estPassee = d < today;
@@ -465,8 +537,18 @@ function initialiserThemeToggle() {
 
 function renderLastUpdate() {
   const el = document.getElementById("last-update");
-  if (!el || typeof LAST_UPDATE === "undefined") return;
-  el.textContent = `Programme mis à jour par ${LAST_UPDATE.auteur} le ${LAST_UPDATE.dateTexte}`;
+  const lastUpdate = getLastUpdatePlanning();
+  if (!el || !lastUpdate) return;
+
+  const auteur = lastUpdate.auteur || "";
+  const dateTexte = lastUpdate.dateTexte || "";
+
+  if (!auteur && !dateTexte) {
+    el.textContent = "";
+    return;
+  }
+
+  el.textContent = `Programme mis à jour par ${auteur || "EAJ"}${dateTexte ? " le " + dateTexte : ""}`;
 }
 
 function renderAlert(filtreActuel = "all") {
@@ -511,13 +593,16 @@ function renderAlert(filtreActuel = "all") {
   // 🧩 Compat : ancien format (ALERT_BANNER) / nouveau format (ALERT_BANNERS)
   let banners = [];
 
-  if (typeof ALERT_BANNERS !== "undefined" && Array.isArray(ALERT_BANNERS)) {
-    banners = ALERT_BANNERS;
-  } else if (typeof ALERT_BANNER !== "undefined" && ALERT_BANNER) {
+  const configuredBanners = getAlertBannersPlanning();
+  const legacyBanner = getAlertBannerPlanning();
+
+  if (Array.isArray(configuredBanners) && configuredBanners.length > 0) {
+    banners = configuredBanners;
+  } else if (legacyBanner) {
     banners = [{
-      actif: !!ALERT_BANNER.actif,
+      actif: !!legacyBanner.actif,
       emoji: "⚠️",
-      texte: ALERT_BANNER.texte || "",
+      texte: legacyBanner.texte || "",
       cibles: ["all"]
     }];
   }
@@ -634,24 +719,18 @@ function initialiserBackToTop() {
 /* ---------- Modal accès administrateur ---------- */
 
 function initialiserAdminModal() {
-  const ADMIN_CODE = "EAJ116"; // 🔐 change le code ici si besoin
-
   const link = document.getElementById("admin-link");
   const modal = document.getElementById("admin-modal");
   if (!link || !modal) return;
 
   const backdrop = modal.querySelector(".admin-modal-backdrop");
-  const input = document.getElementById("admin-code-input");
   const btnCancel = document.getElementById("admin-cancel");
   const btnValidate = document.getElementById("admin-validate");
-  const error = document.getElementById("admin-error");
 
   function openModal() {
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
-    error.style.display = "none";
-    input.value = "";
-    setTimeout(() => input.focus(), 50);
+    setTimeout(() => btnValidate && btnValidate.focus(), 50);
   }
 
   function closeModal() {
@@ -659,13 +738,8 @@ function initialiserAdminModal() {
     modal.setAttribute("aria-hidden", "true");
   }
 
-  function validateCode() {
-    const value = input.value.trim();
-    if (value === ADMIN_CODE) {
-      window.location.href = "eaj-generator.html";
-    } else {
-      error.style.display = "block";
-    }
+  function openGenerator() {
+    window.location.href = "eaj-generator.html";
   }
 
   link.addEventListener("click", (e) => {
@@ -675,13 +749,10 @@ function initialiserAdminModal() {
 
   backdrop.addEventListener("click", closeModal);
   btnCancel.addEventListener("click", closeModal);
-  btnValidate.addEventListener("click", validateCode);
+  btnValidate.addEventListener("click", openGenerator);
 
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      validateCode();
-    } else if (e.key === "Escape") {
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.classList.contains("open")) {
       e.preventDefault();
       closeModal();
     }
@@ -822,7 +893,7 @@ function closeOverlaysOnScroll(){
   // Modales standard
   closeModalById("about-modal");
   closeModalById("contact-modal");
-  // ⚠️ v1.3.1 : on ne ferme PAS "Échange vêtements" au scroll
+  // ⚠️ v1.4.0 : on ne ferme PAS "Échange vêtements" au scroll
 
   // Modale admin
   const admin = document.getElementById("admin-modal");
@@ -862,7 +933,7 @@ function initialiserCloseOnScroll(){
   let lastY = window.scrollY;
 
   window.addEventListener("scroll", () => {
-    // v1.3.1 : pendant "Échange vêtements", on désactive la fermeture automatique au scroll
+    // v1.4.0 : pendant "Échange vêtements", on désactive la fermeture automatique au scroll
     if(isClothesModalOpen()){
       lastY = window.scrollY;
       return;
@@ -1301,24 +1372,48 @@ function initialiserClothesExchange(){
 
 /* ---------- Init globale ---------- */
 
-renderToutesLesSemaines();
+async function initApp() {
+  if (window.EAJPlanning && typeof window.EAJPlanning.loadPublicPlanning === "function") {
+    await window.EAJPlanning.loadPublicPlanning();
+  }
 
-// Toggle bannières d'abord, pour que le premier renderAlert (appelé par initialiserFiltres)
-// respecte l'état "Afficher bannières".
-initialiserBannerToggle();
+  renderToutesLesSemaines();
 
-// Filtre (lit localStorage) + rend la bannière filtrée au bon groupe dès l'initialisation.
-initialiserFiltres();
+  // Toggle bannières d'abord, pour que le premier renderAlert (appelé par initialiserFiltres)
+  // respecte l'état "Afficher bannières".
+  initialiserBannerToggle();
 
-initialiserThemeToggle();
-renderLastUpdate();
+  // Filtre (lit localStorage) + rend la bannière filtrée au bon groupe dès l'initialisation.
+  initialiserFiltres();
 
-initialiserMenu();
-initialiserModales();
-initialiserCloseOnScroll();
-initialiserContactCopy();
-initialiserClothesExchange();
-initialiserProjectsMenu();
+  initialiserThemeToggle();
+  renderLastUpdate();
 
-initialiserBackToTop();
-initialiserAdminModal();
+  initialiserMenu();
+  initialiserModales();
+  initialiserCloseOnScroll();
+  initialiserContactCopy();
+  initialiserClothesExchange();
+  initialiserProjectsMenu();
+
+  initialiserBackToTop();
+  initialiserAdminModal();
+  initialiserRealtimePlanning();
+}
+
+initApp().catch((error) => {
+  console.error("Erreur d'initialisation du site EAJ :", error);
+  renderToutesLesSemaines();
+  initialiserBannerToggle();
+  initialiserFiltres();
+  initialiserThemeToggle();
+  renderLastUpdate();
+  initialiserMenu();
+  initialiserModales();
+  initialiserCloseOnScroll();
+  initialiserContactCopy();
+  initialiserClothesExchange();
+  initialiserProjectsMenu();
+  initialiserBackToTop();
+  initialiserAdminModal();
+});

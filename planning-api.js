@@ -1,0 +1,321 @@
+// ======================================================
+// API Planning EAJ — Supabase + fallback planning.js
+// ======================================================
+// Le site public lit Supabase sans compte.
+// Le générateur exige une connexion Supabase + un statut admin.
+
+(function () {
+  const DEFAULT_TABLE = "eaj_planning_state";
+  const DEFAULT_ROW_ID = "main";
+
+  const state = {
+    client: null,
+    current: null,
+    realtimeChannel: null
+  };
+
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function readFallbackGlobals() {
+    let semaines = [];
+    let alertBanners = [];
+    let alertBanner = { actif: false, texte: "" };
+    let lastUpdate = { auteur: "", dateTexte: "" };
+
+    try {
+      if (typeof SEMAINES !== "undefined" && Array.isArray(SEMAINES)) semaines = SEMAINES;
+    } catch (e) {}
+
+    try {
+      if (typeof ALERT_BANNERS !== "undefined" && Array.isArray(ALERT_BANNERS)) alertBanners = ALERT_BANNERS;
+    } catch (e) {}
+
+    try {
+      if (typeof ALERT_BANNER !== "undefined" && ALERT_BANNER) alertBanner = ALERT_BANNER;
+    } catch (e) {}
+
+    try {
+      if (typeof LAST_UPDATE !== "undefined" && LAST_UPDATE) lastUpdate = LAST_UPDATE;
+    } catch (e) {}
+
+    return normalizePlanningData({
+      semaines,
+      alertBanners,
+      alertBanner,
+      lastUpdate,
+      source: "planning.js",
+      version: null,
+      updatedAt: null
+    });
+  }
+
+  function getConfig() {
+    return window.EAJ_SUPABASE || {};
+  }
+
+  function isConfigured() {
+    const cfg = getConfig();
+    const url = String(cfg.url || "").trim();
+    const key = String(cfg.anonKey || "").trim();
+
+    return Boolean(
+      url &&
+      key &&
+      !url.includes("TON-PROJET") &&
+      !key.includes("TON_ANON") &&
+      !key.includes("PUBLISHABLE")
+    );
+  }
+
+  function getTableName() {
+    return getConfig().table || DEFAULT_TABLE;
+  }
+
+  function getRowId() {
+    return getConfig().rowId || DEFAULT_ROW_ID;
+  }
+
+  function getClient() {
+    if (state.client) return state.client;
+
+    if (!isConfigured()) {
+      throw new Error("Supabase n'est pas encore configuré dans supabase-config.js.");
+    }
+
+    if (!window.supabase || typeof window.supabase.createClient !== "function") {
+      throw new Error("La librairie Supabase n'est pas chargée.");
+    }
+
+    const cfg = getConfig();
+    state.client = window.supabase.createClient(cfg.url, cfg.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
+    return state.client;
+  }
+
+  function normalizePlanningData(input) {
+    const data = input || {};
+    const semaines = Array.isArray(data.semaines) ? data.semaines : [];
+    const alertBanners = Array.isArray(data.alertBanners)
+      ? data.alertBanners
+      : (Array.isArray(data.alert_banners) ? data.alert_banners : []);
+
+    const alertBanner = data.alertBanner || data.alert_banner || { actif: false, texte: "" };
+    const lastUpdate = data.lastUpdate || data.last_update || { auteur: "", dateTexte: "" };
+
+    return {
+      semaines,
+      alertBanners,
+      alertBanner,
+      lastUpdate,
+      version: typeof data.version === "number" ? data.version : null,
+      updatedAt: data.updatedAt || data.updated_at || null,
+      updatedByName: data.updatedByName || data.updated_by_name || "",
+      source: data.source || "local"
+    };
+  }
+
+  function normalizeRow(row) {
+    if (!row) return null;
+    return normalizePlanningData({
+      semaines: row.semaines,
+      alertBanners: row.alert_banners,
+      alertBanner: row.alert_banner,
+      lastUpdate: row.last_update,
+      version: row.version,
+      updatedAt: row.updated_at,
+      updatedByName: row.updated_by_name,
+      source: "supabase"
+    });
+  }
+
+  function applyData(data) {
+    const normalized = normalizePlanningData(data);
+    state.current = normalized;
+
+    // Compat pour d'éventuels scripts qui lisent window.*
+    // Les anciens const de planning.js restent intouchables, donc le nouveau code lit EAJPlanning.getCurrentData().
+    window.EAJ_CURRENT_PLANNING = normalized;
+    window.EAJ_PLANNING_SOURCE = normalized.source;
+
+    return normalized;
+  }
+
+  function getCurrentData() {
+    if (!state.current) {
+      applyData(readFallbackGlobals());
+    }
+    return state.current;
+  }
+
+  async function fetchPlanningFromSupabase() {
+    const client = getClient();
+    const { data, error } = await client
+      .from(getTableName())
+      .select("*")
+      .eq("id", getRowId())
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Aucune ligne de planning trouvée dans Supabase.");
+
+    return applyData(normalizeRow(data));
+  }
+
+  async function loadPublicPlanning() {
+    // On démarre toujours avec le fallback local.
+    applyData(readFallbackGlobals());
+
+    if (!isConfigured()) {
+      console.warn("Supabase non configuré : fallback planning.js utilisé.");
+      return getCurrentData();
+    }
+
+    try {
+      return await fetchPlanningFromSupabase();
+    } catch (error) {
+      console.warn("Impossible de charger Supabase, fallback planning.js utilisé :", error.message || error);
+      return getCurrentData();
+    }
+  }
+
+  async function getSession() {
+    const client = getClient();
+    const { data, error } = await client.auth.getSession();
+    if (error) throw error;
+    return data.session || null;
+  }
+
+  async function signIn(email, password) {
+    const client = getClient();
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data.session || null;
+  }
+
+  async function signOut() {
+    const client = getClient();
+    const { error } = await client.auth.signOut();
+    if (error) throw error;
+  }
+
+  async function getAdminStatus() {
+    const session = await getSession();
+    if (!session || !session.user) {
+      return { ok: false, session: null, admin: null, reason: "not_authenticated" };
+    }
+
+    const client = getClient();
+    const { data, error } = await client
+      .from("eaj_admins")
+      .select("user_id, display_name, active")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data || data.active !== true) {
+      return { ok: false, session, admin: data || null, reason: "not_admin" };
+    }
+
+    return { ok: true, session, admin: data, reason: "admin" };
+  }
+
+  async function savePlanning(payload) {
+    const client = getClient();
+    const session = await getSession();
+    if (!session || !session.user) {
+      throw new Error("Connexion expirée. Reconnecte-toi puis réessaie.");
+    }
+
+    const current = getCurrentData();
+    const currentVersion = typeof current.version === "number" ? current.version : 1;
+    const nextVersion = currentVersion + 1;
+    const updatedByName = payload.updatedByName || payload.lastUpdate?.auteur || session.user.email || "Admin";
+
+    const updatePayload = {
+      semaines: payload.semaines || [],
+      alert_banners: payload.alertBanners || [],
+      alert_banner: payload.alertBanner || { actif: false, texte: "" },
+      last_update: payload.lastUpdate || { auteur: updatedByName, dateTexte: "" },
+      version: nextVersion,
+      updated_by: session.user.id,
+      updated_by_name: updatedByName,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await client
+      .from(getTableName())
+      .update(updatePayload)
+      .eq("id", getRowId())
+      .eq("version", currentVersion)
+      .select("*");
+
+    if (error) throw error;
+
+    if (!Array.isArray(data) || data.length === 0) {
+      throw new Error("Conflit : le planning a été modifié ailleurs. Recharge la page avant d'enregistrer.");
+    }
+
+    return applyData(normalizeRow(data[0]));
+  }
+
+  function subscribePlanningUpdates(callback) {
+    const cfg = getConfig();
+    if (!isConfigured() || cfg.realtime === false) return null;
+
+    const client = getClient();
+    if (state.realtimeChannel) {
+      try { client.removeChannel(state.realtimeChannel); } catch (e) {}
+      state.realtimeChannel = null;
+    }
+
+    state.realtimeChannel = client
+      .channel("eaj-planning-live")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: getTableName(),
+          filter: `id=eq.${getRowId()}`
+        },
+        (payload) => {
+          const data = applyData(normalizeRow(payload.new));
+          if (typeof callback === "function") callback(data, payload);
+        }
+      )
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR") {
+          console.warn("Realtime Supabase indisponible pour le planning.");
+        }
+      });
+
+    return state.realtimeChannel;
+  }
+
+  applyData(readFallbackGlobals());
+
+  window.EAJPlanning = {
+    isConfigured,
+    getConfig,
+    getClient,
+    getCurrentData,
+    loadPublicPlanning,
+    fetchPlanningFromSupabase,
+    subscribePlanningUpdates,
+    getSession,
+    signIn,
+    signOut,
+    getAdminStatus,
+    savePlanning,
+    applyData,
+    normalizePlanningData
+  };
+})();

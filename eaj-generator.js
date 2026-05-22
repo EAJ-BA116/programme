@@ -49,11 +49,186 @@ const weeksContainer = document.getElementById("weeks-container");
 const btnAddWeek     = document.getElementById("btn-add-week");
 const btnGenerate    = document.getElementById("btn-generate");
 const btnSave        = document.getElementById("btn-save");
+const btnExport      = document.getElementById("btn-export");
 const output         = document.getElementById("output");
+const saveStatus     = document.getElementById("save-status");
+
+const authPanel      = document.getElementById("auth-panel");
+const authForm       = document.getElementById("auth-form");
+const authEmail      = document.getElementById("auth-email");
+const authPassword   = document.getElementById("auth-password");
+const authStatus     = document.getElementById("auth-status");
+const authLogout     = document.getElementById("auth-logout");
+const generatorIntro = document.getElementById("generator-intro");
+const generatorApp   = document.getElementById("generator-app");
 
 // Bannières (multi)
 const bannersContainer = document.getElementById("banners-container");
 const btnAddBanner     = document.getElementById("btn-add-banner");
+
+
+// ===============================
+//  Accès Supabase admin
+// ===============================
+
+function setAuthStatus(message, type = "info") {
+  if (!authStatus) return;
+  authStatus.textContent = message || "";
+  authStatus.classList.remove("ok", "error", "info");
+  if (type) authStatus.classList.add(type);
+}
+
+function setSaveStatus(message, type = "info") {
+  if (!saveStatus) return;
+  saveStatus.textContent = message || "";
+  saveStatus.classList.remove("ok", "error", "info");
+  if (type) saveStatus.classList.add(type);
+}
+
+function showGenerator() {
+  if (authPanel) authPanel.classList.add("hidden");
+  if (generatorIntro) generatorIntro.classList.remove("hidden");
+  if (generatorApp) generatorApp.classList.remove("hidden");
+}
+
+function hideGenerator() {
+  if (authPanel) authPanel.classList.remove("hidden");
+  if (generatorIntro) generatorIntro.classList.add("hidden");
+  if (generatorApp) generatorApp.classList.add("hidden");
+}
+
+async function verifierAccesAdmin() {
+  hideGenerator();
+
+  if (!window.EAJPlanning || !window.EAJPlanning.isConfigured()) {
+    setAuthStatus("Supabase n'est pas encore configuré dans supabase-config.js. Le générateur reste verrouillé.", "error");
+    return false;
+  }
+
+  try {
+    const status = await window.EAJPlanning.getAdminStatus();
+
+    if (status.ok) {
+      const nom = status.admin?.display_name || status.session?.user?.email || "admin";
+      setAuthStatus(`Connecté : ${nom}`, "ok");
+      if (authLogout) authLogout.classList.remove("hidden");
+      showGenerator();
+      return true;
+    }
+
+    if (status.reason === "not_admin") {
+      setAuthStatus("Compte connecté, mais non autorisé à modifier ce planning.", "error");
+      if (authLogout) authLogout.classList.remove("hidden");
+      return false;
+    }
+
+    setAuthStatus("Connecte-toi avec le compte administrateur Supabase.", "info");
+    if (authLogout) authLogout.classList.add("hidden");
+    return false;
+  } catch (error) {
+    setAuthStatus("Erreur de vérification admin : " + (error.message || error), "error");
+    return false;
+  }
+}
+
+function initialiserAuthForm(onAdminReady) {
+  if (authForm) {
+    authForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = (authEmail?.value || "").trim();
+      const password = authPassword?.value || "";
+
+      if (!email || !password) {
+        setAuthStatus("Indique l'email et le mot de passe.", "error");
+        return;
+      }
+
+      try {
+        setAuthStatus("Connexion en cours...", "info");
+        await window.EAJPlanning.signIn(email, password);
+        const ok = await verifierAccesAdmin();
+        if (ok && typeof onAdminReady === "function") await onAdminReady();
+      } catch (error) {
+        setAuthStatus("Connexion impossible : " + (error.message || error), "error");
+      }
+    });
+  }
+
+  if (authLogout) {
+    authLogout.addEventListener("click", async () => {
+      try {
+        await window.EAJPlanning.signOut();
+      } catch (e) {}
+      location.reload();
+    });
+  }
+}
+
+function getPlanningDataForGenerator() {
+  if (window.EAJPlanning && typeof window.EAJPlanning.getCurrentData === "function") {
+    return window.EAJPlanning.getCurrentData();
+  }
+
+  let semaines = [];
+  let alertBanners = [];
+  let alertBanner = { actif: false, texte: "" };
+  let lastUpdate = { auteur: "", dateTexte: "" };
+
+  try { if (typeof SEMAINES !== "undefined" && Array.isArray(SEMAINES)) semaines = SEMAINES; } catch (e) {}
+  try { if (typeof ALERT_BANNERS !== "undefined" && Array.isArray(ALERT_BANNERS)) alertBanners = ALERT_BANNERS; } catch (e) {}
+  try { if (typeof ALERT_BANNER !== "undefined" && ALERT_BANNER) alertBanner = ALERT_BANNER; } catch (e) {}
+  try { if (typeof LAST_UPDATE !== "undefined" && LAST_UPDATE) lastUpdate = LAST_UPDATE; } catch (e) {}
+
+  return { semaines, alertBanners, alertBanner, lastUpdate, source: "planning.js", version: null };
+}
+
+async function chargerPlanningInitial() {
+  if (window.EAJPlanning && window.EAJPlanning.isConfigured()) {
+    try {
+      setSaveStatus("Chargement du planning Supabase...", "info");
+      const data = await window.EAJPlanning.fetchPlanningFromSupabase();
+      setSaveStatus(`Planning chargé depuis Supabase${data.version ? " — version " + data.version : ""}.`, "ok");
+      return data;
+    } catch (error) {
+      setSaveStatus("Supabase inaccessible : chargement du planning.js de secours. " + (error.message || error), "error");
+    }
+  }
+
+  return getPlanningDataForGenerator();
+}
+
+async function sauvegarderDansSupabase() {
+  const weeks = getWeeksData();
+  const { ALERT_BANNER, ALERT_BANNERS, LAST_UPDATE } = getConfigData();
+
+  if (!weeks.length) {
+    setSaveStatus("Aucune semaine valide. Ajoute au moins une date JJ/MM/AAAA correcte.", "error");
+    alert("Aucune semaine valide. Ajoute au moins une date JJ/MM/AAAA correcte.");
+    return;
+  }
+
+  if (!window.EAJPlanning || !window.EAJPlanning.isConfigured()) {
+    setSaveStatus("Supabase n'est pas configuré : impossible d'enregistrer en ligne.", "error");
+    return;
+  }
+
+  try {
+    setSaveStatus("Enregistrement dans Supabase...", "info");
+    const saved = await window.EAJPlanning.savePlanning({
+      semaines: weeks,
+      alertBanners: ALERT_BANNERS,
+      alertBanner: ALERT_BANNER,
+      lastUpdate: LAST_UPDATE,
+      updatedByName: LAST_UPDATE.auteur
+    });
+
+    setSaveStatus(`Planning enregistré dans Supabase ✅ Version ${saved.version || "?"}.`, "ok");
+    updateOutput();
+  } catch (error) {
+    setSaveStatus("Erreur d'enregistrement : " + (error.message || error), "error");
+    alert("Erreur d'enregistrement Supabase : " + (error.message || error));
+  }
+}
 
 // ===============================
 //  Utilitaires dates
@@ -1219,8 +1394,14 @@ function isoToFrDate(iso) {
   return `${dd}/${mm}/${yyyy}`;
 }
 
-function chargerPlanningExistant() {
-  if (typeof SEMAINES === "undefined" || !Array.isArray(SEMAINES)) {
+function chargerPlanningExistant(sourceData) {
+  const planningData = sourceData || getPlanningDataForGenerator();
+  const semainesSource = Array.isArray(planningData.semaines) ? planningData.semaines : [];
+  const alertBannersSource = Array.isArray(planningData.alertBanners) ? planningData.alertBanners : [];
+  const alertBannerSource = planningData.alertBanner || { actif: false, texte: "" };
+  const lastUpdateSource = planningData.lastUpdate || { auteur: "", dateTexte: "" };
+
+  if (!Array.isArray(semainesSource) || semainesSource.length === 0) {
     return false;
   }
 
@@ -1230,28 +1411,28 @@ function chargerPlanningExistant() {
   const lastUpdateDate     = document.getElementById("lastupdate-date");
 
   // Nouveau format : ALERT_BANNERS (multi)
-  if (typeof ALERT_BANNERS !== "undefined" && Array.isArray(ALERT_BANNERS)) {
-    const anyActive = ALERT_BANNERS.some(b => b && b.actif);
+  if (Array.isArray(alertBannersSource) && alertBannersSource.length > 0) {
+    const anyActive = alertBannersSource.some(b => b && b.actif);
     if (bannerActifInput) bannerActifInput.checked = anyActive;
-    setBannersInFormFromData(ALERT_BANNERS, anyActive);
+    setBannersInFormFromData(alertBannersSource, anyActive);
   }
   // Ancien format : ALERT_BANNER (simple)
-  else if (typeof ALERT_BANNER !== "undefined" && ALERT_BANNER) {
-    const isOn = !!ALERT_BANNER.actif;
+  else if (alertBannerSource) {
+    const isOn = !!alertBannerSource.actif;
     if (bannerActifInput) bannerActifInput.checked = isOn;
     setBannersInFormFromData([
       {
         actif: isOn,
         emoji: "⚠️",
-        texte: ALERT_BANNER.texte || "",
+        texte: alertBannerSource.texte || "",
         cibles: ["all"]
       }
     ], isOn);
   }
 
-  if (typeof LAST_UPDATE !== "undefined" && LAST_UPDATE) {
-    if (lastUpdateAuteur && LAST_UPDATE.auteur)  lastUpdateAuteur.value  = LAST_UPDATE.auteur;
-    if (lastUpdateDate && LAST_UPDATE.dateTexte) lastUpdateDate.value     = LAST_UPDATE.dateTexte;
+  if (lastUpdateSource) {
+    if (lastUpdateAuteur && lastUpdateSource.auteur)  lastUpdateAuteur.value  = lastUpdateSource.auteur;
+    if (lastUpdateDate && lastUpdateSource.dateTexte) lastUpdateDate.value     = lastUpdateSource.dateTexte;
   } else if (lastUpdateDate) {
     lastUpdateDate.value = getTodayFrDate();
   }
@@ -1261,7 +1442,7 @@ function chargerPlanningExistant() {
   weekCounter = 0;
 
   // On trie les semaines par date ISO croissante
-  const weeksSorted = [...SEMAINES].sort((a, b) => {
+  const weeksSorted = [...semainesSource].sort((a, b) => {
     if (a.isoDate < b.isoDate) return -1;
     if (a.isoDate > b.isoDate) return 1;
     return 0;
@@ -1428,7 +1609,7 @@ function chargerPlanningExistant() {
 //  Initialisation globale
 // ===============================
 
-(function init() {
+async function initGeneratorApp() {
   const lastUpdateInput = document.getElementById("lastupdate-date");
   const bannerActifInput = document.getElementById("banner-actif");
 
@@ -1474,7 +1655,11 @@ function chargerPlanningExistant() {
   }
 
   if (btnSave) {
-    btnSave.addEventListener("click", () => {
+    btnSave.addEventListener("click", sauvegarderDansSupabase);
+  }
+
+  if (btnExport) {
+    btnExport.addEventListener("click", () => {
       const js = buildPlanningJs();
       if (js.startsWith("// Aucune semaine valide")) {
         alert("Aucune semaine valide. Ajoute au moins une date JJ/MM/AAAA correcte.");
@@ -1484,20 +1669,36 @@ function chargerPlanningExistant() {
     });
   }
 
-  // 1) On tente de charger le planning existant (planning.js)
-  const ok = chargerPlanningExistant();
+  const planningData = await chargerPlanningInitial();
+  const ok = chargerPlanningExistant(planningData);
+
   // Trie visuellement les semaines chargées
   reorderWeekFormsByDate();
 
   // Bouton retour haut
   initialiserBackToTop();
 
-  // 2) Si pas de planning.js ou SEMAINES vide, on part sur un formulaire vierge
+  // Si aucune donnée exploitable, on part sur un formulaire vierge
   if (!ok) {
     if (lastUpdateInput) {
       lastUpdateInput.value = getTodayFrDate();
     }
     createWeekForm();
     updateOutput();
+  }
+}
+
+(async function boot() {
+  initialiserAuthForm(async () => {
+    if (!window.__EAJ_GENERATOR_READY__) {
+      window.__EAJ_GENERATOR_READY__ = true;
+      await initGeneratorApp();
+    }
+  });
+
+  const ok = await verifierAccesAdmin();
+  if (ok) {
+    window.__EAJ_GENERATOR_READY__ = true;
+    await initGeneratorApp();
   }
 })();
