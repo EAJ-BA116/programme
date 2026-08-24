@@ -76,9 +76,15 @@ Deno.serve(async (req) => {
     }
 
     const payload = await req.json().catch(() => ({}));
-    const kind = ["information", "important", "update", "reminder"].includes(String(payload?.kind))
-      ? String(payload.kind)
-      : "information";
+    const allowedKinds = ["information", "programme", "modification", "cancellation", "document", "update", "important"];
+    const allowedAudiences = ["all_active", "all_eaj", "eaj1", "eaj2", "eaj3", "eaj23", "system"];
+    const kind = allowedKinds.includes(String(payload?.kind)) ? String(payload.kind) : "information";
+    let audience = allowedAudiences.includes(String(payload?.audience)) ? String(payload.audience) : "all_eaj";
+
+    // Règles non contournables côté serveur.
+    if (kind === "important") audience = "all_active";
+    if (kind === "update") audience = "system";
+
     const title = cleanText(payload?.title, 80);
     const body = cleanText(payload?.body, 300);
     const url = cleanText(payload?.url || "index.html", 500) || "index.html";
@@ -93,6 +99,7 @@ Deno.serve(async (req) => {
       .from("eaj_notifications")
       .insert({
         kind,
+        audience,
         title,
         body,
         url,
@@ -107,15 +114,27 @@ Deno.serve(async (req) => {
 
     const { data: subscriptions, error: subscriptionError } = await service
       .from("eaj_push_subscriptions")
-      .select("id, endpoint, p256dh, auth")
+      .select("id, endpoint, p256dh, auth, pref_eaj1, pref_eaj2, pref_eaj3, pref_system_updates")
       .eq("enabled", true);
 
     if (subscriptionError) throw subscriptionError;
+
+    const list = Array.isArray(subscriptions) ? subscriptions : [];
+    const targeted = list.filter((sub) => {
+      if (audience === "all_active") return true;
+      if (audience === "eaj1") return sub.pref_eaj1 === true;
+      if (audience === "eaj2") return sub.pref_eaj2 === true;
+      if (audience === "eaj3") return sub.pref_eaj3 === true;
+      if (audience === "eaj23") return sub.pref_eaj2 === true || sub.pref_eaj3 === true;
+      if (audience === "system") return sub.pref_system_updates === true;
+      return sub.pref_eaj1 === true || sub.pref_eaj2 === true || sub.pref_eaj3 === true;
+    });
 
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 
     const pushPayload = JSON.stringify({
       kind,
+      audience,
       title,
       body,
       url,
@@ -126,9 +145,7 @@ Deno.serve(async (req) => {
     let failed = 0;
     const invalidIds: string[] = [];
 
-    const list = Array.isArray(subscriptions) ? subscriptions : [];
-
-    await Promise.allSettled(list.map(async (sub) => {
+    await Promise.allSettled(targeted.map(async (sub) => {
       try {
         await webpush.sendNotification(
           {
@@ -141,7 +158,7 @@ Deno.serve(async (req) => {
           pushPayload,
           {
             TTL: kind === "important" ? 86400 : 43200,
-            urgency: kind === "important" ? "high" : "normal",
+            urgency: (kind === "important" || kind === "cancellation") ? "high" : "normal",
           },
         );
         sent += 1;
@@ -171,6 +188,8 @@ Deno.serve(async (req) => {
     return jsonResponse({
       ok: true,
       notificationId: notification.id,
+      audience,
+      matched: targeted.length,
       sent,
       failed,
       disabledSubscriptions: invalidIds.length,

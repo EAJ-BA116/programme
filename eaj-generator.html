@@ -862,6 +862,207 @@
       white-space: pre-wrap;
     }
 
+
+    /* ===== Admin simplifié v1.7.1 ===== */
+    .admin-heading-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .admin-heading-row h1 { margin-bottom: .15rem; }
+    .admin-heading-row p { margin: 0; }
+
+    .admin-online-badge {
+      flex: 0 0 auto;
+      font-size: .76rem;
+      font-weight: 800;
+      color: #16a34a;
+      background: rgba(34,197,94,.10);
+      border: 1px solid rgba(34,197,94,.28);
+      border-radius: 999px;
+      padding: .35rem .65rem;
+    }
+    body[data-theme="dark"] .admin-online-badge { color: #86efac; }
+
+    .admin-tabs {
+      position: sticky;
+      top: .5rem;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+      padding: .55rem;
+      border: 1px solid var(--border-soft);
+      border-radius: 1rem;
+      background: color-mix(in srgb, var(--bg-card) 94%, transparent);
+      box-shadow: 0 8px 25px rgba(15,23,42,.10);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .admin-tab-list,
+    .admin-global-actions {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      flex-wrap: wrap;
+    }
+
+    .admin-tab {
+      border: 0;
+      background: transparent;
+      color: var(--text-muted);
+      font: inherit;
+      font-size: .84rem;
+      font-weight: 800;
+      padding: .55rem .8rem;
+      border-radius: .75rem;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+
+    .admin-tab:hover { background: var(--bg-card-soft); color: var(--text-main); }
+    .admin-tab.active {
+      color: #fff;
+      background: var(--blue-main);
+      box-shadow: 0 4px 12px rgba(37,99,235,.22);
+    }
+
+    .admin-global-status {
+      min-height: 1.1rem;
+      padding: 0 .35rem;
+    }
+    .admin-global-status .save-status { margin: 0; }
+
+    .admin-view-panel { display: none; }
+    .admin-view-panel.active {
+      display: flex;
+      flex-direction: column;
+      gap: .85rem;
+      animation: admin-view-in .16s ease-out;
+    }
+    @keyframes admin-view-in {
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .admin-section-heading {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: .8rem;
+      flex-wrap: wrap;
+      padding: .15rem .15rem .1rem;
+    }
+    .admin-section-heading h2 {
+      margin: 0;
+      color: var(--blue-main);
+      font-size: 1.12rem;
+    }
+    .admin-section-heading p {
+      margin: .18rem 0 0;
+      color: var(--text-muted);
+      font-size: .82rem;
+    }
+
+    .admin-tools-details {
+      border: 1px solid var(--border-soft);
+      border-radius: .9rem;
+      background: var(--bg-card);
+      overflow: hidden;
+    }
+    .admin-tools-details > summary {
+      cursor: pointer;
+      list-style: none;
+      padding: .75rem .9rem;
+      font-weight: 800;
+      color: var(--text-main);
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+    }
+    .admin-tools-details > summary::-webkit-details-marker { display: none; }
+    .admin-tools-details > summary::after { content: "＋"; color: var(--blue-main); font-size: 1rem; }
+    .admin-tools-details[open] > summary::after { content: "−"; }
+    .admin-tools-details > summary span {
+      margin-left: auto;
+      color: var(--text-muted);
+      font-size: .72rem;
+      font-weight: 600;
+    }
+    .admin-tools-body {
+      border-top: 1px solid var(--border-soft);
+      padding: .8rem .9rem .9rem;
+    }
+
+    .compact-action-pack { justify-content: flex-start; margin: .65rem 0; }
+    .compact-output-block { margin-top: .5rem; }
+
+    .push-compose-card { padding: .85rem; }
+    .push-compose-grid { margin-bottom: 0; }
+    .push-send-row {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      flex-wrap: wrap;
+    }
+    .push-send-main { min-width: 210px; justify-content: center; }
+    .push-send-row .push-admin-status { flex: 1 1 240px; }
+    .push-compact-count {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      color: var(--text-main);
+      font-size: .78rem;
+    }
+    .push-breakdown {
+      padding: .55rem .65rem;
+      border-radius: .65rem;
+      background: var(--bg-card-soft);
+      margin: 0 0 .75rem;
+    }
+    .push-url-field { margin-bottom: .8rem; }
+    .history-label { font-weight: 800; font-size: .82rem; color: var(--text-main); }
+
+    .admin-setting-card { box-shadow: none; }
+    .setting-toggle-row {
+      padding: .35rem 0;
+      align-items: center;
+    }
+    .banner-admin-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .65rem;
+      flex-wrap: wrap;
+      margin-bottom: .55rem;
+    }
+    .banner-master-toggle { margin: 0; }
+
+    @media (max-width: 760px) {
+      .admin-heading-row { align-items: flex-start; }
+      .admin-tabs {
+        top: .25rem;
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .admin-tab-list { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: .3rem; }
+      .admin-tab { padding: .55rem .35rem; font-size: .76rem; }
+      .admin-global-actions { width: 100%; display: grid; grid-template-columns: 1fr auto; }
+      .admin-global-actions .btn { justify-content: center; }
+      .admin-section-heading { align-items: stretch; }
+      .admin-section-heading > .btn { width: 100%; justify-content: center; }
+      .push-compact-count { width: 100%; justify-content: space-between; }
+      .push-send-main { width: 100%; }
+      .push-send-row .push-admin-status { flex-basis: 100%; }
+      .admin-tools-details > summary span { display: none; }
+    }
+
   </style>
 </head>
 <body data-theme="dark">
@@ -876,12 +1077,13 @@
   </header>
 
   <section id="generator-intro" class="generator-header-text hidden">
-    <h1>Générateur de programme EAJ</h1>
-    <p>Outil interne connecté à Supabase pour modifier le planning affiché sur le site public.</p>
-    <p class="note">
-      ✅ Les modifications sont enregistrées dans Supabase et deviennent visibles presque immédiatement sur le site public.<br>
-      Le bouton d’export <code>planning.js</code> reste disponible uniquement comme sauvegarde de secours.
-    </p>
+    <div class="admin-heading-row">
+      <div>
+        <h1>Administration EAJ</h1>
+        <p>Planning, notifications et réglages du site public.</p>
+      </div>
+      <span class="admin-online-badge">● Supabase</span>
+    </div>
   </section>
 
   <section id="auth-panel" class="generator-auth-panel">
@@ -919,182 +1121,223 @@
 
 
   <main id="generator-app" class="generator-main hidden">
-    <!-- CONFIG GENERALE (ALERTE + DERNIERE MISE A JOUR) -->
-    <section class="config-block">
-      <div class="config-title">Configuration générale</div>
-      <div class="config-grid">
-        <div class="field full super-admin-setting">
-          <label>Organisation des groupes</label>
-          <div class="field-inline">
-            <input type="checkbox" id="setting-merge-eaj23" checked />
-            <span><strong>Fusionner EAJ2 et EAJ3 en « EAJ 2-3 »</strong></span>
-          </div>
-          <span class="note">Réglage Super Admin. Activé : les nouvelles semaines utilisent EAJ 2-3 par défaut. Chaque semaine peut exceptionnellement passer en EAJ2 seul, EAJ3 seul ou EAJ2/EAJ3 séparés.</span>
-        </div>
-
-        <div class="field full">
-          <label>Bannières d’alerte</label>
-          <div class="field-inline">
-            <input type="checkbox" id="banner-actif" checked />
-            <span>Activer les bannières</span>
-          </div>
-          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; margin-top:0.35rem;">
-            <button class="btn btn-small" type="button" id="btn-add-banner">➕ Ajouter une bannière</button>
-            <span class="note">Chaque bannière peut viser EAJ1, EAJ2, EAJ3, ou une combinaison.</span>
-          </div>
-          <div id="banners-container" class="banners-container"></div>
-        </div>
-
-        <div class="field">
-          <label>Dernière mise à jour – Auteur</label>
-          <input type="text" id="lastupdate-auteur" value="Yoann" />
-        </div>
-       <div class="field">
-  <label>Dernière mise à jour – Date</label>
-  <input type="text" id="lastupdate-date" placeholder="JJ/MM/AAAA" maxlength="10" inputmode="numeric" autocomplete="off" />
-  <span class="note">Saisis une date (ou laisse vide = date du jour).</span>
-</div>
-
+    <nav class="admin-tabs" aria-label="Sections d’administration">
+      <div class="admin-tab-list">
+        <button class="admin-tab active" type="button" data-admin-view="planning">🗓️ <span>Planning</span></button>
+        <button class="admin-tab" type="button" data-admin-view="notifications">🔔 <span>Notifications</span></button>
+        <button class="admin-tab" type="button" data-admin-view="settings">⚙️ <span>Réglages</span></button>
       </div>
+      <div class="admin-global-actions">
+        <button class="btn btn-primary" type="button" id="btn-save">💾 Enregistrer</button>
+        <button class="btn btn-small btn-secondary" type="button" id="btn-admin-logout-main" title="Se déconnecter">↪ Déconnexion</button>
+      </div>
+    </nav>
+    <div class="admin-global-status">
+      <p id="save-status-top" class="save-status top-save-status" aria-live="polite"></p>
+    </div>
+
+    <!-- ONGLET PLANNING -->
+    <section class="admin-view-panel active" data-admin-panel="planning">
+      <div class="admin-section-heading">
+        <div>
+          <h2>Planning</h2>
+          <p>Ajoute ou modifie les semaines, puis clique sur <strong>Enregistrer</strong>.</p>
+        </div>
+        <button class="btn btn-primary" type="button" id="btn-add-week">➕ Ajouter une semaine</button>
+      </div>
+
+      <div id="weeks-container" class="weeks-container">
+        <!-- Les semaines seront ajoutées ici en JS -->
+      </div>
+
+      <details class="admin-tools-details">
+        <summary>🧰 Outils de secours <span>planning.js</span></summary>
+        <div class="admin-tools-body">
+          <p class="note">Ces outils ne servent normalement pas au quotidien. Supabase reste l’enregistrement principal.</p>
+          <div class="action-pack compact-action-pack">
+            <button class="btn" type="button" id="btn-generate">🧩 Générer le code JS</button>
+            <button class="btn" type="button" id="btn-export">⬇️ Export planning.js</button>
+          </div>
+          <div class="output-block compact-output-block">
+            <label for="output">Aperçu / sauvegarde de secours <code>planning.js</code></label>
+            <textarea id="output" readonly placeholder="// Le code apparaîtra ici après clic sur Générer le code JS"></textarea>
+            <p id="save-status" class="save-status" aria-live="polite"></p>
+          </div>
+        </div>
+      </details>
     </section>
 
-    <section class="config-block" id="push-admin-panel">
-      <div class="config-title">🔔 Notifications push</div>
-      <p class="note">Envoi manuel par le Super Admin. Le destinataire et la catégorie sont séparés. Un message « Important » est toujours envoyé à tous les appareils ayant activé les notifications.</p>
-
-      <div class="config-grid" style="margin-top:0.65rem;">
-        <div class="field">
-          <label for="push-audience">Destinataires</label>
-          <select id="push-audience">
-            <option value="all_eaj">📣 Tous les EAJ</option>
-            <option value="eaj1">✈️ EAJ1</option>
-            <option value="eaj2">✈️ EAJ2 uniquement</option>
-            <option value="eaj3">✈️ EAJ3 uniquement</option>
-            <option value="eaj23">✈️ EAJ 2-3 (EAJ2 + EAJ3)</option>
-            <option value="system">🛠️ Abonnés aux mises à jour système</option>
-            <option value="all_active" hidden>🚨 Tous les abonnés actifs</option>
-          </select>
-          <span class="note" id="push-audience-note">EAJ2 et EAJ3 peuvent recevoir séparément ou ensemble via EAJ 2-3.</span>
+    <!-- ONGLET NOTIFICATIONS -->
+    <section class="admin-view-panel" data-admin-panel="notifications" id="push-admin-panel">
+      <div class="admin-section-heading">
+        <div>
+          <h2>Notifications push</h2>
+          <p>Choisis d’abord les destinataires, puis le type de message.</p>
         </div>
-
-        <div class="field">
-          <label for="push-kind">Catégorie du message</label>
-          <select id="push-kind">
-            <option value="information">ℹ️ Information</option>
-            <option value="programme">📅 Programme / activité</option>
-            <option value="modification">🔄 Modification</option>
-            <option value="cancellation">❌ Annulation</option>
-            <option value="document">📄 Document / consigne</option>
-            <option value="update">🆕 Mise à jour de l’application</option>
-            <option value="important">🚨 Important</option>
-          </select>
+        <div class="push-compact-count">
+          <strong id="push-subscriber-count">Appareils actifs : …</strong>
+          <button class="btn btn-small" type="button" id="btn-refresh-push" title="Actualiser">🔄</button>
         </div>
+      </div>
 
-        <div class="field">
-          <label for="push-title">Titre</label>
-          <input type="text" id="push-title" value="EAJ BA 116" maxlength="80" />
-        </div>
-
-        <div class="field full">
-          <label for="push-body">Message</label>
-          <textarea id="push-body" rows="3" maxlength="300" placeholder="Ex : Le programme de mercredi a été modifié. Pensez à consulter l’application."></textarea>
-          <span class="note">Message court recommandé : il s’affichera directement dans la notification du téléphone.</span>
-        </div>
-
-        <div class="field full">
-          <label for="push-url">Page ouverte au toucher</label>
-          <input type="text" id="push-url" value="index.html" placeholder="index.html" />
-          <span class="note">Laisse <strong>index.html</strong> pour ouvrir le programme principal.</span>
-        </div>
-
-        <div class="field full">
-          <div class="push-admin-actions">
-            <button class="btn btn-primary" type="button" id="btn-send-push">📨 Envoyer la notification</button>
-            <button class="btn btn-small" type="button" id="btn-refresh-push">🔄 Actualiser</button>
-            <strong id="push-subscriber-count">Appareils inscrits : …</strong>
+      <div class="config-block push-compose-card">
+        <div class="config-grid push-compose-grid">
+          <div class="field">
+            <label for="push-audience">1. Destinataires</label>
+            <select id="push-audience">
+              <option value="all_eaj">📣 Tous les EAJ</option>
+              <option value="eaj1">✈️ EAJ1</option>
+              <option value="eaj2">✈️ EAJ2 uniquement</option>
+              <option value="eaj3">✈️ EAJ3 uniquement</option>
+              <option value="eaj23">✈️ EAJ 2-3 (EAJ2 + EAJ3)</option>
+              <option value="system">🛠️ Mises à jour système</option>
+              <option value="all_active" hidden>🚨 Tous les abonnés actifs</option>
+            </select>
+            <span class="note" id="push-audience-note">EAJ2 et EAJ3 reçoivent automatiquement les messages EAJ 2-3.</span>
           </div>
-          <div id="push-subscriber-breakdown" class="note"></div>
-          <div id="push-admin-status" class="push-admin-status" aria-live="polite"></div>
-        </div>
 
-        <div class="field full">
-          <label>Dernières notifications envoyées</label>
+          <div class="field">
+            <label for="push-kind">2. Type de message</label>
+            <select id="push-kind">
+              <option value="information">ℹ️ Information</option>
+              <option value="programme">📅 Programme / activité</option>
+              <option value="modification">🔄 Modification</option>
+              <option value="cancellation">❌ Annulation</option>
+              <option value="document">📄 Document / consigne</option>
+              <option value="update">🆕 Mise à jour de l’application</option>
+              <option value="important">🚨 Important</option>
+            </select>
+          </div>
+
+          <div class="field full">
+            <label for="push-title">3. Titre</label>
+            <input type="text" id="push-title" value="EAJ BA 116" maxlength="80" />
+          </div>
+
+          <div class="field full">
+            <label for="push-body">4. Message</label>
+            <textarea id="push-body" rows="4" maxlength="300" placeholder="Ex : Le programme de mercredi a été modifié. Pensez à consulter l’application."></textarea>
+          </div>
+
+          <div class="field full push-send-row">
+            <button class="btn btn-primary push-send-main" type="button" id="btn-send-push">📨 Envoyer la notification</button>
+            <div id="push-admin-status" class="push-admin-status" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+
+      <details class="admin-tools-details push-details">
+        <summary>📊 Abonnements et historique <span>options avancées</span></summary>
+        <div class="admin-tools-body">
+          <div id="push-subscriber-breakdown" class="note push-breakdown"></div>
+
+          <div class="field push-url-field">
+            <label for="push-url">Page ouverte au toucher</label>
+            <input type="text" id="push-url" value="index.html" placeholder="index.html" />
+            <span class="note">Laisse <strong>index.html</strong> dans la plupart des cas.</span>
+          </div>
+
+          <label class="history-label">Dernières notifications envoyées</label>
           <div id="push-history" class="push-history">
             <div class="note">Historique en cours de chargement…</div>
           </div>
         </div>
-      </div>
+      </details>
     </section>
 
-    <div class="bar-actions">
-      <button class="btn btn-primary" type="button" id="btn-add-week">➕ Ajouter une semaine</button>
-      <div class="action-pack">
-        <p id="save-status-top" class="save-status top-save-status" aria-live="polite"></p>
-        <button class="btn" type="button" id="btn-generate">🧩 Générer le code JS</button>
-        <button class="btn btn-primary" type="button" id="btn-save">💾 Enregistrer dans Supabase</button>
-        <button class="btn" type="button" id="btn-export">⬇️ Export planning.js secours</button>
-      </div>
-    </div>
-
-    <div id="weeks-container" class="weeks-container">
-      <!-- Les semaines seront ajoutées ici en JS -->
-    </div>
-
-    <div class="output-block">
-      <label for="output">
-        Aperçu / sauvegarde de secours <code>planning.js</code> :
-      </label>
-      <textarea id="output" readonly placeholder="// Le code apparaîtra ici après clic sur “Visualiser” ou “Générer le code JS”"></textarea>
-      <p class="small-info">
-        💾 Le bouton principal enregistre maintenant dans Supabase. Cet aperçu sert de sauvegarde manuelle si besoin.
-      </p>
-      <p id="save-status" class="save-status" aria-live="polite"></p>
-    </div>
-
-    <details class="maintenance-panel">
-      <summary>Maintenance avancée</summary>
-      <div class="maintenance-body">
-        <p class="danger-mini">
-          Zone volontairement cachée : ici tu peux créer/charger des sauvegardes et remettre la base à zéro pour préparer une nouvelle année.
-          L’accès au générateur + les règles Supabase restent la vraie sécurité ; cette zone ajoute une confirmation anti-bêtise.
-        </p>
-
-        <div id="maintenance-locked" class="maintenance-grid">
-          <div class="field">
-            <label>Code d’accès maintenance</label>
-            <input type="password" id="maintenance-unlock-input" placeholder="Indice : MAINTENANCE" autocomplete="off" />
-          </div>
-          <button class="btn btn-secondary" type="button" id="btn-maintenance-unlock">Déverrouiller</button>
+    <!-- ONGLET REGLAGES -->
+    <section class="admin-view-panel" data-admin-panel="settings">
+      <div class="admin-section-heading">
+        <div>
+          <h2>Réglages du site</h2>
+          <p>Paramètres moins fréquents. Ils sont enregistrés avec le planning.</p>
         </div>
+      </div>
 
-        <div id="maintenance-tools" class="hidden">
-          <div class="maintenance-grid">
-            <div class="field">
-              <label>Sauvegardes disponibles</label>
-              <select id="backup-select"></select>
-            </div>
-            <button class="btn btn-secondary" type="button" id="btn-refresh-backups">🔄 Actualiser</button>
-            <button class="btn btn-primary" type="button" id="btn-restore-backup">↩️ Charger la sauvegarde</button>
+      <section class="config-block admin-setting-card">
+        <div class="config-title">👥 Organisation des groupes</div>
+        <div class="field full super-admin-setting">
+          <div class="field-inline setting-toggle-row">
+            <input type="checkbox" id="setting-merge-eaj23" checked />
+            <span><strong>Fusionner EAJ2 et EAJ3 en « EAJ 2-3 »</strong></span>
           </div>
+          <span class="note">Les nouvelles semaines utilisent EAJ 2-3 par défaut. Une semaine peut toujours être exceptionnellement séparée.</span>
+        </div>
+      </section>
 
-          <hr style="border:0;border-top:1px dashed rgba(248,113,113,.35);margin:.9rem 0;">
+      <section class="config-block admin-setting-card">
+        <div class="config-title">📣 Bannières du site</div>
+        <div class="field full">
+          <div class="banner-admin-toolbar">
+            <label class="field-inline banner-master-toggle">
+              <input type="checkbox" id="banner-actif" checked />
+              <span>Afficher les bannières</span>
+            </label>
+            <button class="btn btn-small" type="button" id="btn-add-banner">➕ Ajouter une bannière</button>
+          </div>
+          <div id="banners-container" class="banners-container"></div>
+        </div>
+      </section>
 
-          <div class="maintenance-grid">
+      <details class="admin-tools-details" open>
+        <summary>✍️ Signature de mise à jour</summary>
+        <div class="admin-tools-body">
+          <div class="config-grid">
             <div class="field">
-              <label>Confirmation remise à zéro</label>
-              <input type="text" id="reset-confirm-phrase" placeholder="Tape : RINCER LA BASE" autocomplete="off" />
+              <label>Dernière mise à jour – Auteur</label>
+              <input type="text" id="lastupdate-auteur" value="Yoann" />
             </div>
             <div class="field">
-              <label>Code affiché : <span id="reset-code-display" class="danger-code">----</span></label>
-              <input type="text" id="reset-confirm-code" placeholder="Recopie le code" inputmode="numeric" autocomplete="off" />
+              <label>Dernière mise à jour – Date</label>
+              <input type="text" id="lastupdate-date" placeholder="JJ/MM/AAAA" maxlength="10" inputmode="numeric" autocomplete="off" />
+              <span class="note">Laisse vide pour utiliser la date du jour.</span>
             </div>
-            <button class="btn btn-danger" type="button" id="btn-reset-db">🧨 Sauvegarder puis rincer la base</button>
           </div>
         </div>
+      </details>
 
-        <p id="maintenance-status" class="maintenance-status" aria-live="polite"></p>
-      </div>
-    </details>
+      <details class="maintenance-panel">
+        <summary>🛠️ Maintenance avancée</summary>
+        <div class="maintenance-body">
+          <p class="danger-mini">Sauvegardes, restauration et remise à zéro de la base. Cette zone n’est pas nécessaire pour la gestion courante.</p>
+
+          <div id="maintenance-locked" class="maintenance-grid">
+            <div class="field">
+              <label>Code d’accès maintenance</label>
+              <input type="password" id="maintenance-unlock-input" placeholder="Indice : MAINTENANCE" autocomplete="off" />
+            </div>
+            <button class="btn btn-secondary" type="button" id="btn-maintenance-unlock">Déverrouiller</button>
+          </div>
+
+          <div id="maintenance-tools" class="hidden">
+            <div class="maintenance-grid">
+              <div class="field">
+                <label>Sauvegardes disponibles</label>
+                <select id="backup-select"></select>
+              </div>
+              <button class="btn btn-secondary" type="button" id="btn-refresh-backups">🔄 Actualiser</button>
+              <button class="btn btn-primary" type="button" id="btn-restore-backup">↩️ Charger la sauvegarde</button>
+            </div>
+
+            <hr style="border:0;border-top:1px dashed rgba(248,113,113,.35);margin:.9rem 0;">
+
+            <div class="maintenance-grid">
+              <div class="field">
+                <label>Confirmation remise à zéro</label>
+                <input type="text" id="reset-confirm-phrase" placeholder="Tape : RINCER LA BASE" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label>Code affiché : <span id="reset-code-display" class="danger-code">----</span></label>
+                <input type="text" id="reset-confirm-code" placeholder="Recopie le code" inputmode="numeric" autocomplete="off" />
+              </div>
+              <button class="btn btn-danger" type="button" id="btn-reset-db">🧨 Sauvegarder puis rincer la base</button>
+            </div>
+          </div>
+
+          <p id="maintenance-status" class="maintenance-status" aria-live="polite"></p>
+        </div>
+      </details>
+    </section>
   </main>
 
   <footer>
@@ -1122,7 +1365,7 @@
 
   <!-- Scripts : Supabase + données de secours + générateur -->
 <script>
-  window.EAJ_BUILD = "1.7.0";
+  window.EAJ_BUILD = "1.7.1";
   (function () {
     const bust = Date.now();
 
@@ -1184,11 +1427,11 @@
     }
 
     loadClassic("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", function () {
-      loadSafe(`./supabase-config.js?v=1.7.0-${bust}`, function () {
-        loadSafe(`./planning.js?v=1.7.0-${bust}`, function () {
-          loadSafe(`./planning-api.js?v=1.7.0-${bust}`, function (apiOk) {
+      loadSafe(`./supabase-config.js?v=1.7.1-${bust}`, function () {
+        loadSafe(`./planning.js?v=1.7.1-${bust}`, function () {
+          loadSafe(`./planning-api.js?v=1.7.1-${bust}`, function (apiOk) {
             if (!apiOk) return;
-            loadSafe(`./eaj-generator.js?v=1.7.0-${bust}`);
+            loadSafe(`./eaj-generator.js?v=1.7.1-${bust}`);
           });
         }, { optional: true });
       });

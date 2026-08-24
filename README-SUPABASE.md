@@ -128,7 +128,7 @@ Cela veut dire que le navigateur ne reçoit pas le vrai fichier JavaScript. À l
 
 La version 1.4.3 ajoute un chargeur plus robuste qui évite de tenter d'exécuter une page HTML comme du JavaScript.
 
-## Version 1.7.0 — préférences et ciblage des notifications
+## Version 1.7.1 — préférences et ciblage des notifications
 
 Cette version ajoute :
 

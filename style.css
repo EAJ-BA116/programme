@@ -2032,7 +2032,7 @@ body[data-theme="dark"] .menu-notification-status.error {
 
 
 /* =============================
-   v1.7.0 – préférences Push
+   v1.7.1 – préférences Push
    ============================= */
 .push-preferences-list{display:flex;flex-direction:column;gap:.55rem;margin:.75rem 0;}
 .push-preference-option{display:flex;align-items:flex-start;gap:.7rem;padding:.75rem .8rem;border:1px solid var(--border-soft);border-radius:.85rem;background:var(--bg-card-soft);cursor:pointer;}

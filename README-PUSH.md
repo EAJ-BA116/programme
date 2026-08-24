@@ -1,4 +1,4 @@
-# Notifications Push EAJ — v1.7.0
+# Notifications Push EAJ — v1.7.1
 
 ## Nouveautés
 

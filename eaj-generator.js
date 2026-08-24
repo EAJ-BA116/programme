@@ -159,6 +159,11 @@ const pushSubscriberBreakdown = document.getElementById("push-subscriber-breakdo
 const pushAdminStatus      = document.getElementById("push-admin-status");
 const pushHistory          = document.getElementById("push-history");
 
+// Navigation Super Admin simplifiée
+const adminTabButtons      = Array.from(document.querySelectorAll("[data-admin-view]"));
+const adminViewPanels      = Array.from(document.querySelectorAll("[data-admin-panel]"));
+const btnAdminLogoutMain   = document.getElementById("btn-admin-logout-main");
+
 // Bannières (multi)
 const bannersContainer = document.getElementById("banners-container");
 const btnAddBanner     = document.getElementById("btn-add-banner");
@@ -2048,7 +2053,7 @@ async function rafraichirPushAdmin() {
     typeof window.EAJPlanning.getPushSubscriberStats !== "function" ||
     typeof window.EAJPlanning.listPushNotifications !== "function"
   ) {
-    setPushAdminStatus("Module push v1.7.0 absent de planning-api.js.", "error");
+    setPushAdminStatus("Module push v1.7.x absent de planning-api.js.", "error");
     return;
   }
 
@@ -2079,7 +2084,7 @@ async function rafraichirPushAdmin() {
     if (pushSubscriberBreakdown) pushSubscriberBreakdown.textContent = "";
     renderPushHistory([]);
     setPushAdminStatus(
-      "Notifications v1.7.0 non initialisées. Exécute la migration v1.7.0 puis redéploie la fonction Edge send-eaj-push.",
+      "Notifications v1.7.x non initialisées. Exécute la migration v1.7.0 puis redéploie la fonction Edge send-eaj-push.",
       "error"
     );
   } finally {
@@ -2332,6 +2337,55 @@ function initialiserMaintenance() {
 }
 
 // ===============================
+//  Navigation Super Admin simplifiée
+// ===============================
+
+function ouvrirVueAdmin(viewName = "planning", options = {}) {
+  const allowed = new Set(["planning", "notifications", "settings"]);
+  const target = allowed.has(viewName) ? viewName : "planning";
+
+  adminTabButtons.forEach(btn => {
+    const active = btn.dataset.adminView === target;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", active ? "true" : "false");
+  });
+
+  adminViewPanels.forEach(panel => {
+    panel.classList.toggle("active", panel.dataset.adminPanel === target);
+  });
+
+  try { localStorage.setItem("eaj-admin-view", target); } catch (e) {}
+
+  if (target === "notifications" && typeof rafraichirPushAdmin === "function") {
+    rafraichirPushAdmin();
+  }
+
+  if (options.scroll !== false) {
+    const nav = document.querySelector(".admin-tabs");
+    if (nav && nav.scrollIntoView) nav.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function initialiserNavigationAdmin() {
+  adminTabButtons.forEach(btn => {
+    btn.addEventListener("click", () => ouvrirVueAdmin(btn.dataset.adminView || "planning"));
+  });
+
+  if (btnAdminLogoutMain) {
+    btnAdminLogoutMain.addEventListener("click", () => {
+      if (authLogout) authLogout.click();
+    });
+  }
+
+  let initialView = "planning";
+  try {
+    const saved = localStorage.getItem("eaj-admin-view");
+    if (["planning", "notifications", "settings"].includes(saved)) initialView = saved;
+  } catch (e) {}
+  ouvrirVueAdmin(initialView, { scroll: false });
+}
+
+// ===============================
 //  Initialisation globale
 // ===============================
 
@@ -2339,6 +2393,7 @@ async function initGeneratorApp() {
   const lastUpdateInput = document.getElementById("lastupdate-date");
   const bannerActifInput = document.getElementById("banner-actif");
 
+  initialiserNavigationAdmin();
   initialiserMaintenance();
   initialiserPushAdmin();
 

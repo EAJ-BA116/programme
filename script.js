@@ -13,8 +13,8 @@ const TYPES_ACTIVITE = {
   autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
 };
 
-// v1.7.0 — Meta
-const APP_VERSION = "1.7.0";
+// v1.7.1 — Meta
+const APP_VERSION = "1.7.1";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -1711,7 +1711,7 @@ async function getPushServiceWorkerRegistration() {
   if (__eajPushRegistration) return __eajPushRegistration;
   if (!pushIsSupported()) return null;
 
-  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.7.0", {
+  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.7.1", {
     scope: "./",
     updateViaCache: "none"
   });
