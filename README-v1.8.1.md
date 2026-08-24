@@ -23,7 +23,7 @@
 
 ## Installation
 1. Mettre en ligne les fichiers de la v1.8.1.
-2. Dans Supabase > SQL Editor, exécuter une seule fois `supabase-migration-v1.8.1.sql`.
+2. Si ce n’est pas déjà fait, exécuter la migration `supabase-migration-v1.8.0.sql` (journal public). La v1.8.1 elle-même n’ajoute aucune migration.
 3. Aucune modification de la fonction Edge `send-eaj-push` n'est nécessaire par rapport à la v1.7.x.
 4. Les utilisateurs doivent ouvrir l'application au moins une fois en ligne après la mise à jour afin que le nouveau Service Worker constitue son cache hors ligne.
 

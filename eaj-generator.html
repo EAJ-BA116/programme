@@ -843,11 +843,46 @@
 
     .push-history-head {
       display: flex;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 0.6rem;
       flex-wrap: wrap;
       font-weight: 650;
       color: var(--text-main);
+    }
+
+    .push-history-title { min-width: 0; flex: 1 1 260px; }
+
+    .push-history-head-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      flex: 0 0 auto;
+    }
+
+    .push-history-counts { white-space: nowrap; }
+
+    .btn-push-delete {
+      border: 1px solid #f1a5a5;
+      background: #fff5f5;
+      color: #b42318;
+      border-radius: 0.55rem;
+      padding: 0.34rem 0.55rem;
+      font: inherit;
+      font-size: 0.76rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-push-delete:hover { background: #fee2e2; }
+    .btn-push-delete:disabled { opacity: 0.6; cursor: wait; }
+
+    body[data-theme="dark"] .btn-push-delete {
+      background: rgba(127, 29, 29, 0.26);
+      border-color: rgba(252, 165, 165, 0.5);
+      color: #fecaca;
     }
 
     .push-history-meta {
@@ -863,7 +898,7 @@
     }
 
 
-    /* ===== Admin simplifié v1.8.1 ===== */
+    /* ===== Admin simplifié v1.8.2 ===== */
     .admin-heading-row {
       display: flex;
       align-items: center;
@@ -1365,7 +1400,7 @@
 
   <!-- Scripts : Supabase + données de secours + générateur -->
 <script>
-  window.EAJ_BUILD = "1.8.1";
+  window.EAJ_BUILD = "1.8.2";
   (function () {
     const bust = Date.now();
 
@@ -1427,11 +1462,11 @@
     }
 
     loadClassic("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", function () {
-      loadSafe(`./supabase-config.js?v=1.8.1-${bust}`, function () {
-        loadSafe(`./planning.js?v=1.8.1-${bust}`, function () {
-          loadSafe(`./planning-api.js?v=1.8.1-${bust}`, function (apiOk) {
+      loadSafe(`./supabase-config.js?v=1.8.2-${bust}`, function () {
+        loadSafe(`./planning.js?v=1.8.2-${bust}`, function () {
+          loadSafe(`./planning-api.js?v=1.8.2-${bust}`, function (apiOk) {
             if (!apiOk) return;
-            loadSafe(`./eaj-generator.js?v=1.8.1-${bust}`);
+            loadSafe(`./eaj-generator.js?v=1.8.2-${bust}`);
           });
         }, { optional: true });
       });

@@ -2014,17 +2014,56 @@ function renderPushHistory(items) {
   items.forEach(item => {
     const card = document.createElement("div");
     card.className = "push-history-item";
+    card.dataset.notificationId = item.id || "";
 
     const head = document.createElement("div");
     head.className = "push-history-head";
 
     const title = document.createElement("span");
+    title.className = "push-history-title";
     title.textContent = `${getPushKindLabel(item.kind)} — ${item.title || "Sans titre"}`;
 
-    const counts = document.createElement("span");
-    counts.textContent = `✅ ${item.sent_count || 0}  •  ❌ ${item.failed_count || 0}`;
+    const headRight = document.createElement("div");
+    headRight.className = "push-history-head-actions";
 
-    head.append(title, counts);
+    const counts = document.createElement("span");
+    counts.className = "push-history-counts";
+    counts.textContent = `✅ ${item.sent_count || 0}  •  ❌ ${item.failed_count || 0}`;
+    headRight.appendChild(counts);
+
+    if (item.id) {
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "btn-push-delete";
+      deleteBtn.textContent = "🗑️ Supprimer";
+      deleteBtn.title = "Supprimer ce message de l’historique et des Dernières informations";
+      deleteBtn.addEventListener("click", async () => {
+        const ok = confirm(`Supprimer définitivement ce message ?\n\n${item.title || "Sans titre"}\n\nIl disparaîtra aussi du journal « Dernières informations ». `);
+        if (!ok) return;
+
+        try {
+          deleteBtn.disabled = true;
+          deleteBtn.textContent = "⏳ Suppression...";
+          setPushAdminStatus("Suppression du message en cours...", "info");
+
+          if (!window.EAJPlanning || typeof window.EAJPlanning.deletePushNotification !== "function") {
+            throw new Error("Migration v1.8.2 ou module de suppression manquant.");
+          }
+
+          await window.EAJPlanning.deletePushNotification(item.id);
+          setPushAdminStatus("Message supprimé.", "ok");
+          await rafraichirPushAdmin();
+        } catch (error) {
+          console.error("Erreur suppression notification :", error);
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = "🗑️ Supprimer";
+          setPushAdminStatus(`Suppression impossible : ${error?.message || error}`, "error");
+        }
+      });
+      headRight.appendChild(deleteBtn);
+    }
+
+    head.append(title, headRight);
 
     const body = document.createElement("div");
     body.className = "push-history-body";

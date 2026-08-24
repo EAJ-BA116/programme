@@ -25,7 +25,7 @@ body[data-theme="dark"] {
   --blue-soft: #8bc5f3;
   --blue-light: #173f68;
 
-  --bg-page: #0b2746;
+  --bg-page: #08233f;
   --bg-card: #123a60;
   --bg-card-soft: #194a76;
 
@@ -55,7 +55,7 @@ body {
 body[data-theme="dark"] {
   color-scheme: dark;
   background:
-    radial-gradient(circle at top, #1a5687 0, #0f365d 34%, var(--bg-page) 68%, #081d35 100%);
+    radial-gradient(circle at top, #164b79 0, #0c2f53 34%, var(--bg-page) 68%, #061a30 100%);
 }
 
 /* ⚠️ Bannière d’alerte */
@@ -1964,8 +1964,21 @@ html, body {
 }
 
 body[data-theme="dark"] .activity-filter-control select {
-  background: rgba(59, 130, 246, 0.15);
-  color: var(--blue-soft);
+  background: #123a60;
+  color: #eaf5ff;
+  border: 1px solid #2e648f;
+  color-scheme: dark;
+}
+
+/* La liste native du select reprend elle aussi le thème sombre (Windows/Android/Chrome). */
+body[data-theme="dark"] .activity-filter-control select option {
+  background: #123a60;
+  color: #eaf5ff;
+}
+
+body[data-theme="dark"] .activity-filter-control select option:checked {
+  background: #1e5f98;
+  color: #ffffff;
 }
 
 @media (max-width: 720px) {
@@ -2053,7 +2066,7 @@ body[data-theme="dark"] .menu-notification-status.error {
 body[data-theme="dark"] .push-important-rule{background:rgba(239,68,68,.12);border-color:rgba(248,113,113,.42);}
 
 /* ======================================================
-   v1.8.1 — Mode hors ligne + journal des informations
+   v1.8.2 — Mode hors ligne + journal des informations
    ====================================================== */
 .offline-status {
   max-width: 960px;
@@ -2158,4 +2171,4 @@ body[data-theme="dark"] .offline-status {
 }
 
 
-/* v1.8.1 — le menu reste ouvert et défilable à la molette / au doigt. */
+/* v1.8.2 — le menu reste ouvert et défilable à la molette / au doigt. */

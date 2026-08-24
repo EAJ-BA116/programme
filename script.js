@@ -13,8 +13,8 @@ const TYPES_ACTIVITE = {
   autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
 };
 
-// v1.8.1 — Meta
-const APP_VERSION = "1.8.1";
+// v1.8.2 — Meta
+const APP_VERSION = "1.8.2";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -118,29 +118,18 @@ function formatGroupTargetsPublic(groupes) {
 }
 
 function syncGroupFilterButtons() {
-  const merge = isEaj23MergeEnabledPublic();
+  // v1.8.2 : l’interface publique reste toujours simple :
+  // Tous / EAJ1 / EAJ 2-3. EAJ2 et EAJ3 sont uniquement des sous-filtres.
   const btn23 = document.querySelector('.btn-filter[data-filter="EAJ23"]');
-  const legacy2 = document.querySelector('.btn-filter-legacy[data-filter="EAJ2"]');
-  const legacy3 = document.querySelector('.btn-filter-legacy[data-filter="EAJ3"]');
   const subfilters = document.getElementById("eaj23-subfilters");
 
-  if (btn23) btn23.hidden = !merge;
-  if (legacy2) legacy2.hidden = merge;
-  if (legacy3) legacy3.hidden = merge;
+  if (btn23) btn23.hidden = false;
 
-  let stored = null;
-  try { stored = localStorage.getItem("eaj_filter"); } catch (e) {}
-
-  // En mode fusionné, EAJ2 et EAJ3 restent des sous-filtres valides.
-  // En mode séparé, l'ancien filtre EAJ 2-3 n'a plus de sens.
-  if (!merge && stored === "EAJ23") {
-    stored = "all";
-    try { localStorage.setItem("eaj_filter", "all"); } catch (e) {}
-  }
+  let stored = "all";
+  try { stored = localStorage.getItem("eaj_filter") || "all"; } catch (e) {}
 
   if (subfilters) {
-    const showSubfilters = merge && ["EAJ23", "EAJ2", "EAJ3"].includes(stored || "all");
-    subfilters.hidden = !showSubfilters;
+    subfilters.hidden = !["EAJ23", "EAJ2", "EAJ3"].includes(stored);
   }
 }
 
@@ -148,10 +137,7 @@ function getFiltreActuel() {
   const filtersValides = ["all", "EAJ1", "EAJ23", "EAJ2", "EAJ3"];
   try {
     const stored = localStorage.getItem("eaj_filter");
-    if (stored && filtersValides.includes(stored)) {
-      if (!isEaj23MergeEnabledPublic() && stored === "EAJ23") return "all";
-      return stored;
-    }
+    if (stored && filtersValides.includes(stored)) return stored;
   } catch (e) {}
   return "all";
 }
@@ -181,8 +167,9 @@ function getActivityListForFilter(list, activityFilter = getFiltreActiviteActuel
 }
 
 function getCurrentGroupFilterFromUiOrStorage() {
-  const activeSub = document.querySelector(".btn-subfilter.active");
-  if (activeSub && activeSub.dataset && activeSub.dataset.filter) return activeSub.dataset.filter;
+  const activeSubs = Array.from(document.querySelectorAll(".btn-subfilter.active"));
+  if (activeSubs.length >= 2) return "EAJ23";
+  if (activeSubs.length === 1 && activeSubs[0].dataset?.filter) return activeSubs[0].dataset.filter;
 
   const active = document.querySelector(".btn-filter.active");
   if (active && active.dataset && active.dataset.filter) return active.dataset.filter;
@@ -190,24 +177,27 @@ function getCurrentGroupFilterFromUiOrStorage() {
 }
 
 function setGroupFilterUi(filter) {
-  const merge = isEaj23MergeEnabledPublic();
   const boutons = document.querySelectorAll(".btn-filter");
   const subButtons = document.querySelectorAll(".btn-subfilter");
   const subfilters = document.getElementById("eaj23-subfilters");
+  const inEaj23 = ["EAJ23", "EAJ2", "EAJ3"].includes(filter);
 
   boutons.forEach(btn => {
     const value = btn.dataset.filter || "all";
-    const parentActive = merge && value === "EAJ23" && ["EAJ23", "EAJ2", "EAJ3"].includes(filter);
+    const parentActive = value === "EAJ23" && inEaj23;
     btn.classList.toggle("active", parentActive || value === filter);
+    btn.setAttribute("aria-pressed", (parentActive || value === filter) ? "true" : "false");
   });
 
   subButtons.forEach(btn => {
-    btn.classList.toggle("active", (btn.dataset.filter || "") === filter);
+    const value = btn.dataset.filter || "";
+    // EAJ23 = les deux sous-groupes sélectionnés.
+    const active = filter === "EAJ23" || value === filter;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", active ? "true" : "false");
   });
 
-  if (subfilters) {
-    subfilters.hidden = !(merge && ["EAJ23", "EAJ2", "EAJ3"].includes(filter));
-  }
+  if (subfilters) subfilters.hidden = !inEaj23;
 }
 
 function getActivityFilterLabel(filter = getFiltreActiviteActuel()) {
@@ -772,9 +762,10 @@ function initialiserFiltreActivite() {
 }
 
 function initialiserFiltres() {
-  const boutons = document.querySelectorAll(".btn-filter, .btn-subfilter");
-  // Sécurité : si les boutons n'existent pas, on affiche quand même les bannières "Tous".
-  if (!boutons.length) {
+  const mainButtons = document.querySelectorAll(".btn-filter");
+  const subButtons = document.querySelectorAll(".btn-subfilter");
+
+  if (!mainButtons.length) {
     renderAlert("all");
     return;
   }
@@ -787,23 +778,50 @@ function initialiserFiltres() {
     try { localStorage.setItem("eaj_filter", "all"); } catch (e) {}
   }
 
-  // Appliquer au démarrage
+  const applyAndStore = (filter) => {
+    appliquerFiltre(filter);
+    renderAlert(filter);
+    setGroupFilterUi(filter);
+    try { localStorage.setItem("eaj_filter", filter); } catch (e) {}
+  };
+
   appliquerFiltre(filtreActuel);
   renderAlert(filtreActuel);
   setGroupFilterUi(filtreActuel);
 
-  // Clics : EAJ2/EAJ3 sont des sous-filtres du parent EAJ 2-3 quand la fusion est active.
-  boutons.forEach(btn => {
+  // Ligne principale : Tous / EAJ1 / EAJ 2-3.
+  mainButtons.forEach(btn => {
     btn.addEventListener("click", () => {
-      const filter = btn.dataset.filter || "all";
+      applyAndStore(btn.dataset.filter || "all");
+    });
+  });
 
-      appliquerFiltre(filter);
-      renderAlert(filter);
-      setGroupFilterUi(filter);
+  // EAJ2 et EAJ3 fonctionnent comme deux cases cumulables sous EAJ 2-3.
+  // Les deux actifs = filtre EAJ23. Un seul actif = filtre EAJ2 ou EAJ3.
+  subButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const clicked = btn.dataset.filter || "";
+      if (!['EAJ2', 'EAJ3'].includes(clicked)) return;
 
-      try {
-        localStorage.setItem("eaj_filter", filter);
-      } catch (e) {}
+      const current = getFiltreActuel();
+      let next = clicked;
+
+      if (current === "EAJ23") {
+        // On décoche le bouton touché et on garde l'autre.
+        next = clicked === "EAJ2" ? "EAJ3" : "EAJ2";
+      } else if (current === "EAJ2" || current === "EAJ3") {
+        if (current === clicked) {
+          // Au moins un sous-groupe doit rester sélectionné.
+          next = current;
+        } else {
+          // Ajout du deuxième sous-groupe = les deux.
+          next = "EAJ23";
+        }
+      } else {
+        next = clicked;
+      }
+
+      applyAndStore(next);
     });
   });
 }
@@ -1175,7 +1193,7 @@ function closeModalById(id){
 /* ---------- Fermer les overlays au scroll ---------- */
 
 function closeOverlaysOnScroll(){
-  // v1.8.1 : le menu principal reste ouvert pendant un scroll,
+  // v1.8.2 : le menu principal reste ouvert pendant un scroll,
   // une molette ou un glissement tactile. Il se ferme uniquement
   // via X, Échap, un choix du menu ou un clic en dehors.
   // La sous-liste « Nos projets » reste elle aussi ouverte pendant le défilement.
@@ -1223,39 +1241,10 @@ function anyOverlayOpen(){
 }
 
 function initialiserCloseOnScroll(){
-  let lastY = window.scrollY;
-
-  window.addEventListener("scroll", () => {
-    // v1.4.1 : pendant "Échange vêtements", on désactive la fermeture automatique au scroll
-    if(isClothesModalOpen()){
-      lastY = window.scrollY;
-      return;
-    }
-    const y = window.scrollY;
-    const nonMenuOverlayOpen = !!document.querySelector(".modal.open")
-      || document.getElementById("admin-modal")?.classList.contains("open");
-    if(y !== lastY && nonMenuOverlayOpen){
-      closeOverlaysOnScroll();
-    }
-    lastY = y;
-  }, { passive: true });
-
-  // Mobile (swipe) + desktop (wheel) : on ferme si le geste n'est pas dans un overlay
-  document.addEventListener("touchmove", (e) => {
-    if(isClothesModalOpen()) return;
-    if(document.getElementById("app-menu")?.classList.contains("open")) return;
-    if(!anyOverlayOpen()) return;
-    if(isTargetInsideOverlay(e.target)) return;
-    closeOverlaysOnScroll();
-  }, { passive: true });
-
-  document.addEventListener("wheel", (e) => {
-    if(isClothesModalOpen()) return;
-    if(document.getElementById("app-menu")?.classList.contains("open")) return;
-    if(!anyOverlayOpen()) return;
-    if(isTargetInsideOverlay(e.target)) return;
-    closeOverlaysOnScroll();
-  }, { passive: true });
+  // v1.8.2 : aucun menu ni aucune fenêtre ne se ferme lors d’un scroll.
+  // Le défilement à la molette et au doigt doit uniquement faire défiler le contenu.
+  // Les overlays se ferment via leur bouton X/Fermer, Échap, une action explicite
+  // ou un clic sur leur fond lorsque celui-ci est prévu.
 }
 
 function initialiserModales(){
@@ -1735,7 +1724,7 @@ function initialiserOfflineMode() {
   window.addEventListener("online", refreshPlanningAfterReconnect);
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js?v=1.8.1", { scope: "./" })
+    navigator.serviceWorker.register("./sw.js?v=1.8.2", { scope: "./" })
       .catch((error) => console.warn("Service Worker hors ligne indisponible :", error));
   }
 }
@@ -1892,7 +1881,7 @@ async function getPushServiceWorkerRegistration() {
   if (__eajPushRegistration) return __eajPushRegistration;
   if (!pushIsSupported()) return null;
 
-  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.8.1", {
+  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.8.2", {
     scope: "./",
     updateViaCache: "none"
   });

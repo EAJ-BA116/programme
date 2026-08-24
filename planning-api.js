@@ -649,6 +649,23 @@
     return Array.isArray(data) ? data : [];
   }
 
+  async function deletePushNotification(id) {
+    const notificationId = String(id || "").trim();
+    if (!notificationId) throw new Error("Identifiant de notification manquant.");
+
+    const client = getClient();
+    const session = await getSession();
+    if (!session || !session.user) {
+      throw new Error("Connexion expirée. Reconnecte-toi puis réessaie.");
+    }
+
+    const { data, error } = await client.rpc("eaj_delete_notification", {
+      p_id: notificationId
+    });
+    if (error) throw error;
+    return data === true;
+  }
+
   async function sendPushNotification(payload) {
     const client = getClient();
     const session = await getSession();
@@ -732,6 +749,7 @@
     getPushSubscriberCount,
     getPushSubscriberStats,
     listPushNotifications,
+    deletePushNotification,
     sendPushNotification,
     listPublicInfoJournal,
     getOfflinePlanningCache,
