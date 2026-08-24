@@ -21,5 +21,5 @@ window.EAJ_SUPABASE = {
 
   // Notifications push Web Push (clé publique VAPID).
   // À renseigner après génération des clés (voir README-PUSH.md).
-  pushPublicKey: "A_REMPLACER_PAR_LA_CLE_PUBLIQUE_VAPID"
+  pushPublicKey: "BHmwd4nHG48XUJu4z7eroAC-qRB41O6o4NjV9n-pqgN1ZOCfwpY7oGGidNcBmEyE1u7ceavHuyplQ7dmfec-7WE"
 };
