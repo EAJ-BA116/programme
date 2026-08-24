@@ -17,5 +17,9 @@ window.EAJ_SUPABASE = {
   // Normalement, tu ne touches pas à ces 2 lignes.
   table: "eaj_planning_state",
   rowId: "main",
-  realtime: true
+  realtime: true,
+
+  // Notifications push Web Push (clé publique VAPID).
+  // À renseigner après génération des clés (voir README-PUSH.md).
+  pushPublicKey: "A_REMPLACER_PAR_LA_CLE_PUBLIQUE_VAPID"
 };

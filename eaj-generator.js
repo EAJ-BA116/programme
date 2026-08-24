@@ -145,6 +145,17 @@ const generatorIntro = document.getElementById("generator-intro");
 const generatorApp   = document.getElementById("generator-app");
 const settingMergeEaj23 = document.getElementById("setting-merge-eaj23");
 
+// Notifications push
+const pushKind             = document.getElementById("push-kind");
+const pushTitle            = document.getElementById("push-title");
+const pushBody             = document.getElementById("push-body");
+const pushUrl              = document.getElementById("push-url");
+const btnSendPush          = document.getElementById("btn-send-push");
+const btnRefreshPush       = document.getElementById("btn-refresh-push");
+const pushSubscriberCount  = document.getElementById("push-subscriber-count");
+const pushAdminStatus      = document.getElementById("push-admin-status");
+const pushHistory          = document.getElementById("push-history");
+
 // Bannières (multi)
 const bannersContainer = document.getElementById("banners-container");
 const btnAddBanner     = document.getElementById("btn-add-banner");
@@ -1910,6 +1921,190 @@ function chargerPlanningExistant(sourceData) {
 }
 
 // ===============================
+//  Notifications push — Super Admin
+// ===============================
+
+function setPushAdminStatus(message = "", type = "info") {
+  if (!pushAdminStatus) return;
+  pushAdminStatus.textContent = message;
+  pushAdminStatus.classList.remove("ok", "error", "info");
+  if (type) pushAdminStatus.classList.add(type);
+}
+
+function getPushKindLabel(kind) {
+  const labels = {
+    information: "ℹ️ Information",
+    important: "🚨 Important",
+    update: "🆕 Mise à jour",
+    reminder: "⏰ Rappel"
+  };
+  return labels[kind] || labels.information;
+}
+
+function renderPushHistory(items) {
+  if (!pushHistory) return;
+  pushHistory.innerHTML = "";
+
+  if (!Array.isArray(items) || !items.length) {
+    const empty = document.createElement("div");
+    empty.className = "note";
+    empty.textContent = "Aucune notification envoyée pour le moment.";
+    pushHistory.appendChild(empty);
+    return;
+  }
+
+  items.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "push-history-item";
+
+    const head = document.createElement("div");
+    head.className = "push-history-head";
+
+    const title = document.createElement("span");
+    title.textContent = `${getPushKindLabel(item.kind)} — ${item.title || "Sans titre"}`;
+
+    const counts = document.createElement("span");
+    counts.textContent = `✅ ${item.sent_count || 0}  •  ❌ ${item.failed_count || 0}`;
+
+    head.append(title, counts);
+
+    const body = document.createElement("div");
+    body.className = "push-history-body";
+    body.textContent = item.body || "";
+
+    const meta = document.createElement("div");
+    meta.className = "push-history-meta";
+    const date = item.created_at ? new Date(item.created_at).toLocaleString("fr-FR") : "date inconnue";
+    const statusLabels = { pending: "En attente", sent: "Envoyée", partial: "Partielle", failed: "Échec" };
+    const statusLabel = item.status ? (statusLabels[item.status] || item.status) : "";
+    meta.textContent = `${date}${item.created_by_name ? " — " + item.created_by_name : ""}${statusLabel ? " — " + statusLabel : ""}`;
+
+    card.append(head, body, meta);
+    pushHistory.appendChild(card);
+  });
+}
+
+async function rafraichirPushAdmin() {
+  if (!pushSubscriberCount || !pushHistory) return;
+
+  if (!window.EAJPlanning || !window.EAJPlanning.isConfigured()) {
+    pushSubscriberCount.textContent = "Appareils inscrits : indisponible";
+    setPushAdminStatus("Supabase n'est pas configuré.", "error");
+    return;
+  }
+
+  if (
+    typeof window.EAJPlanning.getPushSubscriberCount !== "function" ||
+    typeof window.EAJPlanning.listPushNotifications !== "function"
+  ) {
+    setPushAdminStatus("Module push absent de planning-api.js.", "error");
+    return;
+  }
+
+  try {
+    setButtonLoading(btnRefreshPush, true, "⏳");
+    const [count, history] = await Promise.all([
+      window.EAJPlanning.getPushSubscriberCount(),
+      window.EAJPlanning.listPushNotifications(10)
+    ]);
+    pushSubscriberCount.textContent = `Appareils inscrits : ${count}`;
+    renderPushHistory(history);
+
+    const publicKey = typeof window.EAJPlanning.getPushPublicKey === "function"
+      ? window.EAJPlanning.getPushPublicKey()
+      : "";
+
+    if (!publicKey) {
+      setPushAdminStatus("Base Push prête, mais la clé publique VAPID n'est pas encore renseignée dans supabase-config.js.", "info");
+    } else {
+      setPushAdminStatus("Centre de notifications prêt.", "ok");
+    }
+  } catch (error) {
+    console.error("Erreur chargement notifications push :", error);
+    pushSubscriberCount.textContent = "Appareils inscrits : ?";
+    renderPushHistory([]);
+    setPushAdminStatus(
+      "Notifications non initialisées dans Supabase. Exécute la migration v1.6.0 puis déploie la fonction Edge.",
+      "error"
+    );
+  } finally {
+    setButtonLoading(btnRefreshPush, false);
+  }
+}
+
+async function envoyerNotificationPush() {
+  const kind = pushKind?.value || "information";
+  const title = (pushTitle?.value || "").trim();
+  const body = (pushBody?.value || "").trim();
+  const url = (pushUrl?.value || "index.html").trim() || "index.html";
+
+  if (!title || !body) {
+    setPushAdminStatus("Renseigne un titre et un message.", "error");
+    return;
+  }
+
+  let countText = pushSubscriberCount?.textContent || "";
+  const countMatch = countText.match(/(\d+)/);
+  const count = countMatch ? Number(countMatch[1]) : null;
+  const targetText = count === null ? "aux appareils inscrits" : `à ${count} appareil${count > 1 ? "s" : ""}`;
+
+  const ok = confirm(`Envoyer cette notification ${targetText} ?\n\n${title}\n${body}`);
+  if (!ok) return;
+
+  try {
+    setButtonLoading(btnSendPush, true, "⏳ Envoi...");
+    setPushAdminStatus("Envoi de la notification en cours...", "info");
+
+    const result = await window.EAJPlanning.sendPushNotification({
+      kind,
+      title,
+      body,
+      url
+    });
+
+    const sent = Number(result?.sent || 0);
+    const failed = Number(result?.failed || 0);
+
+    setPushAdminStatus(
+      `Notification envoyée : ${sent} reçue${sent > 1 ? "s" : ""}${failed ? `, ${failed} échec${failed > 1 ? "s" : ""}` : ""}.`,
+      failed ? "info" : "ok"
+    );
+
+    if (pushBody) pushBody.value = "";
+    await rafraichirPushAdmin();
+  } catch (error) {
+    console.error("Erreur envoi push :", error);
+    const message = error?.message || String(error);
+    setPushAdminStatus(`Envoi impossible : ${message}`, "error");
+    alert(`Notification non envoyée : ${message}`);
+  } finally {
+    setButtonLoading(btnSendPush, false);
+  }
+}
+
+function initialiserPushAdmin() {
+  if (!btnSendPush) return;
+
+  btnSendPush.addEventListener("click", envoyerNotificationPush);
+  if (btnRefreshPush) btnRefreshPush.addEventListener("click", rafraichirPushAdmin);
+
+  if (pushKind) {
+    pushKind.addEventListener("change", () => {
+      const currentTitle = (pushTitle?.value || "").trim();
+      if (!pushTitle || (currentTitle && currentTitle !== "EAJ BA 116" && !currentTitle.startsWith("Mise à jour"))) return;
+
+      if (pushKind.value === "update") {
+        pushTitle.value = "Mise à jour EAJ BA 116";
+      } else if (!currentTitle || currentTitle.startsWith("Mise à jour")) {
+        pushTitle.value = "EAJ BA 116";
+      }
+    });
+  }
+
+  rafraichirPushAdmin();
+}
+
+// ===============================
 //  Maintenance : sauvegardes / remise à zéro
 // ===============================
 
@@ -2086,6 +2281,7 @@ async function initGeneratorApp() {
   const bannerActifInput = document.getElementById("banner-actif");
 
   initialiserMaintenance();
+  initialiserPushAdmin();
 
   // Permet de taper la date facilement (ex: 23012026 -> 23/01/2026)
   if (lastUpdateInput) {

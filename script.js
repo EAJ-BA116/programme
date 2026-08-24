@@ -13,8 +13,8 @@ const TYPES_ACTIVITE = {
   autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
 };
 
-// v1.5.0 — Meta
-const APP_VERSION = "1.5.0";
+// v1.6.0 — Meta
+const APP_VERSION = "1.6.0";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -120,18 +120,27 @@ function formatGroupTargetsPublic(groupes) {
 function syncGroupFilterButtons() {
   const merge = isEaj23MergeEnabledPublic();
   const btn23 = document.querySelector('.btn-filter[data-filter="EAJ23"]');
-  const btn2 = document.querySelector('.btn-filter[data-filter="EAJ2"]');
-  const btn3 = document.querySelector('.btn-filter[data-filter="EAJ3"]');
+  const legacy2 = document.querySelector('.btn-filter-legacy[data-filter="EAJ2"]');
+  const legacy3 = document.querySelector('.btn-filter-legacy[data-filter="EAJ3"]');
+  const subfilters = document.getElementById("eaj23-subfilters");
+
   if (btn23) btn23.hidden = !merge;
-  if (btn2) btn2.hidden = merge;
-  if (btn3) btn3.hidden = merge;
+  if (legacy2) legacy2.hidden = merge;
+  if (legacy3) legacy3.hidden = merge;
 
   let stored = null;
   try { stored = localStorage.getItem("eaj_filter"); } catch (e) {}
-  if (merge && (stored === "EAJ2" || stored === "EAJ3")) {
-    try { localStorage.setItem("eaj_filter", "EAJ23"); } catch (e) {}
-  } else if (!merge && stored === "EAJ23") {
+
+  // En mode fusionné, EAJ2 et EAJ3 restent des sous-filtres valides.
+  // En mode séparé, l'ancien filtre EAJ 2-3 n'a plus de sens.
+  if (!merge && stored === "EAJ23") {
+    stored = "all";
     try { localStorage.setItem("eaj_filter", "all"); } catch (e) {}
+  }
+
+  if (subfilters) {
+    const showSubfilters = merge && ["EAJ23", "EAJ2", "EAJ3"].includes(stored || "all");
+    subfilters.hidden = !showSubfilters;
   }
 }
 
@@ -140,7 +149,6 @@ function getFiltreActuel() {
   try {
     const stored = localStorage.getItem("eaj_filter");
     if (stored && filtersValides.includes(stored)) {
-      if (isEaj23MergeEnabledPublic() && (stored === "EAJ2" || stored === "EAJ3")) return "EAJ23";
       if (!isEaj23MergeEnabledPublic() && stored === "EAJ23") return "all";
       return stored;
     }
@@ -173,14 +181,33 @@ function getActivityListForFilter(list, activityFilter = getFiltreActiviteActuel
 }
 
 function getCurrentGroupFilterFromUiOrStorage() {
+  const activeSub = document.querySelector(".btn-subfilter.active");
+  if (activeSub && activeSub.dataset && activeSub.dataset.filter) return activeSub.dataset.filter;
+
   const active = document.querySelector(".btn-filter.active");
   if (active && active.dataset && active.dataset.filter) return active.dataset.filter;
   return getFiltreActuel();
 }
 
 function setGroupFilterUi(filter) {
+  const merge = isEaj23MergeEnabledPublic();
   const boutons = document.querySelectorAll(".btn-filter");
-  boutons.forEach(btn => btn.classList.toggle("active", (btn.dataset.filter || "all") === filter));
+  const subButtons = document.querySelectorAll(".btn-subfilter");
+  const subfilters = document.getElementById("eaj23-subfilters");
+
+  boutons.forEach(btn => {
+    const value = btn.dataset.filter || "all";
+    const parentActive = merge && value === "EAJ23" && ["EAJ23", "EAJ2", "EAJ3"].includes(filter);
+    btn.classList.toggle("active", parentActive || value === filter);
+  });
+
+  subButtons.forEach(btn => {
+    btn.classList.toggle("active", (btn.dataset.filter || "") === filter);
+  });
+
+  if (subfilters) {
+    subfilters.hidden = !(merge && ["EAJ23", "EAJ2", "EAJ3"].includes(filter));
+  }
 }
 
 function getActivityFilterLabel(filter = getFiltreActiviteActuel()) {
@@ -745,7 +772,7 @@ function initialiserFiltreActivite() {
 }
 
 function initialiserFiltres() {
-  const boutons = document.querySelectorAll(".btn-filter");
+  const boutons = document.querySelectorAll(".btn-filter, .btn-subfilter");
   // Sécurité : si les boutons n'existent pas, on affiche quand même les bannières "Tous".
   if (!boutons.length) {
     renderAlert("all");
@@ -762,22 +789,17 @@ function initialiserFiltres() {
 
   // Appliquer au démarrage
   appliquerFiltre(filtreActuel);
-  // 🔔 Bannière filtrée (EAJ1/2/3)
   renderAlert(filtreActuel);
-
-  // Etat visuel
   setGroupFilterUi(filtreActuel);
 
-  // Clics
+  // Clics : EAJ2/EAJ3 sont des sous-filtres du parent EAJ 2-3 quand la fusion est active.
   boutons.forEach(btn => {
     btn.addEventListener("click", () => {
       const filter = btn.dataset.filter || "all";
 
-      boutons.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-
       appliquerFiltre(filter);
       renderAlert(filter);
+      setGroupFilterUi(filter);
 
       try {
         localStorage.setItem("eaj_filter", filter);
@@ -1306,6 +1328,7 @@ function initialiserMenu(){
       if(act === "open-contact"){ openModalById("contact-modal"); return; }
       if(act === "open-admin"){ const a=document.getElementById("admin-link"); if(a) a.click(); return; }
       if(act === "open-clothes"){ openModalById("clothes-modal"); return; }
+      if(act === "toggle-push"){ togglePushNotifications(); return; }
     });
   });
 
@@ -1325,8 +1348,9 @@ function initialiserContactCopy(){
   const setHint=(msg)=>{ if(hint) hint.textContent=msg; };
 
   const getCurrentFilter=()=>{
-    const a=document.querySelector(".btn-filter.active");
-    return (a && a.dataset && a.dataset.filter) ? a.dataset.filter : "all";
+    return typeof getCurrentGroupFilterFromUiOrStorage === "function"
+      ? getCurrentGroupFilterFromUiOrStorage()
+      : "all";
   };
 
   const prettyFilter=(f)=>{
@@ -1650,6 +1674,182 @@ function initialiserClothesExchange(){
   updateButtons();
 }
 
+/* ---------- Notifications push ---------- */
+
+let __eajPushRegistration = null;
+
+function pushIsSupported() {
+  return (
+    window.isSecureContext &&
+    "serviceWorker" in navigator &&
+    "PushManager" in window &&
+    "Notification" in window
+  );
+}
+
+function getPushPublicKeyConfigured() {
+  if (!window.EAJPlanning || typeof window.EAJPlanning.getPushPublicKey !== "function") return "";
+  return window.EAJPlanning.getPushPublicKey();
+}
+
+function base64UrlToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = window.atob(base64);
+  return Uint8Array.from([...raw].map(char => char.charCodeAt(0)));
+}
+
+async function getPushServiceWorkerRegistration() {
+  if (__eajPushRegistration) return __eajPushRegistration;
+  if (!pushIsSupported()) return null;
+
+  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.6.0", {
+    scope: "./",
+    updateViaCache: "none"
+  });
+
+  return __eajPushRegistration;
+}
+
+async function getCurrentPushSubscription() {
+  const registration = await getPushServiceWorkerRegistration();
+  if (!registration) return null;
+  return await registration.pushManager.getSubscription();
+}
+
+function setPushMenuStatus(message = "", state = "") {
+  const el = document.getElementById("push-menu-status");
+  if (!el) return;
+  el.textContent = message;
+  el.classList.remove("ok", "warn", "error");
+  if (state) el.classList.add(state);
+}
+
+async function refreshPushMenuUi() {
+  const btn = document.getElementById("push-menu-button");
+  if (!btn) return;
+
+  const statusEl = document.getElementById("push-menu-status");
+
+  // Tant que la configuration Push n'est pas terminée (ou si le navigateur
+  // n'est pas compatible), on ne montre pas une option inutilisable au public.
+  if (!pushIsSupported() || !getPushPublicKeyConfigured()) {
+    btn.hidden = true;
+    if (statusEl) statusEl.hidden = true;
+    return;
+  }
+
+  btn.hidden = false;
+  if (statusEl) statusEl.hidden = false;
+  btn.disabled = false;
+
+  if (Notification.permission === "denied") {
+    btn.textContent = "🔕 Notifications bloquées";
+    setPushMenuStatus("Autorisation refusée dans les réglages du navigateur.", "error");
+    return;
+  }
+
+  try {
+    const subscription = await getCurrentPushSubscription();
+    if (subscription) {
+      btn.textContent = "🔔 Notifications activées";
+      setPushMenuStatus("Tu recevras les informations importantes envoyées par les responsables EAJ.", "ok");
+
+      // Ré-enregistre discrètement l'abonnement s'il existait déjà avant une migration ou un changement de navigateur.
+      try {
+        if (window.EAJPlanning?.savePushSubscription) {
+          await window.EAJPlanning.savePushSubscription(subscription);
+        }
+      } catch (error) {
+        console.warn("Abonnement push local présent mais synchronisation Supabase impossible :", error);
+      }
+    } else {
+      btn.textContent = "🔔 Activer les notifications";
+      setPushMenuStatus("Activation volontaire : aucune demande ne s'affiche sans appuyer ici.");
+    }
+  } catch (error) {
+    console.warn("Impossible de lire l'état des notifications :", error);
+    btn.textContent = "🔔 Activer les notifications";
+    setPushMenuStatus("État des notifications indisponible pour le moment.", "warn");
+  }
+}
+
+async function enablePushNotifications() {
+  const publicKey = getPushPublicKeyConfigured();
+  if (!publicKey) throw new Error("La clé publique VAPID n'est pas encore configurée.");
+
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    if (permission === "denied") {
+      throw new Error("Les notifications ont été refusées. Il faut les autoriser dans les réglages du navigateur.");
+    }
+    return false;
+  }
+
+  const registration = await getPushServiceWorkerRegistration();
+  let subscription = await registration.pushManager.getSubscription();
+
+  if (!subscription) {
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: base64UrlToUint8Array(publicKey)
+    });
+  }
+
+  try {
+    await window.EAJPlanning.savePushSubscription(subscription);
+  } catch (error) {
+    try { await subscription.unsubscribe(); } catch (e) {}
+    throw error;
+  }
+
+  return true;
+}
+
+async function disablePushNotifications() {
+  const subscription = await getCurrentPushSubscription();
+  if (!subscription) return true;
+
+  try {
+    if (window.EAJPlanning?.removePushSubscription) {
+      await window.EAJPlanning.removePushSubscription(subscription.endpoint);
+    }
+  } finally {
+    await subscription.unsubscribe();
+  }
+
+  return true;
+}
+
+async function togglePushNotifications() {
+  const btn = document.getElementById("push-menu-button");
+  if (!btn || btn.disabled) return;
+
+  try {
+    btn.disabled = true;
+    const subscription = await getCurrentPushSubscription();
+
+    if (subscription) {
+      const ok = window.confirm("Désactiver les notifications EAJ sur cet appareil ?");
+      if (!ok) return;
+      await disablePushNotifications();
+    } else {
+      await enablePushNotifications();
+    }
+  } catch (error) {
+    console.error("Erreur notifications push :", error);
+    alert(error.message || error);
+  } finally {
+    btn.disabled = false;
+    await refreshPushMenuUi();
+  }
+}
+
+async function initialiserPushNotifications() {
+  if (!document.getElementById("push-menu-button")) return;
+  await refreshPushMenuUi();
+}
+
 /* ---------- Init globale ---------- */
 
 async function initApp() {
@@ -1677,6 +1877,7 @@ async function initApp() {
   initialiserContactCopy();
   initialiserClothesExchange();
   initialiserProjectsMenu();
+  await initialiserPushNotifications();
 
   initialiserBackToTop();
   initialiserAdminModal();
@@ -1698,6 +1899,7 @@ initApp().catch((error) => {
   initialiserContactCopy();
   initialiserClothesExchange();
   initialiserProjectsMenu();
+  initialiserPushNotifications().catch((pushError) => console.warn("Notifications push indisponibles :", pushError));
   initialiserBackToTop();
   initialiserAdminModal();
 });

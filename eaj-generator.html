@@ -804,6 +804,64 @@
     .hidden {
       display: none !important;
     }
+
+    .push-admin-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      flex-wrap: wrap;
+      margin-top: 0.35rem;
+    }
+
+    .push-admin-status {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      min-height: 1.2rem;
+    }
+
+    .push-admin-status.ok { color: #16a34a; }
+    .push-admin-status.error { color: #dc2626; }
+    .push-admin-status.info { color: var(--blue-main); }
+
+    body[data-theme="dark"] .push-admin-status.ok { color: #86efac; }
+    body[data-theme="dark"] .push-admin-status.error { color: #fca5a5; }
+
+    .push-history {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin-top: 0.45rem;
+    }
+
+    .push-history-item {
+      border: 1px solid var(--border-soft);
+      border-radius: 0.7rem;
+      padding: 0.55rem 0.65rem;
+      background: var(--bg-card-soft);
+      font-size: 0.8rem;
+    }
+
+    .push-history-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      font-weight: 650;
+      color: var(--text-main);
+    }
+
+    .push-history-meta {
+      margin-top: 0.2rem;
+      color: var(--text-muted);
+      font-size: 0.74rem;
+    }
+
+    .push-history-body {
+      margin-top: 0.25rem;
+      color: var(--text-main);
+      white-space: pre-wrap;
+    }
+
   </style>
 </head>
 <body data-theme="dark">
@@ -897,6 +955,56 @@
   <span class="note">Saisis une date (ou laisse vide = date du jour).</span>
 </div>
 
+      </div>
+    </section>
+
+    <section class="config-block" id="push-admin-panel">
+      <div class="config-title">🔔 Notifications push</div>
+      <p class="note">Envoi manuel par le Super Admin. Les utilisateurs ne reçoivent des notifications que s’ils les ont activées depuis le menu du site.</p>
+
+      <div class="config-grid" style="margin-top:0.65rem;">
+        <div class="field">
+          <label for="push-kind">Type de notification</label>
+          <select id="push-kind">
+            <option value="information">ℹ️ Information</option>
+            <option value="important">🚨 Information importante</option>
+            <option value="update">🆕 Mise à jour de l’application</option>
+            <option value="reminder">⏰ Rappel</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="push-title">Titre</label>
+          <input type="text" id="push-title" value="EAJ BA 116" maxlength="80" />
+        </div>
+
+        <div class="field full">
+          <label for="push-body">Message</label>
+          <textarea id="push-body" rows="3" maxlength="300" placeholder="Ex : Le programme de mercredi a été modifié. Pensez à consulter l’application."></textarea>
+          <span class="note">Message court recommandé : il s’affichera directement dans la notification du téléphone.</span>
+        </div>
+
+        <div class="field full">
+          <label for="push-url">Page ouverte au toucher</label>
+          <input type="text" id="push-url" value="index.html" placeholder="index.html" />
+          <span class="note">Laisse <strong>index.html</strong> pour ouvrir le programme principal.</span>
+        </div>
+
+        <div class="field full">
+          <div class="push-admin-actions">
+            <button class="btn btn-primary" type="button" id="btn-send-push">📨 Envoyer la notification</button>
+            <button class="btn btn-small" type="button" id="btn-refresh-push">🔄 Actualiser</button>
+            <strong id="push-subscriber-count">Appareils inscrits : …</strong>
+          </div>
+          <div id="push-admin-status" class="push-admin-status" aria-live="polite"></div>
+        </div>
+
+        <div class="field full">
+          <label>Dernières notifications envoyées</label>
+          <div id="push-history" class="push-history">
+            <div class="note">Historique en cours de chargement…</div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -996,7 +1104,7 @@
 
   <!-- Scripts : Supabase + données de secours + générateur -->
 <script>
-  window.EAJ_BUILD = "1.5.0";
+  window.EAJ_BUILD = "1.6.0";
   (function () {
     const bust = Date.now();
 
@@ -1058,11 +1166,11 @@
     }
 
     loadClassic("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", function () {
-      loadSafe(`./supabase-config.js?v=1.5.0-${bust}`, function () {
-        loadSafe(`./planning.js?v=1.5.0-${bust}`, function () {
-          loadSafe(`./planning-api.js?v=1.5.0-${bust}`, function (apiOk) {
+      loadSafe(`./supabase-config.js?v=1.6.0-${bust}`, function () {
+        loadSafe(`./planning.js?v=1.6.0-${bust}`, function () {
+          loadSafe(`./planning-api.js?v=1.6.0-${bust}`, function (apiOk) {
             if (!apiOk) return;
-            loadSafe(`./eaj-generator.js?v=1.5.0-${bust}`);
+            loadSafe(`./eaj-generator.js?v=1.6.0-${bust}`);
           });
         }, { optional: true });
       });

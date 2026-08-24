@@ -128,6 +128,18 @@ Cela veut dire que le navigateur ne reçoit pas le vrai fichier JavaScript. À l
 
 La version 1.4.3 ajoute un chargeur plus robuste qui évite de tenter d'exécuter une page HTML comme du JavaScript.
 
+## Version 1.6.0 — sous-filtres, thème bleu nuit et notifications push
+
+Cette version ajoute :
+
+- les boutons **EAJ2** et **EAJ3** comme sous-filtres de **EAJ 2-3**, visibles uniquement lorsque le groupe EAJ 2-3 est sélectionné ;
+- un mode sombre bleu nuit plus clair, inspiré du logo EAJ, avec davantage de contraste entre le fond, les semaines et les cartes ;
+- un système **Web Push** volontaire : chaque utilisateur active les notifications depuis le menu ;
+- un centre **Notifications push** dans le Super Admin, avec choix du type, du titre, du message et de la page à ouvrir ;
+- un historique des dix derniers envois et le nombre d'appareils inscrits.
+
+Pour activer les notifications sur une base existante, suivre **README-PUSH.md** et exécuter `supabase-migration-v1.6.0.sql`.
+
 ## Version 1.5.0 — fusion EAJ2 / EAJ3
 
 Cette version ajoute :

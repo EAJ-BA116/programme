@@ -460,6 +460,98 @@
     return state.realtimeChannel;
   }
 
+
+
+  function getPushPublicKey() {
+    const key = String(getConfig().pushPublicKey || "").trim();
+    if (!key || key.includes("A_REMPLACER") || key.includes("VAPID")) return "";
+    return key;
+  }
+
+  async function savePushSubscription(subscription) {
+    if (!subscription || !subscription.endpoint) {
+      throw new Error("Abonnement push invalide.");
+    }
+
+    const json = subscription.toJSON ? subscription.toJSON() : subscription;
+    const keys = json.keys || {};
+
+    if (!keys.p256dh || !keys.auth) {
+      throw new Error("Clés de notification absentes.");
+    }
+
+    const client = getClient();
+    const { error } = await client.rpc("eaj_upsert_push_subscription", {
+      p_endpoint: String(json.endpoint || subscription.endpoint),
+      p_p256dh: String(keys.p256dh),
+      p_auth: String(keys.auth),
+      p_user_agent: String(navigator.userAgent || "").slice(0, 500)
+    });
+
+    if (error) throw error;
+    return true;
+  }
+
+  async function removePushSubscription(endpoint) {
+    if (!endpoint) return true;
+    const client = getClient();
+    const { error } = await client.rpc("eaj_remove_push_subscription", {
+      p_endpoint: String(endpoint)
+    });
+    if (error) throw error;
+    return true;
+  }
+
+  async function getPushSubscriberCount() {
+    const client = getClient();
+    const { count, error } = await client
+      .from("eaj_push_subscriptions")
+      .select("id", { count: "exact", head: true })
+      .eq("enabled", true);
+
+    if (error) throw error;
+    return Number(count || 0);
+  }
+
+  async function listPushNotifications(limit = 10) {
+    const client = getClient();
+    const { data, error } = await client
+      .from("eaj_notifications")
+      .select("id, kind, title, body, url, status, sent_count, failed_count, created_at, created_by_name")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function sendPushNotification(payload) {
+    const client = getClient();
+    const session = await getSession();
+    if (!session || !session.user) {
+      throw new Error("Connexion expirée. Reconnecte-toi puis réessaie.");
+    }
+
+    const body = {
+      kind: String(payload?.kind || "information"),
+      title: String(payload?.title || "").trim(),
+      body: String(payload?.body || "").trim(),
+      url: String(payload?.url || "index.html").trim()
+    };
+
+    if (!body.title || !body.body) {
+      throw new Error("Le titre et le message de la notification sont obligatoires.");
+    }
+
+    const { data, error } = await client.functions.invoke("send-eaj-push", {
+      body
+    });
+
+    if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
+    return data || {};
+  }
+
   applyData(readFallbackGlobals());
 
   window.EAJPlanning = {
@@ -479,6 +571,12 @@
     createBackup,
     resetPlanningWithBackup,
     restoreBackup,
+    getPushPublicKey,
+    savePushSubscription,
+    removePushSubscription,
+    getPushSubscriberCount,
+    listPushNotifications,
+    sendPushNotification,
     applyData,
     normalizePlanningData
   };

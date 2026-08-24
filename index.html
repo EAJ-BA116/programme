@@ -15,22 +15,22 @@
   <meta name="theme-color" content="#0053a6">
 
   <!-- PWA Android -->
-  <link rel="manifest" href="manifest.json?v=1.5.0">
+  <link rel="manifest" href="manifest.json?v=1.6.0">
 
   <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="EAJ 116">
-  <link rel="apple-touch-icon" href="images/logo_eaj192.png?v=1.5.0">
+  <link rel="apple-touch-icon" href="images/logo_eaj192.png?v=1.6.0">
 
   <!-- Icônes Android -->
-  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png?v=1.5.0">
-  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png?v=1.5.0">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png?v=1.6.0">
+  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png?v=1.6.0">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="images/eaj.ico?v=1.5.0">
+  <link rel="icon" type="image/x-icon" href="images/eaj.ico?v=1.6.0">
 
-  <link id="main-style" rel="stylesheet" href="style.css?v=1.5.0">
+  <link id="main-style" rel="stylesheet" href="style.css?v=1.6.0">
 </head>
 
 <body data-theme="dark">
@@ -54,12 +54,20 @@
 
   <!-- Barre filtres + options -->
   <div id="filter-bar" role="navigation" aria-label="Filtres">
-    <div id="filter-buttons">
-      <button class="btn-filter" data-filter="all">Tous</button>
-      <button class="btn-filter" data-filter="EAJ1">EAJ1</button>
-      <button class="btn-filter" data-filter="EAJ23" hidden>EAJ 2-3</button>
-      <button class="btn-filter" data-filter="EAJ2">EAJ2</button>
-      <button class="btn-filter" data-filter="EAJ3">EAJ3</button>
+    <div id="group-filter-area">
+      <div id="filter-buttons">
+        <button class="btn-filter" data-filter="all">Tous</button>
+        <button class="btn-filter" data-filter="EAJ1">EAJ1</button>
+        <button class="btn-filter" data-filter="EAJ23" hidden>EAJ 2-3</button>
+        <button class="btn-filter btn-filter-legacy" data-filter="EAJ2">EAJ2</button>
+        <button class="btn-filter btn-filter-legacy" data-filter="EAJ3">EAJ3</button>
+      </div>
+
+      <div id="eaj23-subfilters" class="eaj23-subfilters" hidden aria-label="Détail EAJ 2-3">
+        <span class="eaj23-subfilters-label">Détail :</span>
+        <button class="btn-subfilter" data-filter="EAJ2" type="button">EAJ2</button>
+        <button class="btn-subfilter" data-filter="EAJ3" type="button">EAJ3</button>
+      </div>
     </div>
 
     <label class="activity-filter-control" for="activity-filter">
@@ -77,7 +85,7 @@
 
       <button id="theme-toggle" class="btn-theme" type="button">🌙 Mode sombre</button>
     </div>
-    <div class="filter-help">💡 Filtres : choisis un groupe ou une activité. Le filtre “Par activité” repart automatiquement sur Tous les groupes.</div>
+    <div class="filter-help">💡 Filtres : sélectionne « EAJ 2-3 » pour faire apparaître juste dessous les sous-filtres EAJ2 et EAJ3. Le filtre “Par activité” repart automatiquement sur Tous les groupes.</div>
   </div>
 
   <!-- 🎨 Légende (dépliable, fermée par défaut) -->
@@ -106,7 +114,7 @@
   <footer>
     <div class="footer-line">EAJ BA 116 – 2026</div>
     <div class="footer-line" id="last-update"></div>
-    <div class="footer-line footer-version">Version 1.5.0 du 24/08/2026 • Codé par Yoann</div>
+    <div class="footer-line footer-version">Version 1.6.0 du 24/08/2026 • Codé par Yoann</div>
     <div class="footer-line">
       <a href="#" id="admin-link" class="footer-link footer-link-admin">🔧 Accès administration</a>
     </div>
@@ -156,13 +164,15 @@
       </div>
 
       <nav class="menu-buttons" aria-label="Actions">
+        <button class="menu-item" type="button" data-action="toggle-push" id="push-menu-button" hidden>🔔 Activer les notifications</button>
+        <div id="push-menu-status" class="menu-notification-status" aria-live="polite" hidden></div>
         <button class="menu-item" type="button" data-action="open-clothes">🧥 Échange vêtements</button>
         <button class="menu-item" type="button" data-action="open-contact">📲 Bug / Contact</button>
         <button class="menu-item" type="button" data-action="open-admin">🔧 Accès admin</button>
         <button class="menu-item" type="button" data-action="open-about">ℹ️ À propos</button>
       </nav>
 
-      <div class="menu-popover-footer muted">Version 1.5.0 • 24/08/2026</div>
+      <div class="menu-popover-footer muted">Version 1.6.0 • 24/08/2026</div>
     </div>
   </div>
 
@@ -177,11 +187,14 @@
       </div>
 
       <div class="modal-body">
-        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.5.0</strong> • 24/08/2026 • Codé par <strong>Yoann</strong></p>
+        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.6.0</strong> • 24/08/2026 • Codé par <strong>Yoann</strong></p>
 
         <div class="changelog">
           <div class="changelog-title">Dernières modifications</div>
           <ul>
+            <li>Filtres : EAJ2 et EAJ3 deviennent des sous-filtres visibles uniquement sous « EAJ 2-3 »</li>
+            <li>Mode sombre : nouveau bleu nuit inspiré du logo, avec cartes plus lisibles</li>
+            <li>Notifications push : abonnement depuis l’application et envoi manuel depuis le Super Admin</li>
             <li>EAJ2 + EAJ3 : nouveau mode fusionné « EAJ 2-3 » configurable dans le Super Admin</li>
             <li>Générateur : exception possible par semaine (EAJ2 seul, EAJ3 seul ou groupes séparés)</li>
             <li>Nos projets : ajout de « 2026 - LCL Papin » et « 2026 - Dorine Bourneton »</li>
@@ -351,11 +364,11 @@ Résultat attendu : …"></textarea>
 <!-- ⚙️ JS : d’abord planning.js (avec version), puis la logique -->
   <script>
   // Cache-buster global (évite les "versions fantômes" sur GitHub Pages)
-  window.EAJ_BUILD = "1.5.0";
+  window.EAJ_BUILD = "1.6.0";
   (function () {
     const bust = Date.now();
     const s = document.createElement('script');
-    s.src = `version-loader.js?v=1.5.0-${bust}`;
+    s.src = `version-loader.js?v=1.6.0-${bust}`;
     document.head.appendChild(s);
   })();
 </script>

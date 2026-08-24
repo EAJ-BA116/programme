@@ -20,15 +20,18 @@
 body[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg-page: #050816;
-  --bg-card: #101827;
-  --bg-card-soft: #161d2f;
+  /* Bleu nuit inspiré du logo EAJ : plus clair et plus lisible */
+  --blue-main: #5aa2e6;
+  --blue-soft: #8bc5f3;
+  --blue-light: #173f68;
 
-  --text-main: #f9fafb;
-  --text-muted: #9ca3af;
-  --border-soft: #1f2937;
+  --bg-page: #0b2746;
+  --bg-card: #123a60;
+  --bg-card-soft: #194a76;
 
-  --blue-light: #0b1730;
+  --text-main: #f7fbff;
+  --text-muted: #bed0e2;
+  --border-soft: #2e648f;
 }
 
 * {
@@ -51,8 +54,8 @@ body {
 
 body[data-theme="dark"] {
   color-scheme: dark;
-
-  background: radial-gradient(circle at top, #0b1730 0, #050816 45%, #020617 100%);
+  background:
+    radial-gradient(circle at top, #1a5687 0, #0f365d 34%, var(--bg-page) 68%, #081d35 100%);
 }
 
 /* ⚠️ Bannière d’alerte */
@@ -191,6 +194,53 @@ header {
   flex-wrap: wrap;
 }
 
+#group-filter-area {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.42rem;
+}
+
+.eaj23-subfilters {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  padding-left: 0.35rem;
+}
+
+.eaj23-subfilters[hidden] {
+  display: none !important;
+}
+
+.eaj23-subfilters-label {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.btn-subfilter {
+  padding: 0.34rem 0.9rem;
+  background: var(--bg-card-soft);
+  color: var(--blue-soft);
+  border: 1px solid rgba(90, 162, 230, 0.5);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.btn-subfilter:hover {
+  background: var(--blue-light);
+}
+
+.btn-subfilter.active {
+  background: var(--blue-main);
+  color: #ffffff;
+  border-color: var(--blue-main);
+  box-shadow: 0 0 0 2px rgba(90, 162, 230, 0.18);
+}
+
 .projects-dropdown select {
   padding: 0.45rem 1rem;
   border-radius: 999px;
@@ -271,6 +321,11 @@ header {
   margin-bottom: 0.7rem;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
   transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+body[data-theme="dark"] .week {
+  background: linear-gradient(135deg, rgba(90, 162, 230, 0.16), var(--bg-card));
+  box-shadow: 0 8px 22px rgba(3, 18, 34, 0.3);
 }
 
 /* Séances passées grisées */
@@ -360,6 +415,12 @@ body[data-theme="dark"] .week-label-past {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+}
+
+body[data-theme="dark"] .group-card {
+  background: linear-gradient(145deg, #184b77, #123a60);
+  border-color: #3a719e;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.035), 0 4px 12px rgba(2, 18, 35, 0.18);
 }
 
 .group-title {
@@ -533,7 +594,7 @@ footer {
 }
 
 .footer-link {
-  color: #0053a6;
+  color: var(--blue-main);
   text-decoration: none;
   font-weight: 500;
 }
@@ -563,7 +624,7 @@ footer {
 }
 
 body[data-theme="dark"] .help code {
-  background: #111827;
+  background: var(--bg-card-soft);
 }
 
 .footer-link-admin {
@@ -954,7 +1015,7 @@ body[data-theme="dark"] .week-common-title {
   height: 52px;
   border-radius: 50%;
   border: 2px solid var(--blue-main);
-  background: linear-gradient(145deg, #0e1a2b, #1a2c46);
+  background: linear-gradient(145deg, #173f68, #245b8b);
   color: #e5edf8;
   font-size: 1.4rem;
   display: none; /* affiché par JS */
@@ -1931,8 +1992,40 @@ body[data-theme="dark"] .activity-filter-control select {
   margin: 0;
 }
 
-/* v1.5.0 — projets à venir / sans lien public */
+/* v1.6.0 — projets à venir / sans lien public */
 .menu-subitem-static {
   cursor: default;
   opacity: .9;
+}
+
+/* Notifications push */
+.menu-notification-status {
+  margin: -0.2rem 0.35rem 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.menu-notification-status.ok {
+  color: #15803d;
+}
+
+.menu-notification-status.warn {
+  color: #a16207;
+}
+
+.menu-notification-status.error {
+  color: #b91c1c;
+}
+
+body[data-theme="dark"] .menu-notification-status.ok {
+  color: #86efac;
+}
+
+body[data-theme="dark"] .menu-notification-status.warn {
+  color: #fde68a;
+}
+
+body[data-theme="dark"] .menu-notification-status.error {
+  color: #fca5a5;
 }
