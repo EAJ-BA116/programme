@@ -13,8 +13,8 @@ const TYPES_ACTIVITE = {
   autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
 };
 
-// v1.8.0 — Meta
-const APP_VERSION = "1.8.0";
+// v1.8.1 — Meta
+const APP_VERSION = "1.8.1";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -1175,22 +1175,11 @@ function closeModalById(id){
 /* ---------- Fermer les overlays au scroll ---------- */
 
 function closeOverlaysOnScroll(){
-  // Menu compact
-  const menu = document.getElementById("app-menu");
-  const menuBtn = document.getElementById("menu-toggle");
-  if(menu && menu.classList.contains("open")){
-    menu.classList.remove("open");
-    menu.setAttribute("aria-hidden","true");
-    if(menuBtn) menuBtn.setAttribute("aria-expanded","false");
-  }
+  // v1.8.1 : le menu principal reste ouvert pendant un scroll,
+  // une molette ou un glissement tactile. Il se ferme uniquement
+  // via X, Échap, un choix du menu ou un clic en dehors.
+  // La sous-liste « Nos projets » reste elle aussi ouverte pendant le défilement.
 
-  // Sous-liste "Nos projets"
-  const pbtn = document.getElementById("projects-btn");
-  const plist = document.getElementById("projects-list");
-  if(pbtn && plist && !plist.hidden){
-    plist.hidden = true;
-    pbtn.setAttribute("aria-expanded","false");
-  }
 
   // Modales standard
   closeModalById("about-modal");
@@ -1243,7 +1232,9 @@ function initialiserCloseOnScroll(){
       return;
     }
     const y = window.scrollY;
-    if(y !== lastY && anyOverlayOpen()){
+    const nonMenuOverlayOpen = !!document.querySelector(".modal.open")
+      || document.getElementById("admin-modal")?.classList.contains("open");
+    if(y !== lastY && nonMenuOverlayOpen){
       closeOverlaysOnScroll();
     }
     lastY = y;
@@ -1252,6 +1243,7 @@ function initialiserCloseOnScroll(){
   // Mobile (swipe) + desktop (wheel) : on ferme si le geste n'est pas dans un overlay
   document.addEventListener("touchmove", (e) => {
     if(isClothesModalOpen()) return;
+    if(document.getElementById("app-menu")?.classList.contains("open")) return;
     if(!anyOverlayOpen()) return;
     if(isTargetInsideOverlay(e.target)) return;
     closeOverlaysOnScroll();
@@ -1259,6 +1251,7 @@ function initialiserCloseOnScroll(){
 
   document.addEventListener("wheel", (e) => {
     if(isClothesModalOpen()) return;
+    if(document.getElementById("app-menu")?.classList.contains("open")) return;
     if(!anyOverlayOpen()) return;
     if(isTargetInsideOverlay(e.target)) return;
     closeOverlaysOnScroll();
@@ -1742,7 +1735,7 @@ function initialiserOfflineMode() {
   window.addEventListener("online", refreshPlanningAfterReconnect);
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js?v=1.8.0", { scope: "./" })
+    navigator.serviceWorker.register("./sw.js?v=1.8.1", { scope: "./" })
       .catch((error) => console.warn("Service Worker hors ligne indisponible :", error));
   }
 }
@@ -1899,7 +1892,7 @@ async function getPushServiceWorkerRegistration() {
   if (__eajPushRegistration) return __eajPushRegistration;
   if (!pushIsSupported()) return null;
 
-  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.8.0", {
+  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.8.1", {
     scope: "./",
     updateViaCache: "none"
   });

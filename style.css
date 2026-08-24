@@ -1514,12 +1514,16 @@ header.app-header .badge-time{
   font-size: 0.85rem;
 }
 
-/* Bouton menu : compact (⋯) */
+/* Bouton menu : libellé explicite */
 header.app-header .btn-menu{
-  width: 42px;
+  width: auto;
+  min-width: 66px;
   height: 42px;
+  padding: 0 0.9rem;
   border-radius: 0.9rem;
-  font-size: 1.45rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* Ligne d'explication des filtres */
@@ -1552,6 +1556,11 @@ header.app-header .btn-menu{
   border: 1px solid var(--border-soft);
   border-radius: 1rem;
   padding: 0.9rem;
+  max-height: calc(100dvh - 94px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   box-shadow: 0 20px 45px rgba(15,23,42,.45);
 }
 
@@ -2044,7 +2053,7 @@ body[data-theme="dark"] .menu-notification-status.error {
 body[data-theme="dark"] .push-important-rule{background:rgba(239,68,68,.12);border-color:rgba(248,113,113,.42);}
 
 /* ======================================================
-   v1.8.0 — Mode hors ligne + journal des informations
+   v1.8.1 — Mode hors ligne + journal des informations
    ====================================================== */
 .offline-status {
   max-width: 960px;
@@ -2147,3 +2156,6 @@ body[data-theme="dark"] .offline-status {
   .info-journal-date { white-space: normal; }
   .info-journal-list { max-height: 56vh; }
 }
+
+
+/* v1.8.1 — le menu reste ouvert et défilable à la molette / au doigt. */

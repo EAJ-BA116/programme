@@ -863,7 +863,7 @@
     }
 
 
-    /* ===== Admin simplifié v1.8.0 ===== */
+    /* ===== Admin simplifié v1.8.1 ===== */
     .admin-heading-row {
       display: flex;
       align-items: center;
@@ -1365,7 +1365,7 @@
 
   <!-- Scripts : Supabase + données de secours + générateur -->
 <script>
-  window.EAJ_BUILD = "1.8.0";
+  window.EAJ_BUILD = "1.8.1";
   (function () {
     const bust = Date.now();
 
@@ -1427,11 +1427,11 @@
     }
 
     loadClassic("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", function () {
-      loadSafe(`./supabase-config.js?v=1.8.0-${bust}`, function () {
-        loadSafe(`./planning.js?v=1.8.0-${bust}`, function () {
-          loadSafe(`./planning-api.js?v=1.8.0-${bust}`, function (apiOk) {
+      loadSafe(`./supabase-config.js?v=1.8.1-${bust}`, function () {
+        loadSafe(`./planning.js?v=1.8.1-${bust}`, function () {
+          loadSafe(`./planning-api.js?v=1.8.1-${bust}`, function (apiOk) {
             if (!apiOk) return;
-            loadSafe(`./eaj-generator.js?v=1.8.0-${bust}`);
+            loadSafe(`./eaj-generator.js?v=1.8.1-${bust}`);
           });
         }, { optional: true });
       });
