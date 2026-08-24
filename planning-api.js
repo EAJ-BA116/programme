@@ -8,6 +8,8 @@
   const DEFAULT_TABLE = "eaj_planning_state";
   const DEFAULT_BACKUPS_TABLE = "eaj_planning_backups";
   const DEFAULT_ROW_ID = "main";
+  const OFFLINE_PLANNING_CACHE_KEY = "eaj_offline_planning_v1";
+  const PUBLIC_INFO_CACHE_KEY = "eaj_public_info_journal_v1";
 
   const state = {
     client: null,
@@ -56,6 +58,64 @@
       version: null,
       updatedAt: null
     });
+  }
+
+  function writeJsonCache(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (error) {
+      console.warn("Cache local indisponible :", error);
+      return false;
+    }
+  }
+
+  function readJsonCache(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      console.warn("Lecture du cache local impossible :", error);
+      return null;
+    }
+  }
+
+  function cachePlanningForOffline(data) {
+    const normalized = normalizePlanningData(data);
+    writeJsonCache(OFFLINE_PLANNING_CACHE_KEY, {
+      cachedAt: new Date().toISOString(),
+      data: {
+        semaines: normalized.semaines || [],
+        alertBanners: normalized.alertBanners || [],
+        alertBanner: normalized.alertBanner || { actif: false, texte: "" },
+        lastUpdate: normalized.lastUpdate || { auteur: "", dateTexte: "" },
+        settings: normalized.settings || { mergeEaj23: true },
+        version: normalized.version,
+        updatedAt: normalized.updatedAt,
+        updatedByName: normalized.updatedByName || "",
+        source: "offline-cache"
+      }
+    });
+  }
+
+  function readOfflinePlanningCache() {
+    const cached = readJsonCache(OFFLINE_PLANNING_CACHE_KEY);
+    if (!cached || !cached.data) return null;
+    const normalized = normalizePlanningData({ ...cached.data, source: "offline-cache" });
+    normalized.cachedAt = cached.cachedAt || null;
+    return normalized;
+  }
+
+  function cachePublicInfoJournal(items) {
+    writeJsonCache(PUBLIC_INFO_CACHE_KEY, {
+      cachedAt: new Date().toISOString(),
+      items: Array.isArray(items) ? items : []
+    });
+  }
+
+  function readCachedPublicInfoJournal() {
+    const cached = readJsonCache(PUBLIC_INFO_CACHE_KEY);
+    return cached && Array.isArray(cached.items) ? cached.items : [];
   }
 
   function getConfig() {
@@ -182,21 +242,36 @@
     if (error) throw error;
     if (!data) throw new Error("Aucune ligne de planning trouvée dans Supabase.");
 
-    return applyData(normalizeRow(data));
+    const normalized = normalizeRow(data);
+    const applied = applyData(normalized);
+    cachePlanningForOffline(applied);
+    return applied;
   }
 
   async function loadPublicPlanning() {
-    // On démarre toujours avec le fallback local.
+    // Le planning.js reste le dernier filet de sécurité intégré au site.
     applyData(readFallbackGlobals());
 
+    const offlineCached = readOfflinePlanningCache();
+
     if (!isConfigured()) {
+      if (offlineCached) return applyData(offlineCached);
       console.warn("Supabase non configuré : fallback planning.js utilisé.");
       return getCurrentData();
+    }
+
+    // Hors connexion : on privilégie la dernière version réellement consultée.
+    if (typeof navigator !== "undefined" && navigator.onLine === false && offlineCached) {
+      return applyData(offlineCached);
     }
 
     try {
       return await fetchPlanningFromSupabase();
     } catch (error) {
+      if (offlineCached) {
+        console.warn("Supabase inaccessible : dernière copie locale utilisée :", error.message || error);
+        return applyData(offlineCached);
+      }
       console.warn("Impossible de charger Supabase, fallback planning.js utilisé :", error.message || error);
       return getCurrentData();
     }
@@ -448,6 +523,7 @@
         },
         (payload) => {
           const data = applyData(normalizeRow(payload.new));
+          cachePlanningForOffline(data);
           if (typeof callback === "function") callback(data, payload);
         }
       )
@@ -601,6 +677,35 @@
     return data || {};
   }
 
+  async function listPublicInfoJournal(limit = 30) {
+    const safeLimit = Math.max(1, Math.min(Number(limit) || 30, 50));
+
+    if (!isConfigured()) return readCachedPublicInfoJournal().slice(0, safeLimit);
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return readCachedPublicInfoJournal().slice(0, safeLimit);
+    }
+
+    try {
+      const client = getClient();
+      const { data, error } = await client.rpc("eaj_list_public_notifications", { p_limit: safeLimit });
+      if (error) throw error;
+      const items = Array.isArray(data) ? data : [];
+      cachePublicInfoJournal(items);
+      return items;
+    } catch (error) {
+      console.warn("Journal des informations indisponible en ligne, cache local utilisé :", error.message || error);
+      return readCachedPublicInfoJournal().slice(0, safeLimit);
+    }
+  }
+
+  function getOfflinePlanningCache() {
+    return readOfflinePlanningCache();
+  }
+
+  function getCachedInfoJournal() {
+    return readCachedPublicInfoJournal();
+  }
+
   applyData(readFallbackGlobals());
 
   window.EAJPlanning = {
@@ -628,6 +733,9 @@
     getPushSubscriberStats,
     listPushNotifications,
     sendPushNotification,
+    listPublicInfoJournal,
+    getOfflinePlanningCache,
+    getCachedInfoJournal,
     applyData,
     normalizePlanningData
   };

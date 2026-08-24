@@ -220,3 +220,15 @@ Avant de vider le planning, le générateur crée automatiquement une sauvegarde
 Dans `Maintenance avancée`, clique sur `Actualiser`, choisis une sauvegarde, puis clique sur `Charger la sauvegarde`.
 
 Le générateur crée aussi une sauvegarde de sécurité de l'état actuel avant de restaurer l'ancienne sauvegarde.
+
+---
+
+## Version 1.8.0 — journal public + hors ligne
+
+Après les migrations Push v1.6.0 et v1.7.0, exécuter une fois :
+
+`supabase-migration-v1.8.0.sql`
+
+Cette migration ajoute uniquement le RPC sécurisé `eaj_list_public_notifications` utilisé par le journal « Dernières informations ». Il expose seulement les champs d'affichage des notifications envoyées (`sent` / `partial`) et ne donne aucun accès public direct aux tables d'administration.
+
+Aucune modification de la fonction Edge `send-eaj-push` n'est nécessaire pour la v1.8.0.

@@ -364,7 +364,10 @@ async function sauvegarderDansSupabase() {
 
   try {
     setButtonLoading(btnSave, true, "⏳ Enregistrement...");
-    setSaveStatus("Enregistrement dans Supabase...", "info");
+    setSaveStatus("Création de la sauvegarde automatique...", "info");
+    await window.EAJPlanning.createBackup("Sauvegarde automatique avant publication");
+
+    setSaveStatus("Sauvegarde créée ✅ Publication dans Supabase...", "info");
     const saved = await window.EAJPlanning.savePlanning({
       semaines: weeks,
       alertBanners: ALERT_BANNERS,
@@ -374,7 +377,7 @@ async function sauvegarderDansSupabase() {
       updatedByName: LAST_UPDATE.auteur
     });
 
-    setSaveStatus(`Planning enregistré dans Supabase ✅ Version ${saved.version || "?"}.`, "ok", true);
+    setSaveStatus(`Sauvegarde automatique créée • Planning publié ✅ Version ${saved.version || "?"}.`, "ok", true);
     updateOutput();
   } catch (error) {
     setSaveStatus("Erreur d'enregistrement : " + (error.message || error), "error", true);

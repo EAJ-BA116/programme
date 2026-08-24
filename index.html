@@ -15,27 +15,30 @@
   <meta name="theme-color" content="#0053a6">
 
   <!-- PWA Android -->
-  <link rel="manifest" href="manifest.json?v=1.7.1">
+  <link rel="manifest" href="manifest.json?v=1.8.0">
 
   <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="EAJ 116">
-  <link rel="apple-touch-icon" href="images/logo_eaj192.png?v=1.7.1">
+  <link rel="apple-touch-icon" href="images/logo_eaj192.png?v=1.8.0">
 
   <!-- Icônes Android -->
-  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png?v=1.7.1">
-  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png?v=1.7.1">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png?v=1.8.0">
+  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png?v=1.8.0">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="images/eaj.ico?v=1.7.1">
+  <link rel="icon" type="image/x-icon" href="images/eaj.ico?v=1.8.0">
 
-  <link id="main-style" rel="stylesheet" href="style.css?v=1.7.1">
+  <link id="main-style" rel="stylesheet" href="style.css?v=1.8.0">
 </head>
 
 <body data-theme="dark">
   <!-- ⚠️ Bannières d’alerte -->
   <div id="alert-banner"></div>
+
+  <!-- 📡 État réseau / mode hors ligne -->
+  <div id="offline-status" class="offline-status" hidden role="status" aria-live="polite"></div>
 
   <header class="app-header">
     <div class="header-left">
@@ -114,7 +117,7 @@
   <footer>
     <div class="footer-line">EAJ BA 116 – 2026</div>
     <div class="footer-line" id="last-update"></div>
-    <div class="footer-line footer-version">Version 1.7.1 du 24/08/2026 • Codé par Yoann</div>
+    <div class="footer-line footer-version">Version 1.8.0 du 24/08/2026 • Codé par Yoann</div>
     <div class="footer-line">
       <a href="#" id="admin-link" class="footer-link footer-link-admin">🔧 Accès administration</a>
     </div>
@@ -164,6 +167,7 @@
       </div>
 
       <nav class="menu-buttons" aria-label="Actions">
+        <button class="menu-item" type="button" data-action="open-info-journal">📰 Dernières informations</button>
         <button class="menu-item" type="button" data-action="manage-push" id="push-menu-button" hidden>🔔 Activer les notifications</button>
         <div id="push-menu-status" class="menu-notification-status" aria-live="polite" hidden></div>
         <button class="menu-item" type="button" data-action="open-clothes">🧥 Échange vêtements</button>
@@ -172,7 +176,30 @@
         <button class="menu-item" type="button" data-action="open-about">ℹ️ À propos</button>
       </nav>
 
-      <div class="menu-popover-footer muted">Version 1.7.1 • 24/08/2026</div>
+      <div class="menu-popover-footer muted">Version 1.8.0 • 24/08/2026</div>
+    </div>
+  </div>
+
+
+  <!-- 📰 Journal des dernières informations -->
+  <div id="info-journal-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-modal-close="info-journal-modal"></div>
+    <div class="modal-dialog info-journal-dialog" role="dialog" aria-modal="true" aria-label="Dernières informations">
+      <div class="modal-header">
+        <h2>📰 Dernières informations</h2>
+        <button class="modal-close" type="button" data-modal-close="info-journal-modal" aria-label="Fermer">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-meta">Les derniers messages envoyés par l’équipe EAJ restent consultables ici, même si une notification a été effacée.</p>
+        <div id="info-journal-status" class="info-journal-status" aria-live="polite"></div>
+        <div id="info-journal-list" class="info-journal-list">
+          <div class="info-journal-empty">Chargement des informations…</div>
+        </div>
+        <div class="modal-actions">
+          <button id="info-journal-refresh" class="btn-primary" type="button">🔄 Actualiser</button>
+          <button class="btn-secondary" type="button" data-modal-close="info-journal-modal">Fermer</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -232,11 +259,14 @@
       </div>
 
       <div class="modal-body">
-        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.7.1</strong> • 24/08/2026 • Codé par <strong>Yoann</strong></p>
+        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.8.0</strong> • 24/08/2026 • Codé par <strong>Yoann</strong></p>
 
         <div class="changelog">
           <div class="changelog-title">Dernières modifications</div>
           <ul>
+            <li>Mode hors ligne réel : l’application, ses ressources et le dernier planning consulté restent disponibles sans réseau</li>
+            <li>Journal « Dernières informations » : historique des messages envoyés, conservé localement pour consultation hors connexion</li>
+            <li>Administration : sauvegarde automatique créée avant chaque publication du planning</li>
             <li>Filtres : EAJ2 et EAJ3 deviennent des sous-filtres visibles uniquement sous « EAJ 2-3 »</li>
             <li>Mode sombre : nouveau bleu nuit inspiré du logo, avec cartes plus lisibles</li>
             <li>Notifications push : choix libre EAJ1 / EAJ2 / EAJ3 / mises à jour système, cumulables</li>
@@ -411,11 +441,11 @@ Résultat attendu : …"></textarea>
 <!-- ⚙️ JS : d’abord planning.js (avec version), puis la logique -->
   <script>
   // Cache-buster global (évite les "versions fantômes" sur GitHub Pages)
-  window.EAJ_BUILD = "1.7.1";
+  window.EAJ_BUILD = "1.8.0";
   (function () {
     const bust = Date.now();
     const s = document.createElement('script');
-    s.src = `version-loader.js?v=1.7.1-${bust}`;
+    s.src = `version-loader.js?v=1.8.0-${bust}`;
     document.head.appendChild(s);
   })();
 </script>

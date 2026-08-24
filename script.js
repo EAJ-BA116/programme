@@ -13,8 +13,8 @@ const TYPES_ACTIVITE = {
   autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
 };
 
-// v1.7.1 — Meta
-const APP_VERSION = "1.7.1";
+// v1.8.0 — Meta
+const APP_VERSION = "1.8.0";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -1196,6 +1196,7 @@ function closeOverlaysOnScroll(){
   closeModalById("about-modal");
   closeModalById("contact-modal");
   closeModalById("push-preferences-modal");
+  closeModalById("info-journal-modal");
   // ⚠️ v1.4.1 : on ne ferme PAS "Échange vêtements" au scroll
 
   // Modale admin
@@ -1326,6 +1327,7 @@ function initialiserMenu(){
       close();
 
       if(act === "open-about"){ openModalById("about-modal"); return; }
+      if(act === "open-info-journal"){ openInfoJournal(); return; }
       if(act === "open-contact"){ openModalById("contact-modal"); return; }
       if(act === "open-admin"){ const a=document.getElementById("admin-link"); if(a) a.click(); return; }
       if(act === "open-clothes"){ openModalById("clothes-modal"); return; }
@@ -1675,6 +1677,192 @@ function initialiserClothesExchange(){
   updateButtons();
 }
 
+/* ---------- Mode hors ligne ---------- */
+
+function formatOfflineCacheDate(value) {
+  if (!value) return "";
+  try {
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "2-digit", month: "2-digit", year: "numeric",
+      hour: "2-digit", minute: "2-digit"
+    }).format(new Date(value));
+  } catch (error) {
+    return "";
+  }
+}
+
+function refreshOfflineStatus() {
+  const el = document.getElementById("offline-status");
+  if (!el) return;
+
+  const data = getPlanningData();
+  const offline = navigator.onLine === false;
+  const usingLocalCopy = data?.source === "offline-cache";
+
+  if (!offline && !usingLocalCopy) {
+    el.hidden = true;
+    el.textContent = "";
+    return;
+  }
+
+  const cachedAt = formatOfflineCacheDate(data?.cachedAt);
+  el.hidden = false;
+  if (offline) {
+    el.textContent = cachedAt
+      ? `📡 Hors connexion — dernier planning disponible sur cet appareil (${cachedAt}).`
+      : "📡 Hors connexion — affichage du dernier planning disponible sur cet appareil.";
+  } else {
+    el.textContent = "⚠️ Serveur momentanément indisponible — affichage de la dernière copie locale du planning.";
+  }
+}
+
+async function refreshPlanningAfterReconnect() {
+  refreshOfflineStatus();
+  if (!navigator.onLine || !window.EAJPlanning?.fetchPlanningFromSupabase) return;
+
+  try {
+    await window.EAJPlanning.fetchPlanningFromSupabase();
+    syncGroupFilterButtons();
+    renderToutesLesSemaines();
+    const currentGroup = getCurrentGroupFilterFromUiOrStorage();
+    appliquerFiltre(currentGroup);
+    renderAlert(currentGroup);
+    renderLastUpdate();
+    refreshOfflineStatus();
+    primeInfoJournalCache();
+  } catch (error) {
+    console.warn("Reconnexion : actualisation Supabase impossible :", error);
+    refreshOfflineStatus();
+  }
+}
+
+function initialiserOfflineMode() {
+  refreshOfflineStatus();
+  window.addEventListener("offline", refreshOfflineStatus);
+  window.addEventListener("online", refreshPlanningAfterReconnect);
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js?v=1.8.0", { scope: "./" })
+      .catch((error) => console.warn("Service Worker hors ligne indisponible :", error));
+  }
+}
+
+/* ---------- Journal des dernières informations ---------- */
+
+const JOURNAL_KIND_META = {
+  information: ["ℹ️", "Information"],
+  programme: ["📅", "Programme / activité"],
+  modification: ["🔄", "Modification"],
+  cancellation: ["❌", "Annulation"],
+  document: ["📄", "Document / consigne"],
+  update: ["🆕", "Mise à jour application"],
+  important: ["🚨", "Important"]
+};
+
+const JOURNAL_AUDIENCE_LABELS = {
+  all_active: "Tous les abonnés",
+  all_eaj: "Tous les EAJ",
+  eaj1: "EAJ1",
+  eaj2: "EAJ2",
+  eaj3: "EAJ3",
+  eaj23: "EAJ 2-3",
+  system: "Mises à jour système"
+};
+
+function journalEscape(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatJournalDate(value) {
+  if (!value) return "";
+  try {
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit"
+    }).format(new Date(value));
+  } catch (error) {
+    return String(value);
+  }
+}
+
+function renderInfoJournal(items) {
+  const list = document.getElementById("info-journal-list");
+  if (!list) return;
+
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    list.innerHTML = '<div class="info-journal-empty">Aucune information publiée pour le moment.</div>';
+    return;
+  }
+
+  list.innerHTML = rows.map((item) => {
+    const kind = String(item.kind || "information");
+    const meta = JOURNAL_KIND_META[kind] || JOURNAL_KIND_META.information;
+    const audience = JOURNAL_AUDIENCE_LABELS[String(item.audience || "all_eaj")] || String(item.audience || "");
+    const importantClass = kind === "important" ? " is-important" : "";
+    return `
+      <article class="info-journal-item${importantClass}">
+        <div class="info-journal-head">
+          <div class="info-journal-title">${meta[0]} ${journalEscape(item.title || "EAJ BA 116")}</div>
+          <div class="info-journal-date">${journalEscape(formatJournalDate(item.created_at))}</div>
+        </div>
+        <div class="info-journal-body">${journalEscape(item.body || "")}</div>
+        <div class="info-journal-meta">
+          <span class="info-journal-chip">${journalEscape(meta[1])}</span>
+          <span class="info-journal-chip">${journalEscape(audience)}</span>
+        </div>
+      </article>`;
+  }).join("");
+}
+
+async function loadInfoJournal({ showLoading = true } = {}) {
+  const status = document.getElementById("info-journal-status");
+  if (status && showLoading) status.textContent = "Actualisation…";
+
+  try {
+    const items = window.EAJPlanning?.listPublicInfoJournal
+      ? await window.EAJPlanning.listPublicInfoJournal(30)
+      : [];
+    renderInfoJournal(items);
+    if (status) {
+      status.textContent = navigator.onLine
+        ? `${items.length} information${items.length > 1 ? "s" : ""} récente${items.length > 1 ? "s" : ""}.`
+        : "📡 Hors connexion — journal enregistré sur cet appareil.";
+    }
+    return items;
+  } catch (error) {
+    console.warn("Journal des informations indisponible :", error);
+    const cached = window.EAJPlanning?.getCachedInfoJournal?.() || [];
+    renderInfoJournal(cached);
+    if (status) status.textContent = cached.length
+      ? "📡 Version locale du journal affichée."
+      : "Journal indisponible pour le moment.";
+    return cached;
+  }
+}
+
+function openInfoJournal() {
+  openModalById("info-journal-modal");
+  loadInfoJournal();
+}
+
+function initialiserInfoJournal() {
+  const refreshBtn = document.getElementById("info-journal-refresh");
+  if (refreshBtn) refreshBtn.addEventListener("click", () => loadInfoJournal());
+}
+
+function primeInfoJournalCache() {
+  if (!navigator.onLine || !window.EAJPlanning?.listPublicInfoJournal) return;
+  window.EAJPlanning.listPublicInfoJournal(30).catch((error) => {
+    console.warn("Préchargement du journal impossible :", error);
+  });
+}
+
 /* ---------- Notifications push ---------- */
 
 let __eajPushRegistration = null;
@@ -1711,7 +1899,7 @@ async function getPushServiceWorkerRegistration() {
   if (__eajPushRegistration) return __eajPushRegistration;
   if (!pushIsSupported()) return null;
 
-  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.7.1", {
+  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.8.0", {
     scope: "./",
     updateViaCache: "none"
   });
@@ -1995,8 +2183,11 @@ async function initApp() {
 
   initialiserThemeToggle();
   renderLastUpdate();
+  initialiserOfflineMode();
 
   initialiserMenu();
+  initialiserInfoJournal();
+  primeInfoJournalCache();
   initialiserModales();
   initialiserCloseOnScroll();
   initialiserContactCopy();
@@ -2018,7 +2209,10 @@ initApp().catch((error) => {
   initialiserFiltres();
   initialiserThemeToggle();
   renderLastUpdate();
+  initialiserOfflineMode();
   initialiserMenu();
+  initialiserInfoJournal();
+  primeInfoJournalCache();
   initialiserModales();
   initialiserCloseOnScroll();
   initialiserContactCopy();
