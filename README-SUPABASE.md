@@ -128,6 +128,20 @@ Cela veut dire que le navigateur ne reçoit pas le vrai fichier JavaScript. À l
 
 La version 1.4.3 ajoute un chargeur plus robuste qui évite de tenter d'exécuter une page HTML comme du JavaScript.
 
+## Version 1.7.0 — préférences et ciblage des notifications
+
+Cette version ajoute :
+
+- choix utilisateur cumulable **EAJ1 / EAJ2 / EAJ3 / Mises à jour système** ;
+- réception automatique des messages **EAJ 2-3** pour les inscrits EAJ2 et EAJ3 ;
+- messages **Important** obligatoires pour tout appareil ayant activé les notifications ;
+- séparation Super Admin entre **destinataires** et **catégorie du message** ;
+- catégories : Information, Programme / activité, Modification, Annulation, Document / consigne, Mise à jour application et Important ;
+- suppression de la catégorie Rappel ;
+- désactivation complète depuis le site avec suppression de l'abonnement navigateur.
+
+Après la migration Push v1.6.0, exécuter `supabase-migration-v1.7.0.sql` et redéployer la fonction Edge `send-eaj-push`. Voir `README-PUSH.md`.
+
 ## Version 1.6.0 — sous-filtres, thème bleu nuit et notifications push
 
 Cette version ajoute :

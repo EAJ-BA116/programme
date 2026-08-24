@@ -2029,3 +2029,16 @@ body[data-theme="dark"] .menu-notification-status.warn {
 body[data-theme="dark"] .menu-notification-status.error {
   color: #fca5a5;
 }
+
+
+/* =============================
+   v1.7.0 – préférences Push
+   ============================= */
+.push-preferences-list{display:flex;flex-direction:column;gap:.55rem;margin:.75rem 0;}
+.push-preference-option{display:flex;align-items:flex-start;gap:.7rem;padding:.75rem .8rem;border:1px solid var(--border-soft);border-radius:.85rem;background:var(--bg-card-soft);cursor:pointer;}
+.push-preference-option:hover{border-color:rgba(59,130,246,.55);}
+.push-preference-option input{width:20px;height:20px;margin-top:.1rem;accent-color:var(--blue-main);flex:0 0 auto;}
+.push-preference-option span{display:flex;flex-direction:column;gap:.15rem;color:var(--text-main);}
+.push-preference-option small{color:var(--text-muted);line-height:1.35;}
+.push-important-rule{margin-top:.8rem;padding:.7rem .8rem;border-radius:.8rem;border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.08);color:var(--text-main);font-size:.86rem;line-height:1.4;}
+body[data-theme="dark"] .push-important-rule{background:rgba(239,68,68,.12);border-color:rgba(248,113,113,.42);}

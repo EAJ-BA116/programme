@@ -8,17 +8,29 @@ self.addEventListener('push', (event) => {
     data = { body: event.data ? event.data.text() : '' };
   }
 
-  const title = String(data.title || 'EAJ BA 116');
+  const rawTitle = String(data.title || 'EAJ BA 116');
   const body = String(data.body || 'Nouvelle information disponible.');
   const kind = String(data.kind || 'information');
   const targetUrl = String(data.url || DEFAULT_URL);
+
+  const kindMeta = {
+    information: ['ℹ️', 'Information'],
+    programme: ['📅', 'Programme / activité'],
+    modification: ['🔄', 'Modification'],
+    cancellation: ['❌', 'Annulation'],
+    document: ['📄', 'Document / consigne'],
+    update: ['🆕', 'Mise à jour application'],
+    important: ['🚨', 'Important']
+  };
+  const meta = kindMeta[kind] || kindMeta.information;
+  const title = `${meta[0]} ${rawTitle}`;
 
   const options = {
     body,
     icon: new URL('./images/logo_eaj192.png', self.registration.scope).href,
     badge: new URL('./images/logo_eaj192.png', self.registration.scope).href,
     tag: data.tag || `eaj-${kind}`,
-    renotify: kind === 'important' || kind === 'update',
+    renotify: ['important', 'update', 'modification', 'cancellation'].includes(kind),
     data: {
       url: targetUrl,
       kind

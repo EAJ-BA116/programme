@@ -468,7 +468,7 @@
     return key;
   }
 
-  async function savePushSubscription(subscription) {
+  async function savePushSubscription(subscription, preferences = {}) {
     if (!subscription || !subscription.endpoint) {
       throw new Error("Abonnement push invalide.");
     }
@@ -480,16 +480,44 @@
       throw new Error("Clés de notification absentes.");
     }
 
+    const prefs = {
+      eaj1: preferences.eaj1 === true,
+      eaj2: preferences.eaj2 === true,
+      eaj3: preferences.eaj3 === true,
+      systemUpdates: preferences.systemUpdates === true
+    };
+
     const client = getClient();
-    const { error } = await client.rpc("eaj_upsert_push_subscription", {
+    const { error } = await client.rpc("eaj_upsert_push_subscription_v2", {
       p_endpoint: String(json.endpoint || subscription.endpoint),
       p_p256dh: String(keys.p256dh),
       p_auth: String(keys.auth),
-      p_user_agent: String(navigator.userAgent || "").slice(0, 500)
+      p_user_agent: String(navigator.userAgent || "").slice(0, 500),
+      p_eaj1: prefs.eaj1,
+      p_eaj2: prefs.eaj2,
+      p_eaj3: prefs.eaj3,
+      p_system_updates: prefs.systemUpdates
     });
 
     if (error) throw error;
     return true;
+  }
+
+  async function getPushPreferences(endpoint) {
+    if (!endpoint) return { eaj1: false, eaj2: false, eaj3: false, systemUpdates: false, enabled: false };
+    const client = getClient();
+    const { data, error } = await client.rpc("eaj_get_push_preferences", {
+      p_endpoint: String(endpoint)
+    });
+    if (error) throw error;
+    const prefs = data || {};
+    return {
+      eaj1: prefs.eaj1 === true,
+      eaj2: prefs.eaj2 === true,
+      eaj3: prefs.eaj3 === true,
+      systemUpdates: prefs.system_updates === true || prefs.systemUpdates === true,
+      enabled: prefs.enabled === true
+    };
   }
 
   async function removePushSubscription(endpoint) {
@@ -513,11 +541,31 @@
     return Number(count || 0);
   }
 
+  async function getPushSubscriberStats() {
+    const client = getClient();
+    const { data, error } = await client
+      .from("eaj_push_subscriptions")
+      .select("pref_eaj1, pref_eaj2, pref_eaj3, pref_system_updates")
+      .eq("enabled", true);
+
+    if (error) throw error;
+    const rows = Array.isArray(data) ? data : [];
+    return {
+      total: rows.length,
+      eaj1: rows.filter(r => r.pref_eaj1 === true).length,
+      eaj2: rows.filter(r => r.pref_eaj2 === true).length,
+      eaj3: rows.filter(r => r.pref_eaj3 === true).length,
+      eaj23: rows.filter(r => r.pref_eaj2 === true || r.pref_eaj3 === true).length,
+      allEaj: rows.filter(r => r.pref_eaj1 === true || r.pref_eaj2 === true || r.pref_eaj3 === true).length,
+      system: rows.filter(r => r.pref_system_updates === true).length
+    };
+  }
+
   async function listPushNotifications(limit = 10) {
     const client = getClient();
     const { data, error } = await client
       .from("eaj_notifications")
-      .select("id, kind, title, body, url, status, sent_count, failed_count, created_at, created_by_name")
+      .select("id, kind, audience, title, body, url, status, sent_count, failed_count, created_at, created_by_name")
       .order("created_at", { ascending: false })
       .limit(limit);
 
@@ -534,6 +582,7 @@
 
     const body = {
       kind: String(payload?.kind || "information"),
+      audience: String(payload?.audience || "all_eaj"),
       title: String(payload?.title || "").trim(),
       body: String(payload?.body || "").trim(),
       url: String(payload?.url || "index.html").trim()
@@ -573,8 +622,10 @@
     restoreBackup,
     getPushPublicKey,
     savePushSubscription,
+    getPushPreferences,
     removePushSubscription,
     getPushSubscriberCount,
+    getPushSubscriberStats,
     listPushNotifications,
     sendPushNotification,
     applyData,

@@ -13,8 +13,8 @@ const TYPES_ACTIVITE = {
   autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
 };
 
-// v1.6.0 — Meta
-const APP_VERSION = "1.6.0";
+// v1.7.0 — Meta
+const APP_VERSION = "1.7.0";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -1195,6 +1195,7 @@ function closeOverlaysOnScroll(){
   // Modales standard
   closeModalById("about-modal");
   closeModalById("contact-modal");
+  closeModalById("push-preferences-modal");
   // ⚠️ v1.4.1 : on ne ferme PAS "Échange vêtements" au scroll
 
   // Modale admin
@@ -1328,7 +1329,7 @@ function initialiserMenu(){
       if(act === "open-contact"){ openModalById("contact-modal"); return; }
       if(act === "open-admin"){ const a=document.getElementById("admin-link"); if(a) a.click(); return; }
       if(act === "open-clothes"){ openModalById("clothes-modal"); return; }
-      if(act === "toggle-push"){ togglePushNotifications(); return; }
+      if(act === "manage-push"){ openPushPreferences(); return; }
     });
   });
 
@@ -1678,6 +1679,13 @@ function initialiserClothesExchange(){
 
 let __eajPushRegistration = null;
 
+const EMPTY_PUSH_PREFS = Object.freeze({
+  eaj1: false,
+  eaj2: false,
+  eaj3: false,
+  systemUpdates: false
+});
+
 function pushIsSupported() {
   return (
     window.isSecureContext &&
@@ -1703,7 +1711,7 @@ async function getPushServiceWorkerRegistration() {
   if (__eajPushRegistration) return __eajPushRegistration;
   if (!pushIsSupported()) return null;
 
-  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.6.0", {
+  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.7.0", {
     scope: "./",
     updateViaCache: "none"
   });
@@ -1725,14 +1733,65 @@ function setPushMenuStatus(message = "", state = "") {
   if (state) el.classList.add(state);
 }
 
+function setPushPreferencesStatus(message = "", state = "") {
+  const el = document.getElementById("push-preferences-status");
+  if (!el) return;
+  el.textContent = message;
+  el.classList.remove("ok", "warn", "error");
+  if (state) el.classList.add(state);
+}
+
+function readPushPreferencesForm() {
+  return {
+    eaj1: document.getElementById("push-pref-eaj1")?.checked === true,
+    eaj2: document.getElementById("push-pref-eaj2")?.checked === true,
+    eaj3: document.getElementById("push-pref-eaj3")?.checked === true,
+    systemUpdates: document.getElementById("push-pref-system")?.checked === true
+  };
+}
+
+function writePushPreferencesForm(prefs = EMPTY_PUSH_PREFS) {
+  const map = [
+    ["push-pref-eaj1", prefs.eaj1],
+    ["push-pref-eaj2", prefs.eaj2],
+    ["push-pref-eaj3", prefs.eaj3],
+    ["push-pref-system", prefs.systemUpdates]
+  ];
+  map.forEach(([id, checked]) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = checked === true;
+  });
+}
+
+function hasAnyPushPreference(prefs) {
+  return !!(prefs?.eaj1 || prefs?.eaj2 || prefs?.eaj3 || prefs?.systemUpdates);
+}
+
+function describePushPreferences(prefs) {
+  const labels = [];
+  if (prefs?.eaj1) labels.push("EAJ1");
+  if (prefs?.eaj2) labels.push("EAJ2");
+  if (prefs?.eaj3) labels.push("EAJ3");
+  if (prefs?.systemUpdates) labels.push("mises à jour système");
+  return labels.join(", ");
+}
+
+async function fetchCurrentPushPreferences(subscription) {
+  if (!subscription || !window.EAJPlanning?.getPushPreferences) return { ...EMPTY_PUSH_PREFS };
+  try {
+    return await window.EAJPlanning.getPushPreferences(subscription.endpoint);
+  } catch (error) {
+    console.warn("Préférences Push indisponibles :", error);
+    return { ...EMPTY_PUSH_PREFS };
+  }
+}
+
 async function refreshPushMenuUi() {
   const btn = document.getElementById("push-menu-button");
   if (!btn) return;
 
   const statusEl = document.getElementById("push-menu-status");
 
-  // Tant que la configuration Push n'est pas terminée (ou si le navigateur
-  // n'est pas compatible), on ne montre pas une option inutilisable au public.
   if (!pushIsSupported() || !getPushPublicKeyConfigured()) {
     btn.hidden = true;
     if (statusEl) statusEl.hidden = true;
@@ -1752,20 +1811,18 @@ async function refreshPushMenuUi() {
   try {
     const subscription = await getCurrentPushSubscription();
     if (subscription) {
-      btn.textContent = "🔔 Notifications activées";
-      setPushMenuStatus("Tu recevras les informations importantes envoyées par les responsables EAJ.", "ok");
-
-      // Ré-enregistre discrètement l'abonnement s'il existait déjà avant une migration ou un changement de navigateur.
-      try {
-        if (window.EAJPlanning?.savePushSubscription) {
-          await window.EAJPlanning.savePushSubscription(subscription);
-        }
-      } catch (error) {
-        console.warn("Abonnement push local présent mais synchronisation Supabase impossible :", error);
-      }
+      btn.textContent = "🔔 Gérer les notifications";
+      const prefs = await fetchCurrentPushPreferences(subscription);
+      const selected = describePushPreferences(prefs);
+      setPushMenuStatus(
+        selected
+          ? `Actives : ${selected}. Les messages importants restent toujours inclus.`
+          : "Notifications actives : messages importants uniquement. Ouvre les réglages pour choisir tes groupes.",
+        "ok"
+      );
     } else {
       btn.textContent = "🔔 Activer les notifications";
-      setPushMenuStatus("Activation volontaire : aucune demande ne s'affiche sans appuyer ici.");
+      setPushMenuStatus("Choisis EAJ1, EAJ2, EAJ3 et/ou les mises à jour système.");
     }
   } catch (error) {
     console.warn("Impossible de lire l'état des notifications :", error);
@@ -1774,9 +1831,10 @@ async function refreshPushMenuUi() {
   }
 }
 
-async function enablePushNotifications() {
+async function enablePushNotifications(preferences) {
   const publicKey = getPushPublicKeyConfigured();
   if (!publicKey) throw new Error("La clé publique VAPID n'est pas encore configurée.");
+  if (!hasAnyPushPreference(preferences)) throw new Error("Coche au moins une catégorie de notification.");
 
   const permission = await Notification.requestPermission();
   if (permission !== "granted") {
@@ -1797,7 +1855,7 @@ async function enablePushNotifications() {
   }
 
   try {
-    await window.EAJPlanning.savePushSubscription(subscription);
+    await window.EAJPlanning.savePushSubscription(subscription, preferences);
   } catch (error) {
     try { await subscription.unsubscribe(); } catch (e) {}
     throw error;
@@ -1821,32 +1879,99 @@ async function disablePushNotifications() {
   return true;
 }
 
-async function togglePushNotifications() {
-  const btn = document.getElementById("push-menu-button");
-  if (!btn || btn.disabled) return;
+async function openPushPreferences() {
+  if (!pushIsSupported() || !getPushPublicKeyConfigured()) return;
+  openModalById("push-preferences-modal");
+  setPushPreferencesStatus("Chargement des préférences…");
 
   try {
-    btn.disabled = true;
     const subscription = await getCurrentPushSubscription();
-
-    if (subscription) {
-      const ok = window.confirm("Désactiver les notifications EAJ sur cet appareil ?");
-      if (!ok) return;
-      await disablePushNotifications();
-    } else {
-      await enablePushNotifications();
-    }
+    const prefs = subscription ? await fetchCurrentPushPreferences(subscription) : { ...EMPTY_PUSH_PREFS };
+    writePushPreferencesForm(prefs);
+    const disableBtn = document.getElementById("push-disable-all");
+    if (disableBtn) disableBtn.hidden = !subscription;
+    setPushPreferencesStatus(
+      subscription
+        ? "Modifie tes choix puis enregistre. EAJ2/EAJ3 reçoivent automatiquement les messages EAJ 2-3."
+        : "Coche au moins une case puis enregistre pour activer les notifications."
+    );
   } catch (error) {
-    console.error("Erreur notifications push :", error);
-    alert(error.message || error);
-  } finally {
-    btn.disabled = false;
-    await refreshPushMenuUi();
+    console.error(error);
+    setPushPreferencesStatus("Impossible de charger les préférences.", "error");
   }
+}
+
+async function savePushPreferencesFromModal() {
+  const btn = document.getElementById("push-save-preferences");
+  const prefs = readPushPreferencesForm();
+
+  if (!hasAnyPushPreference(prefs)) {
+    const subscription = await getCurrentPushSubscription();
+    if (!subscription) {
+      setPushPreferencesStatus("Coche au moins une case pour activer les notifications.", "warn");
+      return;
+    }
+    const ok = window.confirm("Aucune catégorie n'est cochée. Désactiver complètement les notifications sur cet appareil ?");
+    if (!ok) return;
+    await disablePushNotifications();
+    setPushPreferencesStatus("Notifications désactivées sur cet appareil.", "ok");
+    const disableBtn = document.getElementById("push-disable-all");
+    if (disableBtn) disableBtn.hidden = true;
+    await refreshPushMenuUi();
+    return;
+  }
+
+  try {
+    if (btn) btn.disabled = true;
+    setPushPreferencesStatus("Enregistrement…");
+    let subscription = await getCurrentPushSubscription();
+    if (!subscription) {
+      const enabled = await enablePushNotifications(prefs);
+      if (!enabled) return;
+      subscription = await getCurrentPushSubscription();
+    } else {
+      await window.EAJPlanning.savePushSubscription(subscription, prefs);
+    }
+
+    const selected = describePushPreferences(prefs);
+    setPushPreferencesStatus(`Enregistré : ${selected}. Messages importants toujours inclus.`, "ok");
+    const disableBtn = document.getElementById("push-disable-all");
+    if (disableBtn) disableBtn.hidden = false;
+    await refreshPushMenuUi();
+  } catch (error) {
+    console.error("Erreur préférences push :", error);
+    const message = error?.message || String(error);
+    setPushPreferencesStatus(message, "error");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function disableAllPushFromModal() {
+  const ok = window.confirm("Désactiver toutes les notifications EAJ sur cet appareil ?");
+  if (!ok) return;
+  try {
+    await disablePushNotifications();
+    writePushPreferencesForm(EMPTY_PUSH_PREFS);
+    setPushPreferencesStatus("Toutes les notifications sont désactivées.", "ok");
+    const btn = document.getElementById("push-disable-all");
+    if (btn) btn.hidden = true;
+    await refreshPushMenuUi();
+  } catch (error) {
+    setPushPreferencesStatus(error?.message || String(error), "error");
+  }
+}
+
+function initialiserPushPreferencesModal() {
+  const saveBtn = document.getElementById("push-save-preferences");
+  const disableBtn = document.getElementById("push-disable-all");
+  if (saveBtn) saveBtn.addEventListener("click", savePushPreferencesFromModal);
+  if (disableBtn) disableBtn.addEventListener("click", disableAllPushFromModal);
 }
 
 async function initialiserPushNotifications() {
   if (!document.getElementById("push-menu-button")) return;
+  initialiserPushPreferencesModal();
   await refreshPushMenuUi();
 }
 

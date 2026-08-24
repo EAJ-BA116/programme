@@ -146,6 +146,8 @@ const generatorApp   = document.getElementById("generator-app");
 const settingMergeEaj23 = document.getElementById("setting-merge-eaj23");
 
 // Notifications push
+const pushAudience         = document.getElementById("push-audience");
+const pushAudienceNote     = document.getElementById("push-audience-note");
 const pushKind             = document.getElementById("push-kind");
 const pushTitle            = document.getElementById("push-title");
 const pushBody             = document.getElementById("push-body");
@@ -153,6 +155,7 @@ const pushUrl              = document.getElementById("push-url");
 const btnSendPush          = document.getElementById("btn-send-push");
 const btnRefreshPush       = document.getElementById("btn-refresh-push");
 const pushSubscriberCount  = document.getElementById("push-subscriber-count");
+const pushSubscriberBreakdown = document.getElementById("push-subscriber-breakdown");
 const pushAdminStatus      = document.getElementById("push-admin-status");
 const pushHistory          = document.getElementById("push-history");
 
@@ -1924,6 +1927,8 @@ function chargerPlanningExistant(sourceData) {
 //  Notifications push — Super Admin
 // ===============================
 
+let pushLastAudience = "all_eaj";
+
 function setPushAdminStatus(message = "", type = "info") {
   if (!pushAdminStatus) return;
   pushAdminStatus.textContent = message;
@@ -1934,11 +1939,56 @@ function setPushAdminStatus(message = "", type = "info") {
 function getPushKindLabel(kind) {
   const labels = {
     information: "ℹ️ Information",
-    important: "🚨 Important",
-    update: "🆕 Mise à jour",
-    reminder: "⏰ Rappel"
+    programme: "📅 Programme / activité",
+    modification: "🔄 Modification",
+    cancellation: "❌ Annulation",
+    document: "📄 Document / consigne",
+    update: "🆕 Mise à jour application",
+    important: "🚨 Important"
   };
   return labels[kind] || labels.information;
+}
+
+function getPushAudienceLabel(audience) {
+  const labels = {
+    all_active: "Tous les abonnés actifs",
+    all_eaj: "Tous les EAJ",
+    eaj1: "EAJ1",
+    eaj2: "EAJ2 uniquement",
+    eaj3: "EAJ3 uniquement",
+    eaj23: "EAJ 2-3",
+    system: "Mises à jour système"
+  };
+  return labels[audience] || labels.all_eaj;
+}
+
+function syncPushAudienceRules() {
+  if (!pushKind || !pushAudience) return;
+  const kind = pushKind.value;
+
+  if (!pushAudience.disabled && pushAudience.value !== "all_active") {
+    pushLastAudience = pushAudience.value;
+  }
+
+  if (kind === "important") {
+    pushAudience.value = "all_active";
+    pushAudience.disabled = true;
+    if (pushAudienceNote) pushAudienceNote.textContent = "Un message important est envoyé à tous les appareils ayant activé les notifications, sans tenir compte des préférences.";
+    return;
+  }
+
+  if (kind === "update") {
+    pushAudience.value = "system";
+    pushAudience.disabled = true;
+    if (pushAudienceNote) pushAudienceNote.textContent = "Une mise à jour de l’application est envoyée uniquement aux personnes ayant coché « Mises à jour système ».";
+    return;
+  }
+
+  pushAudience.disabled = false;
+  if (pushAudience.value === "all_active" || (pushAudience.value === "system" && pushLastAudience !== "system")) {
+    pushAudience.value = pushLastAudience || "all_eaj";
+  }
+  if (pushAudienceNote) pushAudienceNote.textContent = "EAJ2 et EAJ3 peuvent recevoir séparément ou ensemble via EAJ 2-3.";
 }
 
 function renderPushHistory(items) {
@@ -1977,7 +2027,8 @@ function renderPushHistory(items) {
     const date = item.created_at ? new Date(item.created_at).toLocaleString("fr-FR") : "date inconnue";
     const statusLabels = { pending: "En attente", sent: "Envoyée", partial: "Partielle", failed: "Échec" };
     const statusLabel = item.status ? (statusLabels[item.status] || item.status) : "";
-    meta.textContent = `${date}${item.created_by_name ? " — " + item.created_by_name : ""}${statusLabel ? " — " + statusLabel : ""}`;
+    const audienceLabel = getPushAudienceLabel(item.audience || (item.kind === "important" ? "all_active" : "all_eaj"));
+    meta.textContent = `${date} — ${audienceLabel}${item.created_by_name ? " — " + item.created_by_name : ""}${statusLabel ? " — " + statusLabel : ""}`;
 
     card.append(head, body, meta);
     pushHistory.appendChild(card);
@@ -1994,20 +2045,23 @@ async function rafraichirPushAdmin() {
   }
 
   if (
-    typeof window.EAJPlanning.getPushSubscriberCount !== "function" ||
+    typeof window.EAJPlanning.getPushSubscriberStats !== "function" ||
     typeof window.EAJPlanning.listPushNotifications !== "function"
   ) {
-    setPushAdminStatus("Module push absent de planning-api.js.", "error");
+    setPushAdminStatus("Module push v1.7.0 absent de planning-api.js.", "error");
     return;
   }
 
   try {
     setButtonLoading(btnRefreshPush, true, "⏳");
-    const [count, history] = await Promise.all([
-      window.EAJPlanning.getPushSubscriberCount(),
+    const [stats, history] = await Promise.all([
+      window.EAJPlanning.getPushSubscriberStats(),
       window.EAJPlanning.listPushNotifications(10)
     ]);
-    pushSubscriberCount.textContent = `Appareils inscrits : ${count}`;
+    pushSubscriberCount.textContent = `Appareils actifs : ${stats.total || 0}`;
+    if (pushSubscriberBreakdown) {
+      pushSubscriberBreakdown.textContent = `EAJ1 : ${stats.eaj1 || 0} • EAJ2 : ${stats.eaj2 || 0} • EAJ3 : ${stats.eaj3 || 0} • EAJ 2-3 : ${stats.eaj23 || 0} • Mises à jour système : ${stats.system || 0}`;
+    }
     renderPushHistory(history);
 
     const publicKey = typeof window.EAJPlanning.getPushPublicKey === "function"
@@ -2022,9 +2076,10 @@ async function rafraichirPushAdmin() {
   } catch (error) {
     console.error("Erreur chargement notifications push :", error);
     pushSubscriberCount.textContent = "Appareils inscrits : ?";
+    if (pushSubscriberBreakdown) pushSubscriberBreakdown.textContent = "";
     renderPushHistory([]);
     setPushAdminStatus(
-      "Notifications non initialisées dans Supabase. Exécute la migration v1.6.0 puis déploie la fonction Edge.",
+      "Notifications v1.7.0 non initialisées. Exécute la migration v1.7.0 puis redéploie la fonction Edge send-eaj-push.",
       "error"
     );
   } finally {
@@ -2034,6 +2089,7 @@ async function rafraichirPushAdmin() {
 
 async function envoyerNotificationPush() {
   const kind = pushKind?.value || "information";
+  const audience = kind === "important" ? "all_active" : (kind === "update" ? "system" : (pushAudience?.value || "all_eaj"));
   const title = (pushTitle?.value || "").trim();
   const body = (pushBody?.value || "").trim();
   const url = (pushUrl?.value || "index.html").trim() || "index.html";
@@ -2043,12 +2099,8 @@ async function envoyerNotificationPush() {
     return;
   }
 
-  let countText = pushSubscriberCount?.textContent || "";
-  const countMatch = countText.match(/(\d+)/);
-  const count = countMatch ? Number(countMatch[1]) : null;
-  const targetText = count === null ? "aux appareils inscrits" : `à ${count} appareil${count > 1 ? "s" : ""}`;
-
-  const ok = confirm(`Envoyer cette notification ${targetText} ?\n\n${title}\n${body}`);
+  const audienceLabel = getPushAudienceLabel(audience);
+  const ok = confirm(`Envoyer cette notification ?\n\nDestinataires : ${audienceLabel}\nCatégorie : ${getPushKindLabel(kind)}\n\n${title}\n${body}`);
   if (!ok) return;
 
   try {
@@ -2057,6 +2109,7 @@ async function envoyerNotificationPush() {
 
     const result = await window.EAJPlanning.sendPushNotification({
       kind,
+      audience,
       title,
       body,
       url
@@ -2064,9 +2117,10 @@ async function envoyerNotificationPush() {
 
     const sent = Number(result?.sent || 0);
     const failed = Number(result?.failed || 0);
+    const matched = Number(result?.matched || 0);
 
     setPushAdminStatus(
-      `Notification envoyée : ${sent} reçue${sent > 1 ? "s" : ""}${failed ? `, ${failed} échec${failed > 1 ? "s" : ""}` : ""}.`,
+      `Cible : ${matched} appareil${matched > 1 ? "s" : ""} • envoyée : ${sent}${failed ? ` • échecs : ${failed}` : ""}.`,
       failed ? "info" : "ok"
     );
 
@@ -2087,9 +2141,13 @@ function initialiserPushAdmin() {
 
   btnSendPush.addEventListener("click", envoyerNotificationPush);
   if (btnRefreshPush) btnRefreshPush.addEventListener("click", rafraichirPushAdmin);
+  if (pushAudience) pushAudience.addEventListener("change", () => {
+    if (!pushAudience.disabled && pushAudience.value !== "all_active") pushLastAudience = pushAudience.value;
+  });
 
   if (pushKind) {
     pushKind.addEventListener("change", () => {
+      syncPushAudienceRules();
       const currentTitle = (pushTitle?.value || "").trim();
       if (!pushTitle || (currentTitle && currentTitle !== "EAJ BA 116" && !currentTitle.startsWith("Mise à jour"))) return;
 
@@ -2101,6 +2159,7 @@ function initialiserPushAdmin() {
     });
   }
 
+  syncPushAudienceRules();
   rafraichirPushAdmin();
 }
 

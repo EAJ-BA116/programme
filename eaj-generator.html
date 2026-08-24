@@ -960,16 +960,33 @@
 
     <section class="config-block" id="push-admin-panel">
       <div class="config-title">🔔 Notifications push</div>
-      <p class="note">Envoi manuel par le Super Admin. Les utilisateurs ne reçoivent des notifications que s’ils les ont activées depuis le menu du site.</p>
+      <p class="note">Envoi manuel par le Super Admin. Le destinataire et la catégorie sont séparés. Un message « Important » est toujours envoyé à tous les appareils ayant activé les notifications.</p>
 
       <div class="config-grid" style="margin-top:0.65rem;">
         <div class="field">
-          <label for="push-kind">Type de notification</label>
+          <label for="push-audience">Destinataires</label>
+          <select id="push-audience">
+            <option value="all_eaj">📣 Tous les EAJ</option>
+            <option value="eaj1">✈️ EAJ1</option>
+            <option value="eaj2">✈️ EAJ2 uniquement</option>
+            <option value="eaj3">✈️ EAJ3 uniquement</option>
+            <option value="eaj23">✈️ EAJ 2-3 (EAJ2 + EAJ3)</option>
+            <option value="system">🛠️ Abonnés aux mises à jour système</option>
+            <option value="all_active" hidden>🚨 Tous les abonnés actifs</option>
+          </select>
+          <span class="note" id="push-audience-note">EAJ2 et EAJ3 peuvent recevoir séparément ou ensemble via EAJ 2-3.</span>
+        </div>
+
+        <div class="field">
+          <label for="push-kind">Catégorie du message</label>
           <select id="push-kind">
             <option value="information">ℹ️ Information</option>
-            <option value="important">🚨 Information importante</option>
+            <option value="programme">📅 Programme / activité</option>
+            <option value="modification">🔄 Modification</option>
+            <option value="cancellation">❌ Annulation</option>
+            <option value="document">📄 Document / consigne</option>
             <option value="update">🆕 Mise à jour de l’application</option>
-            <option value="reminder">⏰ Rappel</option>
+            <option value="important">🚨 Important</option>
           </select>
         </div>
 
@@ -996,6 +1013,7 @@
             <button class="btn btn-small" type="button" id="btn-refresh-push">🔄 Actualiser</button>
             <strong id="push-subscriber-count">Appareils inscrits : …</strong>
           </div>
+          <div id="push-subscriber-breakdown" class="note"></div>
           <div id="push-admin-status" class="push-admin-status" aria-live="polite"></div>
         </div>
 
@@ -1104,7 +1122,7 @@
 
   <!-- Scripts : Supabase + données de secours + générateur -->
 <script>
-  window.EAJ_BUILD = "1.6.0";
+  window.EAJ_BUILD = "1.7.0";
   (function () {
     const bust = Date.now();
 
@@ -1166,11 +1184,11 @@
     }
 
     loadClassic("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", function () {
-      loadSafe(`./supabase-config.js?v=1.6.0-${bust}`, function () {
-        loadSafe(`./planning.js?v=1.6.0-${bust}`, function () {
-          loadSafe(`./planning-api.js?v=1.6.0-${bust}`, function (apiOk) {
+      loadSafe(`./supabase-config.js?v=1.7.0-${bust}`, function () {
+        loadSafe(`./planning.js?v=1.7.0-${bust}`, function () {
+          loadSafe(`./planning-api.js?v=1.7.0-${bust}`, function (apiOk) {
             if (!apiOk) return;
-            loadSafe(`./eaj-generator.js?v=1.6.0-${bust}`);
+            loadSafe(`./eaj-generator.js?v=1.7.0-${bust}`);
           });
         }, { optional: true });
       });
