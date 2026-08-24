@@ -32,10 +32,78 @@ const TYPES_ACTIVITE_CHOICES = [
 ];
 
 const GROUPS = [
-  { id: "EAJ1", label: "Groupe 1 – EAJ1" },
-  { id: "EAJ2", label: "Groupe 2 – EAJ2" },
-  { id: "EAJ3", label: "Groupe 3 – EAJ3" }
+  { id: "EAJ1",  label: "Groupe 1 – EAJ1" },
+  { id: "EAJ23", label: "Groupe 2-3 – EAJ 2-3" },
+  { id: "EAJ2",  label: "Groupe 2 – EAJ2" },
+  { id: "EAJ3",  label: "Groupe 3 – EAJ3" }
 ];
+
+const EAJ23_MODES = {
+  merged:   { label: "EAJ 2-3 ensemble", groups: ["EAJ23"] },
+  EAJ2:     { label: "EAJ2 seul", groups: ["EAJ2"] },
+  EAJ3:     { label: "EAJ3 seul", groups: ["EAJ3"] },
+  separate: { label: "EAJ2 et EAJ3 séparés", groups: ["EAJ2", "EAJ3"] }
+};
+
+function isEaj23MergeEnabled() {
+  const cb = document.getElementById("setting-merge-eaj23");
+  return cb ? cb.checked : true;
+}
+
+function getDefaultEaj23Mode() {
+  return isEaj23MergeEnabled() ? "merged" : "separate";
+}
+
+function getWeekEaj23Mode(weekDiv) {
+  const select = weekDiv?.querySelector(".week-eaj23-mode");
+  const value = select?.value || getDefaultEaj23Mode();
+  return EAJ23_MODES[value] ? value : getDefaultEaj23Mode();
+}
+
+function getGroupMetaById(groupId) {
+  return GROUPS.find(g => g.id === groupId) || { id: groupId, label: groupId || "Groupe" };
+}
+
+function getStoredGroupId(group) {
+  if (!group || typeof group.titre !== "string") return "";
+  if (Array.isArray(group.groupIds) && group.groupIds.includes("EAJ2") && group.groupIds.includes("EAJ3")) return "EAJ23";
+  const title = group.titre.replace(/\s+/g, " ");
+  if (title.includes("EAJ 2-3") || title.includes("EAJ2-3") || title.includes("EAJ 2 / 3")) return "EAJ23";
+  if (title.includes("EAJ1")) return "EAJ1";
+  if (title.includes("EAJ2")) return "EAJ2";
+  if (title.includes("EAJ3")) return "EAJ3";
+  return "";
+}
+
+function inferWeekEaj23Mode(weekObj) {
+  if (weekObj && EAJ23_MODES[weekObj.eaj23Mode]) return weekObj.eaj23Mode;
+  const ids = new Set((weekObj?.groupes || []).map(getStoredGroupId).filter(Boolean));
+  if (ids.has("EAJ23")) return "merged";
+  if (ids.has("EAJ2") && ids.has("EAJ3")) return "separate";
+  if (ids.has("EAJ2")) return "EAJ2";
+  if (ids.has("EAJ3")) return "EAJ3";
+  return getDefaultEaj23Mode();
+}
+
+function updateWeekGroupModeUi(weekDiv) {
+  if (!weekDiv) return;
+  const mode = getWeekEaj23Mode(weekDiv);
+  const modeField = weekDiv.querySelector(".week-eaj23-mode-field");
+  if (modeField) modeField.style.display = "";
+
+  weekDiv.querySelectorAll(".group-form").forEach(groupDiv => {
+    const gid = groupDiv.dataset.group;
+    let visible = gid === "EAJ1";
+    if (gid !== "EAJ1") {
+      visible = EAJ23_MODES[mode]?.groups.includes(gid) || false;
+    }
+    groupDiv.style.display = visible ? "" : "none";
+  });
+}
+
+function updateAllWeekGroupModeUi() {
+  document.querySelectorAll(".week-form").forEach(updateWeekGroupModeUi);
+}
 
 const MOIS_FR = [
   "janvier", "février", "mars", "avril", "mai", "juin",
@@ -75,6 +143,7 @@ const authStatus     = document.getElementById("auth-status");
 const authLogout     = document.getElementById("auth-logout");
 const generatorIntro = document.getElementById("generator-intro");
 const generatorApp   = document.getElementById("generator-app");
+const settingMergeEaj23 = document.getElementById("setting-merge-eaj23");
 
 // Bannières (multi)
 const bannersContainer = document.getElementById("banners-container");
@@ -233,13 +302,15 @@ function getPlanningDataForGenerator() {
   let alertBanners = [];
   let alertBanner = { actif: false, texte: "" };
   let lastUpdate = { auteur: "", dateTexte: "" };
+  let settings = { mergeEaj23: true };
 
   try { if (typeof SEMAINES !== "undefined" && Array.isArray(SEMAINES)) semaines = SEMAINES; } catch (e) {}
   try { if (typeof ALERT_BANNERS !== "undefined" && Array.isArray(ALERT_BANNERS)) alertBanners = ALERT_BANNERS; } catch (e) {}
   try { if (typeof ALERT_BANNER !== "undefined" && ALERT_BANNER) alertBanner = ALERT_BANNER; } catch (e) {}
   try { if (typeof LAST_UPDATE !== "undefined" && LAST_UPDATE) lastUpdate = LAST_UPDATE; } catch (e) {}
+  try { if (typeof PLANNING_SETTINGS !== "undefined" && PLANNING_SETTINGS) settings = PLANNING_SETTINGS; } catch (e) {}
 
-  return { semaines, alertBanners, alertBanner, lastUpdate, source: "planning.js", version: null };
+  return { semaines, alertBanners, alertBanner, lastUpdate, settings, source: "planning.js", version: null };
 }
 
 async function chargerPlanningInitial() {
@@ -259,7 +330,7 @@ async function chargerPlanningInitial() {
 
 async function sauvegarderDansSupabase() {
   const weeks = getWeeksData();
-  const { ALERT_BANNER, ALERT_BANNERS, LAST_UPDATE } = getConfigData();
+  const { ALERT_BANNER, ALERT_BANNERS, LAST_UPDATE, SETTINGS } = getConfigData();
 
   if (!weeks.length) {
     setSaveStatus("Aucune semaine valide. Ajoute au moins une date JJ/MM/AAAA correcte.", "error", true);
@@ -280,6 +351,7 @@ async function sauvegarderDansSupabase() {
       alertBanners: ALERT_BANNERS,
       alertBanner: ALERT_BANNER,
       lastUpdate: LAST_UPDATE,
+      settings: SETTINGS,
       updatedByName: LAST_UPDATE.auteur
     });
 
@@ -782,10 +854,11 @@ function addCommonGroupsToSet(entry, set) {
   if (!entry || !set) return;
   const groupes = Array.isArray(entry.groupes) ? entry.groupes.filter(Boolean) : [];
   if (!groupes.length) {
-    ["EAJ1", "EAJ2", "EAJ3"].forEach(id => set.add(id));
+    ["EAJ1", "EAJ2", "EAJ3", "EAJ23"].forEach(id => set.add(id));
     return;
   }
   groupes.forEach(id => set.add(id));
+  if (groupes.includes("EAJ2") && groupes.includes("EAJ3")) set.add("EAJ23");
 }
 
 function buildActivitiesHtml(activities, defaults = {}) {
@@ -1053,12 +1126,15 @@ function renderWeekPreview(weekObj) {
   const meaningfulGroups = (weekObj.groupes || []).filter(g => g && g.titre && hasMeaningfulGroupEntry(g));
 
   meaningfulGroups.forEach(g => {
-    const groupId =
-      g.titre.includes("EAJ1") ? "EAJ1" :
-      g.titre.includes("EAJ2") ? "EAJ2" :
-      g.titre.includes("EAJ3") ? "EAJ3" : "";
+    const groupId = getStoredGroupId(g);
 
-    if (groupId) presentGroups.add(groupId);
+    if (groupId) {
+      presentGroups.add(groupId);
+      if (groupId === "EAJ23") {
+        presentGroups.add("EAJ2");
+        presentGroups.add("EAJ3");
+      }
+    }
 
     html += `
       <article class="group-card" data-group="${groupId}">
@@ -1074,11 +1150,18 @@ function renderWeekPreview(weekObj) {
   });
 
   // Groupes absents
-  const ALL_GROUPS = [
-    { id: "EAJ1", titre: "Groupe 1 – EAJ1" },
-    { id: "EAJ2", titre: "Groupe 2 – EAJ2" },
-    { id: "EAJ3", titre: "Groupe 3 – EAJ3" }
-  ];
+  const mode = EAJ23_MODES[weekObj.eaj23Mode] ? weekObj.eaj23Mode : getDefaultEaj23Mode();
+  const secondary = mode === "merged"
+    ? [{ id: "EAJ23", titre: "Groupe 2-3 – EAJ 2-3" }]
+    : mode === "EAJ2"
+      ? [{ id: "EAJ2", titre: "Groupe 2 – EAJ2" }]
+      : mode === "EAJ3"
+        ? [{ id: "EAJ3", titre: "Groupe 3 – EAJ3" }]
+        : [
+            { id: "EAJ2", titre: "Groupe 2 – EAJ2" },
+            { id: "EAJ3", titre: "Groupe 3 – EAJ3" }
+          ];
+  const ALL_GROUPS = [{ id: "EAJ1", titre: "Groupe 1 – EAJ1" }, ...secondary];
 
   ALL_GROUPS.forEach(gMeta => {
     if (!presentGroups.has(gMeta.id)) {
@@ -1137,6 +1220,16 @@ function createWeekForm(options = {}) {
           <label>Message si OFF (facultatif)</label>
           <textarea class="week-messageOff" placeholder="Ex : Pas de séance EAJ ce mercredi..."></textarea>
         </div>
+        <div class="field week-eaj23-mode-field">
+          <label>Organisation EAJ2 / EAJ3 pour cette semaine</label>
+          <select class="week-eaj23-mode">
+            <option value="merged">EAJ 2-3 ensemble</option>
+            <option value="EAJ2">EAJ2 seul</option>
+            <option value="EAJ3">EAJ3 seul</option>
+            <option value="separate">EAJ2 et EAJ3 séparés</option>
+          </select>
+          <span class="note">Exception valable uniquement pour cette semaine.</span>
+        </div>
       </div>
       <div class="groups-wrapper"></div>
       <div class="common-wrapper">
@@ -1158,6 +1251,7 @@ function createWeekForm(options = {}) {
   const sessionCheckbox = weekDiv.querySelector(".week-session");
   const noteField = weekDiv.querySelector(".week-note").closest(".field");
   const messageOffField = weekDiv.querySelector(".week-messageOff").closest(".field");
+  const eaj23ModeSelect = weekDiv.querySelector(".week-eaj23-mode");
 
   // Gestion séance / off
   function updateSessionFields() {
@@ -1189,6 +1283,15 @@ function createWeekForm(options = {}) {
   GROUPS.forEach(g => {
     groupsWrapper.appendChild(createGroupForm(g.id, g.label));
   });
+
+  if (eaj23ModeSelect) {
+    eaj23ModeSelect.value = getDefaultEaj23Mode();
+    eaj23ModeSelect.addEventListener("change", () => {
+      updateWeekGroupModeUi(weekDiv);
+      updateOutput();
+    });
+  }
+  updateWeekGroupModeUi(weekDiv);
 
   // Activités communes
   const commonList = weekDiv.querySelector(".common-list");
@@ -1277,25 +1380,31 @@ function getWeekDataFromForm(weekDiv, showAlertOnError = false) {
   const noteInput = weekDiv.querySelector(".week-note");
   const messageOffInput = weekDiv.querySelector(".week-messageOff");
 
+  const eaj23Mode = getWeekEaj23Mode(weekDiv);
+  const activeSecondaryGroups = new Set(EAJ23_MODES[eaj23Mode]?.groups || ["EAJ2", "EAJ3"]);
+
   const weekObj = {
     isoDate: parsed.iso,
     date: parsed.label,
     statut: isSession ? "session" : "off",
     note: isSession ? (noteInput?.value.trim() || "") : "",
     messageOff: !isSession ? (messageOffInput?.value.trim() || "") : "",
+    eaj23Mode,
     activitesCommunes: [],
     groupes: []
   };
 
-  // -------- Groupes (EAJ1 / EAJ2 / EAJ3) --------
+  // -------- Groupes (EAJ1 / EAJ 2-3 / exceptions EAJ2 / EAJ3) --------
   const groupForms = weekDiv.querySelectorAll(".group-form");
   groupForms.forEach(groupDiv => {
+    const groupId = groupDiv.dataset.group;
+    if (groupId !== "EAJ1" && !activeSecondaryGroups.has(groupId)) return;
+
     const enabled = groupDiv.querySelector(".group-enabled")?.checked;
     if (!enabled) return;
 
-    const groupId = groupDiv.dataset.group;
-    const meta = GROUPS.find(g => g.id === groupId);
-    const titre = meta ? meta.label : (groupId || "Groupe");
+    const meta = getGroupMetaById(groupId);
+    const titre = meta.label;
 
     const lieu      = groupDiv.querySelector(".group-lieu")?.value.trim()      || "";
     const horaire   = groupDiv.querySelector(".group-horaire")?.value.trim()   || "";
@@ -1343,6 +1452,7 @@ function getWeekDataFromForm(weekDiv, showAlertOnError = false) {
     }
 
     const groupObj = { titre, activites };
+    if (groupId === "EAJ23") groupObj.groupIds = ["EAJ2", "EAJ3"];
     if (horaire)   groupObj.horaire   = horaire;
     if (lieu)      groupObj.lieu      = lieu;
     if (tenue)     groupObj.tenue     = tenue;
@@ -1517,17 +1627,22 @@ function getConfigData() {
     dateTexte
   };
 
+  const SETTINGS_CFG = {
+    mergeEaj23: isEaj23MergeEnabled()
+  };
+
   return {
     ALERT_BANNER: ALERT_BANNER_CFG,
     ALERT_BANNERS: Array.isArray(ALERT_BANNERS) ? ALERT_BANNERS : [],
-    LAST_UPDATE: LAST_UPDATE_CFG
+    LAST_UPDATE: LAST_UPDATE_CFG,
+    SETTINGS: SETTINGS_CFG
   };
 }
 
 
 function buildPlanningJs() {
   const weeks = getWeeksData();
-  const { ALERT_BANNER, ALERT_BANNERS, LAST_UPDATE } = getConfigData();
+  const { ALERT_BANNER, ALERT_BANNERS, LAST_UPDATE, SETTINGS } = getConfigData();
 
   if (weeks.length === 0) {
     return "// Aucune semaine valide (renseigner au moins une date JJ/MM/AAAA correcte).";
@@ -1540,6 +1655,8 @@ function buildPlanningJs() {
   parts.push("const ALERT_BANNER = " + JSON.stringify(ALERT_BANNER, null, 2) + ";\n");
   parts.push("// 📝 Dernière mise à jour (affichée dans le footer)");
   parts.push("const LAST_UPDATE = " + JSON.stringify(LAST_UPDATE, null, 2) + ";\n");
+  parts.push("// ⚙️ Réglages du planning");
+  parts.push("const PLANNING_SETTINGS = " + JSON.stringify(SETTINGS, null, 2) + ";\n");
   parts.push("// 🗓️ LISTE DES SEMAINES / ÉVÉNEMENTS (isoDate au format AAAA-MM-JJ)");
   parts.push("const SEMAINES = " + JSON.stringify(weeks, null, 2) + ";\n");
 
@@ -1579,13 +1696,18 @@ function chargerPlanningExistant(sourceData) {
   const alertBannersSource = Array.isArray(planningData.alertBanners) ? planningData.alertBanners : [];
   const alertBannerSource = planningData.alertBanner || { actif: false, texte: "" };
   const lastUpdateSource = planningData.lastUpdate || { auteur: "", dateTexte: "" };
+  const settingsSource = planningData.settings || { mergeEaj23: true };
 
   if (!Array.isArray(semainesSource)) semainesSource = [];
 
-  // Config générale : bannières + dernière MAJ
+  // Config générale : organisation des groupes + bannières + dernière MAJ
   const bannerActifInput   = document.getElementById("banner-actif");
   const lastUpdateAuteur   = document.getElementById("lastupdate-auteur");
   const lastUpdateDate     = document.getElementById("lastupdate-date");
+
+  if (settingMergeEaj23) {
+    settingMergeEaj23.checked = settingsSource.mergeEaj23 !== false;
+  }
 
   // Nouveau format : ALERT_BANNERS (multi)
   if (Array.isArray(alertBannersSource) && alertBannersSource.length > 0) {
@@ -1628,6 +1750,11 @@ function chargerPlanningExistant(sourceData) {
 
   weeksSorted.forEach(weekObj => {
     const weekDiv = createWeekForm();
+    weekDiv.dataset.loadedExisting = "true";
+
+    const eaj23ModeSelect = weekDiv.querySelector(".week-eaj23-mode");
+    if (eaj23ModeSelect) eaj23ModeSelect.value = inferWeekEaj23Mode(weekObj);
+    updateWeekGroupModeUi(weekDiv);
 
     // ---- Date + statut (session / off) ----
     const dateInput        = weekDiv.querySelector(".week-date-fr");
@@ -1684,10 +1811,7 @@ function chargerPlanningExistant(sourceData) {
       weekObj.groupes.forEach(g => {
         if (!g || typeof g.titre !== "string") return;
 
-        let groupId = "";
-        if (g.titre.includes("EAJ1")) groupId = "EAJ1";
-        else if (g.titre.includes("EAJ2")) groupId = "EAJ2";
-        else if (g.titre.includes("EAJ3")) groupId = "EAJ3";
+        const groupId = getStoredGroupId(g);
 
         const groupDiv = groupDivById[groupId];
         if (!groupDiv) return;
@@ -1770,6 +1894,8 @@ function chargerPlanningExistant(sourceData) {
         commonList.appendChild(commonDiv);
       });
     }
+
+    updateWeekGroupModeUi(weekDiv);
 
     // ---- On bascule directement en mode "aperçu" pour cette semaine ----
     const btnValidate = weekDiv.querySelector(".btn-validate-week");
@@ -1994,6 +2120,19 @@ async function initGeneratorApp() {
 
   if (bannerActifInput) {
     bannerActifInput.addEventListener("change", updateOutput);
+  }
+
+  if (settingMergeEaj23) {
+    settingMergeEaj23.addEventListener("change", () => {
+      document.querySelectorAll(".week-form").forEach(weekDiv => {
+        const select = weekDiv.querySelector(".week-eaj23-mode");
+        if (select && !weekDiv.dataset.loadedExisting) {
+          select.value = settingMergeEaj23.checked ? "merged" : "separate";
+        }
+        updateWeekGroupModeUi(weekDiv);
+      });
+      updateOutput();
+    });
   }
 
   // Toujours au moins 1 bannière au démarrage

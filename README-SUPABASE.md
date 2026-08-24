@@ -128,6 +128,28 @@ Cela veut dire que le navigateur ne reçoit pas le vrai fichier JavaScript. À l
 
 La version 1.4.3 ajoute un chargeur plus robuste qui évite de tenter d'exécuter une page HTML comme du JavaScript.
 
+## Version 1.5.0 — fusion EAJ2 / EAJ3
+
+Cette version ajoute :
+
+- un réglage **Super Admin** « Fusionner EAJ2 et EAJ3 en EAJ 2-3 » ;
+- sur le site public, les filtres deviennent **Tous / EAJ1 / EAJ 2-3** lorsque la fusion est active ;
+- dans chaque semaine du générateur, une exception permet de choisir **EAJ 2-3 ensemble**, **EAJ2 seul**, **EAJ3 seul** ou **EAJ2 et EAJ3 séparés** ;
+- les anciennes semaines restent compatibles et ne sont pas fusionnées automatiquement ;
+- le réglage est inclus dans les sauvegardes Supabase et dans l’export `planning.js`.
+
+### Mise à jour d’une base Supabase déjà existante
+
+Avant de publier cette version, exécute dans **Supabase > SQL Editor** :
+
+```sql
+alter table public.eaj_planning_state
+  add column if not exists settings jsonb not null
+  default '{"mergeEaj23": true}'::jsonb;
+```
+
+Tu peux aussi exécuter directement le fichier `supabase-migration-v1.5.0.sql` fourni avec le site. Cette migration ne supprime aucune semaine existante.
+
 ## Version 1.4.3 — correctifs générateur
 
 Cette version ajoute :

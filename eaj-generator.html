@@ -274,7 +274,7 @@
 
     @media (min-width: 900px) {
       .groups-wrapper {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       }
     }
 
@@ -865,6 +865,15 @@
     <section class="config-block">
       <div class="config-title">Configuration générale</div>
       <div class="config-grid">
+        <div class="field full super-admin-setting">
+          <label>Organisation des groupes</label>
+          <div class="field-inline">
+            <input type="checkbox" id="setting-merge-eaj23" checked />
+            <span><strong>Fusionner EAJ2 et EAJ3 en « EAJ 2-3 »</strong></span>
+          </div>
+          <span class="note">Réglage Super Admin. Activé : les nouvelles semaines utilisent EAJ 2-3 par défaut. Chaque semaine peut exceptionnellement passer en EAJ2 seul, EAJ3 seul ou EAJ2/EAJ3 séparés.</span>
+        </div>
+
         <div class="field full">
           <label>Bannières d’alerte</label>
           <div class="field-inline">
@@ -987,7 +996,7 @@
 
   <!-- Scripts : Supabase + données de secours + générateur -->
 <script>
-  window.EAJ_BUILD = "1.4.3";
+  window.EAJ_BUILD = "1.5.0";
   (function () {
     const bust = Date.now();
 
@@ -1049,11 +1058,11 @@
     }
 
     loadClassic("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", function () {
-      loadSafe(`./supabase-config.js?v=1.4.3-${bust}`, function () {
-        loadSafe(`./planning.js?v=1.4.3-${bust}`, function () {
-          loadSafe(`./planning-api.js?v=1.4.3-${bust}`, function (apiOk) {
+      loadSafe(`./supabase-config.js?v=1.5.0-${bust}`, function () {
+        loadSafe(`./planning.js?v=1.5.0-${bust}`, function () {
+          loadSafe(`./planning-api.js?v=1.5.0-${bust}`, function (apiOk) {
             if (!apiOk) return;
-            loadSafe(`./eaj-generator.js?v=1.4.3-${bust}`);
+            loadSafe(`./eaj-generator.js?v=1.5.0-${bust}`);
           });
         }, { optional: true });
       });

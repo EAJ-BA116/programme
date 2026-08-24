@@ -24,6 +24,7 @@
     let alertBanners = [];
     let alertBanner = { actif: false, texte: "" };
     let lastUpdate = { auteur: "", dateTexte: "" };
+    let settings = { mergeEaj23: true };
 
     try {
       if (typeof SEMAINES !== "undefined" && Array.isArray(SEMAINES)) semaines = SEMAINES;
@@ -41,11 +42,16 @@
       if (typeof LAST_UPDATE !== "undefined" && LAST_UPDATE) lastUpdate = LAST_UPDATE;
     } catch (e) {}
 
+    try {
+      if (typeof PLANNING_SETTINGS !== "undefined" && PLANNING_SETTINGS) settings = PLANNING_SETTINGS;
+    } catch (e) {}
+
     return normalizePlanningData({
       semaines,
       alertBanners,
       alertBanner,
       lastUpdate,
+      settings,
       source: "planning.js",
       version: null,
       updatedAt: null
@@ -113,12 +119,17 @@
 
     const alertBanner = data.alertBanner || data.alert_banner || { actif: false, texte: "" };
     const lastUpdate = data.lastUpdate || data.last_update || { auteur: "", dateTexte: "" };
+    const rawSettings = data.settings || data.planning_settings || {};
+    const settings = {
+      mergeEaj23: rawSettings.mergeEaj23 !== false
+    };
 
     return {
       semaines,
       alertBanners,
       alertBanner,
       lastUpdate,
+      settings,
       version: typeof data.version === "number" ? data.version : null,
       updatedAt: data.updatedAt || data.updated_at || null,
       updatedByName: data.updatedByName || data.updated_by_name || "",
@@ -133,6 +144,7 @@
       alertBanners: row.alert_banners,
       alertBanner: row.alert_banner,
       lastUpdate: row.last_update,
+      settings: row.settings,
       version: row.version,
       updatedAt: row.updated_at,
       updatedByName: row.updated_by_name,
@@ -249,6 +261,7 @@
       alert_banners: payload.alertBanners || [],
       alert_banner: payload.alertBanner || { actif: false, texte: "" },
       last_update: payload.lastUpdate || { auteur: updatedByName, dateTexte: "" },
+      settings: payload.settings || current.settings || { mergeEaj23: true },
       version: nextVersion,
       updated_by: session.user.id,
       updated_by_name: updatedByName,
@@ -287,6 +300,7 @@
       alertBanners: clone(normalized.alertBanners || []),
       alertBanner: clone(normalized.alertBanner || { actif: false, texte: "" }),
       lastUpdate: clone(normalized.lastUpdate || { auteur: "", dateTexte: "" }),
+      settings: clone(normalized.settings || { mergeEaj23: true }),
       version: normalized.version,
       updatedAt: normalized.updatedAt,
       updatedByName: normalized.updatedByName,
@@ -365,6 +379,7 @@
       alert_banners: normalized.alertBanners || [],
       alert_banner: normalized.alertBanner || { actif: false, texte: "" },
       last_update: normalized.lastUpdate || { auteur: updatedByName, dateTexte: getTodayFrDate() },
+      settings: normalized.settings || current.settings || { mergeEaj23: true },
       version: nextVersion,
       updated_by: session.user.id,
       updated_by_name: updatedByName,
@@ -400,7 +415,8 @@
       semaines: [],
       alertBanners: [],
       alertBanner: { actif: false, texte: "" },
-      lastUpdate: { auteur: updatedByName, dateTexte: getTodayFrDate() }
+      lastUpdate: { auteur: updatedByName, dateTexte: getTodayFrDate() },
+      settings: clone(getCurrentData().settings || { mergeEaj23: true })
     }, { updatedByName });
   }
 

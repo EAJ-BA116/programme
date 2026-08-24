@@ -2,7 +2,7 @@
 -- SETUP SUPABASE — Planning EAJ BA 116
 -- ======================================================
 -- À lancer dans Supabase > SQL Editor.
--- Version 1.4.3 : reprend les sauvegardes automatiques / restauration.
+-- Version 1.5.0 : ajoute la fusion EAJ2/EAJ3 configurable + sauvegardes/restauration.
 -- Ensuite : crée un utilisateur dans Authentication > Users,
 -- puis ajoute son UUID dans public.eaj_admins.
 
@@ -13,12 +13,17 @@ create table if not exists public.eaj_planning_state (
   alert_banners jsonb not null default '[]'::jsonb,
   alert_banner jsonb not null default '{"actif": false, "texte": ""}'::jsonb,
   last_update jsonb not null default '{"auteur": "", "dateTexte": ""}'::jsonb,
+  settings jsonb not null default '{"mergeEaj23": true}'::jsonb,
 
   version integer not null default 1,
   updated_at timestamptz not null default now(),
   updated_by uuid references auth.users(id),
   updated_by_name text
 );
+
+-- Migration sûre si la table existait déjà avant la v1.5.0.
+alter table public.eaj_planning_state
+  add column if not exists settings jsonb not null default '{"mergeEaj23": true}'::jsonb;
 
 create table if not exists public.eaj_admins (
   user_id uuid primary key references auth.users(id) on delete cascade,

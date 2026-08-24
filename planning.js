@@ -37,6 +37,11 @@ const LAST_UPDATE = {
   "dateTexte": "12/05/2026"
 };
 
+// ⚙️ Réglages du planning (fallback si Supabase est indisponible)
+const PLANNING_SETTINGS = {
+  "mergeEaj23": true
+};
+
 // 🗓️ LISTE DES SEMAINES / ÉVÉNEMENTS (isoDate au format AAAA-MM-JJ)
 const SEMAINES = [
   {

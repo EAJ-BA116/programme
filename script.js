@@ -13,8 +13,8 @@ const TYPES_ACTIVITE = {
   autre:          { label: "Autres",            emoji: "✨",  color: "#64748b" }
 };
 
-// v1.4.3 — Meta
-const APP_VERSION = "1.4.3";
+// v1.5.0 — Meta
+const APP_VERSION = "1.5.0";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -31,13 +31,15 @@ function getPlanningData() {
   let alertBanners = [];
   let alertBanner = { actif: false, texte: "" };
   let lastUpdate = { auteur: "", dateTexte: "" };
+  let settings = { mergeEaj23: true };
 
   try { if (typeof SEMAINES !== "undefined" && Array.isArray(SEMAINES)) semaines = SEMAINES; } catch (e) {}
   try { if (typeof ALERT_BANNERS !== "undefined" && Array.isArray(ALERT_BANNERS)) alertBanners = ALERT_BANNERS; } catch (e) {}
   try { if (typeof ALERT_BANNER !== "undefined" && ALERT_BANNER) alertBanner = ALERT_BANNER; } catch (e) {}
   try { if (typeof LAST_UPDATE !== "undefined" && LAST_UPDATE) lastUpdate = LAST_UPDATE; } catch (e) {}
+  try { if (typeof PLANNING_SETTINGS !== "undefined" && PLANNING_SETTINGS) settings = PLANNING_SETTINGS; } catch (e) {}
 
-  return { semaines, alertBanners, alertBanner, lastUpdate };
+  return { semaines, alertBanners, alertBanner, lastUpdate, settings };
 }
 
 function getSemainesPlanning() {
@@ -58,11 +60,90 @@ function getAlertBannerPlanning() {
   return getPlanningData().alertBanner || { actif: false, texte: "" };
 }
 
+function getPlanningSettings() {
+  const settings = getPlanningData().settings || {};
+  return { mergeEaj23: settings.mergeEaj23 !== false };
+}
+
+function isEaj23MergeEnabledPublic() {
+  return getPlanningSettings().mergeEaj23 !== false;
+}
+
+function getStoredGroupIdPublic(group) {
+  if (!group || typeof group.titre !== "string") return "";
+  if (Array.isArray(group.groupIds) && group.groupIds.includes("EAJ2") && group.groupIds.includes("EAJ3")) return "EAJ23";
+  const title = group.titre.replace(/\s+/g, " ");
+  if (title.includes("EAJ 2-3") || title.includes("EAJ2-3") || title.includes("EAJ 2 / 3")) return "EAJ23";
+  if (title.includes("EAJ1")) return "EAJ1";
+  if (title.includes("EAJ2")) return "EAJ2";
+  if (title.includes("EAJ3")) return "EAJ3";
+  return "";
+}
+
+function getStoredGroupIdsPublic(group) {
+  const id = getStoredGroupIdPublic(group);
+  if (id === "EAJ23") return ["EAJ2", "EAJ3"];
+  return id ? [id] : [];
+}
+
+function inferWeekEaj23ModePublic(week) {
+  const explicit = week?.eaj23Mode;
+  if (["merged", "EAJ2", "EAJ3", "separate"].includes(explicit)) return explicit;
+  const ids = new Set((week?.groupes || []).map(getStoredGroupIdPublic).filter(Boolean));
+  if (ids.has("EAJ23")) return "merged";
+  if (ids.has("EAJ2") && ids.has("EAJ3")) return "separate";
+  if (ids.has("EAJ2")) return "EAJ2";
+  if (ids.has("EAJ3")) return "EAJ3";
+  return isEaj23MergeEnabledPublic() ? "merged" : "separate";
+}
+
+function formatGroupTargetsPublic(groupes) {
+  const list = Array.isArray(groupes) ? groupes.filter(Boolean) : [];
+  if (!list.length || list.includes("all")) return "Tous les groupes";
+
+  const labels = [];
+  if (list.includes("EAJ1")) labels.push("EAJ 1");
+  const has2 = list.includes("EAJ2");
+  const has3 = list.includes("EAJ3");
+  if (isEaj23MergeEnabledPublic() && has2 && has3) {
+    labels.push("EAJ 2-3");
+  } else {
+    if (has2) labels.push("EAJ 2");
+    if (has3) labels.push("EAJ 3");
+  }
+  list.forEach(id => {
+    if (!["EAJ1", "EAJ2", "EAJ3", "all"].includes(id)) labels.push(id);
+  });
+  return labels.join(" + ");
+}
+
+function syncGroupFilterButtons() {
+  const merge = isEaj23MergeEnabledPublic();
+  const btn23 = document.querySelector('.btn-filter[data-filter="EAJ23"]');
+  const btn2 = document.querySelector('.btn-filter[data-filter="EAJ2"]');
+  const btn3 = document.querySelector('.btn-filter[data-filter="EAJ3"]');
+  if (btn23) btn23.hidden = !merge;
+  if (btn2) btn2.hidden = merge;
+  if (btn3) btn3.hidden = merge;
+
+  let stored = null;
+  try { stored = localStorage.getItem("eaj_filter"); } catch (e) {}
+  if (merge && (stored === "EAJ2" || stored === "EAJ3")) {
+    try { localStorage.setItem("eaj_filter", "EAJ23"); } catch (e) {}
+  } else if (!merge && stored === "EAJ23") {
+    try { localStorage.setItem("eaj_filter", "all"); } catch (e) {}
+  }
+}
+
 function getFiltreActuel() {
-  const filtersValides = ["all", "EAJ1", "EAJ2", "EAJ3"];
+  const filtersValides = ["all", "EAJ1", "EAJ23", "EAJ2", "EAJ3"];
   try {
     const stored = localStorage.getItem("eaj_filter");
-    if (stored && filtersValides.includes(stored)) return stored;
+    if (stored && filtersValides.includes(stored)) {
+      if (isEaj23MergeEnabledPublic() && (stored === "EAJ2" || stored === "EAJ3")) return "EAJ23";
+      if (!isEaj23MergeEnabledPublic() && stored === "EAJ23") return "all";
+      return stored;
+    }
   } catch (e) {}
   return "all";
 }
@@ -109,7 +190,9 @@ function getActivityFilterLabel(filter = getFiltreActiviteActuel()) {
 }
 
 function rafraichirPlanningAffiche() {
-  const filtre = getCurrentGroupFilterFromUiOrStorage();
+  syncGroupFilterButtons();
+  const filtre = getFiltreActuel();
+  setGroupFilterUi(filtre);
   renderToutesLesSemaines();
   appliquerFiltre(filtre);
   renderAlert(filtre);
@@ -257,10 +340,11 @@ function addCommonGroupsToSet(entry, set) {
   if (!entry || !set) return;
   const groupes = Array.isArray(entry.groupes) ? entry.groupes.filter(Boolean) : [];
   if (!groupes.length) {
-    ["EAJ1", "EAJ2", "EAJ3"].forEach(id => set.add(id));
+    ["EAJ1", "EAJ2", "EAJ3", "EAJ23"].forEach(id => set.add(id));
     return;
   }
   groupes.forEach(id => set.add(id));
+  if (groupes.includes("EAJ2") && groupes.includes("EAJ3")) set.add("EAJ23");
 }
 
 function appendActivitiesBlock(parent, activities) {
@@ -368,7 +452,7 @@ function renderSemaine(p, index, indexProchaine, estPassee) {
       card.dataset.groups = groupes.join(",");
 
       const groupesLabel = groupes.length
-        ? "Groupes concernés : " + groupes.join(" + ")
+        ? "Groupes concernés : " + formatGroupTargetsPublic(groupes)
         : "Tous les groupes";
 
       card.innerHTML = `
@@ -416,16 +500,14 @@ function renderSemaine(p, index, indexProchaine, estPassee) {
     article.className = "group-card";
 
     const titre = g.titre || "";
-    const groupId =
-      titre.includes("EAJ1") ? "EAJ1" :
-      titre.includes("EAJ2") ? "EAJ2" :
-      titre.includes("EAJ3") ? "EAJ3" : "";
+    const groupId = getStoredGroupIdPublic(g);
+    const groupIds = getStoredGroupIdsPublic(g);
 
-    if (groupId) {
-      presentGroups.add(groupId);
-    }
+    if (groupId) presentGroups.add(groupId);
+    groupIds.forEach(id => presentGroups.add(id));
 
     article.dataset.group = groupId;
+    article.dataset.groups = groupIds.join(",");
 
     article.innerHTML = `
       <div class="group-title">${titre}</div>
@@ -455,30 +537,42 @@ function renderSemaine(p, index, indexProchaine, estPassee) {
     groupsContainer.appendChild(article);
   });
 
-  // 🛑 Groupes absents : tuile “Pas de séance EAJx”
-  const ALL_GROUPS = [
-    { id: "EAJ1", titre: "Groupe 1 – EAJ1" },
-    { id: "EAJ2", titre: "Groupe 2 – EAJ2" },
-    { id: "EAJ3", titre: "Groupe 3 – EAJ3" }
-  ];
+  // 🛑 Groupes absents : la structure dépend de l'organisation choisie pour la semaine.
+  const weekMode = inferWeekEaj23ModePublic(p);
+  const secondaryGroups = weekMode === "merged"
+    ? [{ id: "EAJ23", ids: ["EAJ2", "EAJ3"], titre: "Groupe 2-3 – EAJ 2-3", short: "EAJ 2-3" }]
+    : weekMode === "EAJ2"
+      ? [{ id: "EAJ2", ids: ["EAJ2"], titre: "Groupe 2 – EAJ2", short: "EAJ2" }]
+      : weekMode === "EAJ3"
+        ? [{ id: "EAJ3", ids: ["EAJ3"], titre: "Groupe 3 – EAJ3", short: "EAJ3" }]
+        : [
+            { id: "EAJ2", ids: ["EAJ2"], titre: "Groupe 2 – EAJ2", short: "EAJ2" },
+            { id: "EAJ3", ids: ["EAJ3"], titre: "Groupe 3 – EAJ3", short: "EAJ3" }
+          ];
+  const ALL_GROUPS = [{ id: "EAJ1", ids: ["EAJ1"], titre: "Groupe 1 – EAJ1", short: "EAJ1" }, ...secondaryGroups];
 
   if (activityFilter === "all") {
     ALL_GROUPS.forEach(gMeta => {
-      if (!presentGroups.has(gMeta.id)) {
-        const article = document.createElement("article");
-      article.className = "group-card group-card-off";
-      article.dataset.group = gMeta.id;
+      const isPresent = gMeta.id === "EAJ23"
+        ? (presentGroups.has("EAJ23") || (presentGroups.has("EAJ2") && presentGroups.has("EAJ3")))
+        : presentGroups.has(gMeta.id);
 
-      article.innerHTML = `
-        <div class="group-title">${gMeta.titre}</div>
-        <div class="group-off">
-          <div class="group-off-emoji">🛑</div>
-          <div class="group-off-title">Pas de séance ${gMeta.id}</div>
-          <p class="group-off-text">
-            Ce groupe n'est pas convoqué pour cette date.
-          </p>
-        </div>
-      `;
+      if (!isPresent) {
+        const article = document.createElement("article");
+        article.className = "group-card group-card-off";
+        article.dataset.group = gMeta.id;
+        article.dataset.groups = gMeta.ids.join(",");
+
+        article.innerHTML = `
+          <div class="group-title">${gMeta.titre}</div>
+          <div class="group-off">
+            <div class="group-off-emoji">🛑</div>
+            <div class="group-off-title">Pas de séance ${gMeta.short}</div>
+            <p class="group-off-text">
+              Ce groupe n'est pas convoqué pour cette date.
+            </p>
+          </div>
+        `;
 
         groupsContainer.appendChild(article);
       }
@@ -580,33 +674,29 @@ function appliquerFiltre(nomGroupe) {
   const cartes = document.querySelectorAll(".group-card");
 
   cartes.forEach(carte => {
-    const isCommon = carte.classList.contains("week-common-card");
-
-    // Cas "Tous"
     if (nomGroupe === "all") {
       carte.style.display = "";
       return;
     }
 
-    // Cas activités communes
-    if (isCommon) {
-      const groupsAttr = carte.dataset.groups || "";
-      if (!groupsAttr) {
-        carte.style.display = ""; // si pas précisé, on affiche pour tous
-        return;
-      }
-      const list = groupsAttr
-        .split(",")
-        .map(s => s.trim())
-        .filter(Boolean);
+    const groupsAttr = carte.dataset.groups || "";
+    const list = groupsAttr
+      .split(",")
+      .map(s => s.trim())
+      .filter(Boolean);
 
-      carte.style.display = list.includes(nomGroupe) ? "" : "none";
+    // Une activité commune sans cibles explicites concerne tout le monde.
+    if (carte.classList.contains("week-common-card") && !list.length) {
+      carte.style.display = "";
       return;
     }
 
-    // Cas carte de groupe
-    const groupe = carte.dataset.group; // "EAJ1" / "EAJ2" / "EAJ3"
-    carte.style.display = (groupe === nomGroupe) ? "" : "none";
+    if (nomGroupe === "EAJ23") {
+      carte.style.display = (list.includes("EAJ2") || list.includes("EAJ3")) ? "" : "none";
+      return;
+    }
+
+    carte.style.display = list.includes(nomGroupe) ? "" : "none";
   });
 
   updateWeekVisibilityAfterFilters();
@@ -662,16 +752,7 @@ function initialiserFiltres() {
     return;
   }
 
-  const FILTERS_VALIDES = ["all", "EAJ1", "EAJ2", "EAJ3"];
-  let filtreActuel = "all";
-
-  // 🔄 Lecture depuis localStorage
-  try {
-    const stored = localStorage.getItem("eaj_filter");
-    if (stored && FILTERS_VALIDES.includes(stored)) {
-      filtreActuel = stored;
-    }
-  } catch (e) {}
+  let filtreActuel = getFiltreActuel();
 
   // Si un filtre activité est actif, on démarre toujours sur Tous les groupes.
   if (getFiltreActiviteActuel() !== "all") {
@@ -784,15 +865,8 @@ function renderAlert(filtreActuel = "all") {
   }
 
   function formatTargets(ciblesArr) {
-    const cibles = Array.isArray(ciblesArr) ? ciblesArr : [];
-    if (!cibles.length || cibles.includes("all")) return "Tous";
-    const pretty = cibles.map(c => {
-      if (c === "EAJ1") return "EAJ 1";
-      if (c === "EAJ2") return "EAJ 2";
-      if (c === "EAJ3") return "EAJ 3";
-      return c;
-    });
-    return pretty.join(" + ");
+    const label = formatGroupTargetsPublic(ciblesArr);
+    return label === "Tous les groupes" ? "Tous" : label;
   }
 
   // 🧩 Compat : ancien format (ALERT_BANNER) / nouveau format (ALERT_BANNERS)
@@ -869,6 +943,7 @@ function renderAlert(filtreActuel = "all") {
       if (!cibles.length) return true; // si non précisé → visible pour tous
       if (cibles.includes("all")) return true;
       if (filtreActuel === "all") return true; // en vue "Tous" on affiche tout
+      if (filtreActuel === "EAJ23") return cibles.includes("EAJ2") || cibles.includes("EAJ3");
       return cibles.includes(filtreActuel);
     });
 
@@ -1582,6 +1657,7 @@ async function initApp() {
     await window.EAJPlanning.loadPublicPlanning();
   }
 
+  syncGroupFilterButtons();
   initialiserFiltreActivite();
   renderToutesLesSemaines();
 
@@ -1609,6 +1685,7 @@ async function initApp() {
 
 initApp().catch((error) => {
   console.error("Erreur d'initialisation du site EAJ :", error);
+  syncGroupFilterButtons();
   initialiserFiltreActivite();
   renderToutesLesSemaines();
   initialiserBannerToggle();

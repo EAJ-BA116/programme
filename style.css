@@ -369,16 +369,19 @@ body[data-theme="dark"] .week-label-past {
   color: var(--blue-main);
 }
 
-/* Toujours 3 colonnes bien ordonnées */
+/* Colonnes adaptatives : 2 cartes en mode EAJ 1 + EAJ 2-3, 3 en mode séparé */
 .groups {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 0.75rem;
 }
 
-/* Même si un groupe manque, on garde les colonnes */
+/* Ordre stable des groupes */
 .group-card[data-group="EAJ1"] {
   order: 1;
+}
+.group-card[data-group="EAJ23"] {
+  order: 2;
 }
 .group-card[data-group="EAJ2"] {
   order: 2;
@@ -1926,4 +1929,10 @@ body[data-theme="dark"] .activity-filter-control select {
 .empty-filter-state p {
   color: var(--text-muted);
   margin: 0;
+}
+
+/* v1.5.0 — projets à venir / sans lien public */
+.menu-subitem-static {
+  cursor: default;
+  opacity: .9;
 }

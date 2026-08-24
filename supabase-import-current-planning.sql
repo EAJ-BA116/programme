@@ -1086,6 +1086,7 @@ set
   "auteur": "Yoann",
   "dateTexte": "12/05/2026"
 }$lastupdate$::jsonb,
+  settings = '{"mergeEaj23": true}'::jsonb,
   version = version + 1,
   updated_at = now(),
   updated_by_name = coalesce(updated_by_name, 'Import planning.js')
