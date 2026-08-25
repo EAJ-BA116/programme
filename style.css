@@ -2189,3 +2189,14 @@ body[data-theme="dark"] .offline-status {
 body[data-theme="dark"] .activity-chip.activity-chip-tricolore {
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.30), 0 3px 10px rgba(0,0,0,.22);
 }
+
+/* v1.9.1 — résumé du contenu des sauvegardes */
+.backup-card-stats{
+  margin-top:5px;
+  font-weight:700;
+  color:var(--text, #eef6ff);
+}
+html[data-theme="light"] .backup-card-stats,
+body.light-mode .backup-card-stats{
+  color:#163a5f;
+}

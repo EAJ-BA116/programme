@@ -1,9 +1,9 @@
 // ======================================================
-// Service Worker EAJ — v1.9.0
+// Service Worker EAJ — v1.9.1
 // Hors ligne + cache applicatif + notifications Web Push
 // ======================================================
 
-const SW_VERSION = '1.9.0';
+const SW_VERSION = '1.9.1';
 const STATIC_CACHE = `eaj-static-${SW_VERSION}`;
 const RUNTIME_CACHE = `eaj-runtime-${SW_VERSION}`;
 const DEFAULT_URL = './index.html';

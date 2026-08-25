@@ -14,7 +14,7 @@ const TYPES_ACTIVITE = {
 };
 
 // v1.8.2 — Meta
-const APP_VERSION = "1.9.0";
+const APP_VERSION = "1.9.1";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -1731,7 +1731,7 @@ function initialiserOfflineMode() {
   window.addEventListener("online", refreshPlanningAfterReconnect);
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js?v=1.9.0", { scope: "./" })
+    navigator.serviceWorker.register("./sw.js?v=1.9.1", { scope: "./" })
       .catch((error) => console.warn("Service Worker hors ligne indisponible :", error));
   }
 }
@@ -1888,7 +1888,7 @@ async function getPushServiceWorkerRegistration() {
   if (__eajPushRegistration) return __eajPushRegistration;
   if (!pushIsSupported()) return null;
 
-  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.9.0", {
+  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.9.1", {
     scope: "./",
     updateViaCache: "none"
   });

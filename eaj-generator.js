@@ -2273,6 +2273,47 @@ function unlockMaintenance() {
   chargerListeSauvegardes();
 }
 
+function getIsoWeekInfoFromDateString(isoDate) {
+  const match = String(isoDate || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  if (Number.isNaN(date.getTime())) return null;
+
+  // ISO 8601 : la semaine appartient à l'année du jeudi correspondant.
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  const isoYear = date.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+  const week = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  return { week, year: isoYear };
+}
+
+function getBackupPlanningStats(backup) {
+  const semaines = Array.isArray(backup?.planning?.semaines) ? backup.planning.semaines : [];
+  const dates = semaines
+    .map(s => String(s?.isoDate || "").trim())
+    .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d))
+    .sort();
+
+  const count = semaines.length;
+  if (!dates.length) return { count, rangeText: "" };
+
+  const first = getIsoWeekInfoFromDateString(dates[0]);
+  const last = getIsoWeekInfoFromDateString(dates[dates.length - 1]);
+  if (!first || !last) return { count, rangeText: "" };
+
+  let rangeText = "";
+  if (first.year === last.year && first.week === last.week) {
+    rangeText = `semaine ${first.week} • ${first.year}`;
+  } else if (first.year === last.year) {
+    rangeText = `semaines ${first.week} à ${last.week} • ${first.year}`;
+  } else {
+    rangeText = `S${first.week}/${first.year} → S${last.week}/${last.year}`;
+  }
+
+  return { count, rangeText };
+}
+
 async function chargerListeSauvegardes() {
   if (!backupList) return;
   if (!window.EAJPlanning || !window.EAJPlanning.isConfigured()) {
@@ -2313,11 +2354,18 @@ async function chargerListeSauvegardes() {
       badge.textContent = badgeLabel;
       titleEl.appendChild(badge);
 
+      const stats = getBackupPlanningStats(b);
+      const statsEl = document.createElement("div");
+      statsEl.className = "backup-card-stats";
+      const weekWord = stats.count === 1 ? "semaine" : "semaines";
+      statsEl.textContent = `${stats.count} ${weekWord}${stats.rangeText ? ` • ${stats.rangeText}` : ""}`;
+
       const meta = document.createElement("div");
       meta.className = "backup-card-meta";
       meta.textContent = `${date} • ${version}${author}`;
 
       info.appendChild(titleEl);
+      info.appendChild(statsEl);
       info.appendChild(meta);
 
       if (b.note) {

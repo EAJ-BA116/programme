@@ -15,22 +15,22 @@
   <meta name="theme-color" content="#0053a6">
 
   <!-- PWA Android -->
-  <link rel="manifest" href="manifest.json?v=1.9.0">
+  <link rel="manifest" href="manifest.json?v=1.9.1">
 
   <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="EAJ 116">
-  <link rel="apple-touch-icon" href="images/logo_eaj192.png?v=1.9.0">
+  <link rel="apple-touch-icon" href="images/logo_eaj192.png?v=1.9.1">
 
   <!-- Icônes Android -->
-  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png?v=1.9.0">
-  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png?v=1.9.0">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png?v=1.9.1">
+  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png?v=1.9.1">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="images/eaj.ico?v=1.9.0">
+  <link rel="icon" type="image/x-icon" href="images/eaj.ico?v=1.9.1">
 
-  <link id="main-style" rel="stylesheet" href="style.css?v=1.9.0">
+  <link id="main-style" rel="stylesheet" href="style.css?v=1.9.1">
 </head>
 
 <body data-theme="dark">
@@ -115,7 +115,7 @@
   <footer>
     <div class="footer-line">EAJ BA 116 – 2026</div>
     <div class="footer-line" id="last-update"></div>
-    <div class="footer-line footer-version">Version 1.9.0 du 25/08/2026 • Codé par Yoann</div>
+    <div class="footer-line footer-version">Version 1.9.1 du 25/08/2026 • Codé par Yoann</div>
     <div class="footer-line">
       <a href="#" id="admin-link" class="footer-link footer-link-admin">🔧 Accès administration</a>
     </div>
@@ -174,7 +174,7 @@
         <button class="menu-item" type="button" data-action="open-about">ℹ️ À propos</button>
       </nav>
 
-      <div class="menu-popover-footer muted">Version 1.9.0 • 25/08/2026</div>
+      <div class="menu-popover-footer muted">Version 1.9.1 • 25/08/2026</div>
     </div>
   </div>
 
@@ -257,13 +257,13 @@
       </div>
 
       <div class="modal-body">
-        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.9.0</strong> • 25/08/2026 • Codé par <strong>Yoann</strong></p>
+        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.9.1</strong> • 25/08/2026 • Codé par <strong>Yoann</strong></p>
 
         <div class="changelog">
           <div class="changelog-title">Dernières modifications</div>
           <ul>
-            <li>v1.9.0 : gestionnaire de sauvegardes avec sauvegardes manuelles nommées, restauration et suppression</li>
-            <li>v1.9.0 : style de cartouche 🇫🇷 bleu-blanc-rouge sélectionnable activité par activité</li>
+            <li>v1.9.1 : gestionnaire de sauvegardes avec sauvegardes manuelles nommées, restauration et suppression</li>
+            <li>v1.9.1 : style de cartouche 🇫🇷 bleu-blanc-rouge sélectionnable activité par activité</li>
             <li>v1.8.2 : filtres publics simplifiés à Tous / EAJ1 / EAJ 2-3, avec EAJ2 et EAJ3 en sous-sélection cumulable</li>
             <li>v1.8.2 : fenêtres du menu stables pendant le défilement à la molette ou au doigt</li>
             <li>v1.8.2 : suppression des messages push depuis le Super Admin</li>
@@ -445,11 +445,11 @@ Résultat attendu : …"></textarea>
 <!-- ⚙️ JS : d’abord planning.js (avec version), puis la logique -->
   <script>
   // Cache-buster global (évite les "versions fantômes" sur GitHub Pages)
-  window.EAJ_BUILD = "1.9.0";
+  window.EAJ_BUILD = "1.9.1";
   (function () {
     const bust = Date.now();
     const s = document.createElement('script');
-    s.src = `version-loader.js?v=1.9.0-${bust}`;
+    s.src = `version-loader.js?v=1.9.1-${bust}`;
     document.head.appendChild(s);
   })();
 </script>

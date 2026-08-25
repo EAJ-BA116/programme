@@ -387,7 +387,7 @@
     const client = getClient();
     const { data, error } = await client
       .from(getBackupTableName())
-      .select("id, reason, label, note, backup_type, created_at, created_by_name, source_version")
+      .select("id, reason, label, note, backup_type, created_at, created_by_name, source_version, planning")
       .order("created_at", { ascending: false })
       .limit(limit);
 
