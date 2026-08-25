@@ -14,7 +14,7 @@ const TYPES_ACTIVITE = {
 };
 
 // v1.8.2 — Meta
-const APP_VERSION = "1.8.2";
+const APP_VERSION = "1.9.0";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
@@ -275,14 +275,21 @@ function createActivityChip(activity, groupDefaults = {}) {
   };
 
   const chip = document.createElement("div");
-  chip.className = "activity-chip";
+  const isTricolore = activity.cartoucheStyle === "tricolore";
+  chip.className = `activity-chip${isTricolore ? " activity-chip-tricolore" : ""}`;
   chip.dataset.activityType = getActivityType(activity);
 
-  // 🎨 fond teinté selon l’activité
+  // 🎨 fond teinté selon l’activité, avec style tricolore optionnel choisi par l'admin.
   const baseColor = typeCfg.color;
-  const bgColor = baseColor.length === 7 ? baseColor + "25" : baseColor;
-  chip.style.background = bgColor;
-  chip.style.borderLeft = `4px solid ${baseColor}`;
+  if (isTricolore) {
+    chip.style.background = "linear-gradient(105deg, rgba(0,85,164,.30) 0%, rgba(0,85,164,.20) 30%, rgba(255,255,255,.94) 50%, rgba(239,65,53,.20) 70%, rgba(239,65,53,.30) 100%)";
+    chip.style.borderLeft = "4px solid #0055a4";
+    chip.style.borderRight = "4px solid #ef4135";
+  } else {
+    const bgColor = baseColor.length === 7 ? baseColor + "25" : baseColor;
+    chip.style.background = bgColor;
+    chip.style.borderLeft = `4px solid ${baseColor}`;
+  }
 
   const textSpan = document.createElement("span");
 
@@ -1724,7 +1731,7 @@ function initialiserOfflineMode() {
   window.addEventListener("online", refreshPlanningAfterReconnect);
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js?v=1.8.2", { scope: "./" })
+    navigator.serviceWorker.register("./sw.js?v=1.9.0", { scope: "./" })
       .catch((error) => console.warn("Service Worker hors ligne indisponible :", error));
   }
 }
@@ -1881,7 +1888,7 @@ async function getPushServiceWorkerRegistration() {
   if (__eajPushRegistration) return __eajPushRegistration;
   if (!pushIsSupported()) return null;
 
-  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.8.2", {
+  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.9.0", {
     scope: "./",
     updateViaCache: "none"
   });

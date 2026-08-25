@@ -387,7 +387,7 @@
     const client = getClient();
     const { data, error } = await client
       .from(getBackupTableName())
-      .select("id, reason, created_at, created_by_name, source_version")
+      .select("id, reason, label, note, backup_type, created_at, created_by_name, source_version")
       .order("created_at", { ascending: false })
       .limit(limit);
 
@@ -395,7 +395,7 @@
     return Array.isArray(data) ? data : [];
   }
 
-  async function createBackup(reason = "Sauvegarde automatique") {
+  async function createBackup(reason = "Sauvegarde automatique", options = {}) {
     const client = getClient();
     const session = await getSession();
     if (!session || !session.user) {
@@ -406,11 +406,20 @@
     const fresh = await fetchPlanningFromSupabase();
     const snapshot = toBackupSnapshot(fresh);
     const createdByName = snapshot.lastUpdate?.auteur || session.user.email || "Admin";
+    const safeReason = String(reason || "Sauvegarde").trim().slice(0, 250) || "Sauvegarde";
+    const label = String(options.label || "").trim().slice(0, 120) || null;
+    const note = String(options.note || "").trim().slice(0, 1000) || null;
+    const backupType = ["automatic", "manual", "safety"].includes(options.backupType)
+      ? options.backupType
+      : (safeReason.toLowerCase().includes("automatique") ? "automatic" : "manual");
 
     const { data, error } = await client
       .from(getBackupTableName())
       .insert({
-        reason,
+        reason: safeReason,
+        label,
+        note,
+        backup_type: backupType,
         planning: snapshot,
         source_version: snapshot.version,
         created_by: session.user.id,
@@ -484,7 +493,7 @@
   }
 
   async function resetPlanningWithBackup(options = {}) {
-    await createBackup("Sauvegarde automatique avant remise à zéro");
+    await createBackup("Sauvegarde automatique avant remise à zéro", { backupType: "safety" });
     const updatedByName = options.updatedByName || "Admin EAJ";
     return replacePlanningSnapshot({
       semaines: [],
@@ -497,8 +506,26 @@
 
   async function restoreBackup(backupId, options = {}) {
     const backup = await getBackup(backupId);
-    await createBackup("Sauvegarde automatique avant restauration");
+    await createBackup("Sauvegarde automatique avant restauration", { backupType: "safety" });
     return replacePlanningSnapshot(backup.planning || {}, options);
+  }
+
+  async function deleteBackup(backupId) {
+    const client = getClient();
+    const session = await getSession();
+    if (!session || !session.user) {
+      throw new Error("Connexion expirée. Reconnecte-toi puis réessaie.");
+    }
+    const { data, error } = await client
+      .from(getBackupTableName())
+      .delete()
+      .eq("id", backupId)
+      .select("id");
+    if (error) throw error;
+    if (!Array.isArray(data) || data.length === 0) {
+      throw new Error("Suppression refusée ou sauvegarde introuvable. Vérifie la migration v1.9.0.");
+    }
+    return true;
   }
 
   function subscribePlanningUpdates(callback) {
@@ -742,6 +769,7 @@
     createBackup,
     resetPlanningWithBackup,
     restoreBackup,
+    deleteBackup,
     getPushPublicKey,
     savePushSubscription,
     getPushPreferences,

@@ -126,9 +126,11 @@ const maintenanceUnlockInput = document.getElementById("maintenance-unlock-input
 const btnMaintenanceUnlock   = document.getElementById("btn-maintenance-unlock");
 const maintenanceLocked      = document.getElementById("maintenance-locked");
 const maintenanceTools       = document.getElementById("maintenance-tools");
-const backupSelect           = document.getElementById("backup-select");
+const backupList             = document.getElementById("backup-list");
+const backupLabel            = document.getElementById("backup-label");
+const backupNote             = document.getElementById("backup-note");
+const btnCreateBackup        = document.getElementById("btn-create-backup");
 const btnRefreshBackups      = document.getElementById("btn-refresh-backups");
-const btnRestoreBackup       = document.getElementById("btn-restore-backup");
 const btnResetDb             = document.getElementById("btn-reset-db");
 const resetConfirmPhrase     = document.getElementById("reset-confirm-phrase");
 const resetConfirmCode       = document.getElementById("reset-confirm-code");
@@ -365,7 +367,7 @@ async function sauvegarderDansSupabase() {
   try {
     setButtonLoading(btnSave, true, "⏳ Enregistrement...");
     setSaveStatus("Création de la sauvegarde automatique...", "info");
-    await window.EAJPlanning.createBackup("Sauvegarde automatique avant publication");
+    await window.EAJPlanning.createBackup("Sauvegarde automatique avant publication", { backupType: "automatic" });
 
     setSaveStatus("Sauvegarde créée ✅ Publication dans Supabase...", "info");
     const saved = await window.EAJPlanning.savePlanning({
@@ -811,7 +813,10 @@ function createActivityChip(activity, groupDefaults = {}) {
   };
 
   const baseColor = typeCfg.color;
-  const bgColor = baseColor.length === 7 ? baseColor + "25" : baseColor;
+  const isTricolore = activity.cartoucheStyle === "tricolore";
+  const bgColor = isTricolore
+    ? "linear-gradient(105deg, rgba(0,85,164,.30) 0%, rgba(0,85,164,.20) 30%, rgba(255,255,255,.92) 50%, rgba(239,65,53,.20) 70%, rgba(239,65,53,.30) 100%)"
+    : (baseColor.length === 7 ? baseColor + "25" : baseColor);
 
   const extras = [];
   // Les champs généraux du groupe sont affichés sous la carte.
@@ -835,7 +840,7 @@ function createActivityChip(activity, groupDefaults = {}) {
   }
 
   return `
-    <div class="activity-chip" style="background:${bgColor};border-left:4px solid ${baseColor};">
+    <div class="activity-chip${isTricolore ? " activity-chip-tricolore" : ""}" style="background:${bgColor};border-left:4px solid ${isTricolore ? "#0055a4" : baseColor};${isTricolore ? "border-right:4px solid #ef4135;color:#0f2742;" : ""}">
       <span>${html}</span>
     </div>
   `;
@@ -941,8 +946,27 @@ function createActivityRow() {
     <input type="text" class="act-encadrant"placeholder="Encadrant spécifique (facultatif)" />
   `;
 
+  const styleRow = document.createElement("div");
+  styleRow.className = "activity-style-row";
+  const styleLabel = document.createElement("label");
+  styleLabel.textContent = "Style du cartouche";
+  const styleSelect = document.createElement("select");
+  styleSelect.className = "activity-style-select act-cartouche-style";
+  [
+    { value: "standard", label: "Standard" },
+    { value: "tricolore", label: "🇫🇷 Bleu – Blanc – Rouge" }
+  ].forEach(item => {
+    const opt = document.createElement("option");
+    opt.value = item.value;
+    opt.textContent = item.label;
+    styleSelect.appendChild(opt);
+  });
+  styleRow.appendChild(styleLabel);
+  styleRow.appendChild(styleSelect);
+
   row.appendChild(topLine);
   row.appendChild(extra);
+  row.appendChild(styleRow);
   return row;
 }
 
@@ -1453,8 +1477,10 @@ function getWeekDataFromForm(weekDiv, showAlertOnError = false) {
       const actTenue     = row.querySelector(".act-tenue")?.value.trim()     || "";
       const actMateriel  = row.querySelector(".act-materiel")?.value.trim()  || "";
       const actEncadrant = row.querySelector(".act-encadrant")?.value.trim() || "";
+      const cartoucheStyle = row.querySelector(".act-cartouche-style")?.value || "standard";
 
       const act = { type, texte };
+      if (cartoucheStyle !== "standard") act.cartoucheStyle = cartoucheStyle;
       if (actHoraire)   act.horaire  = actHoraire;
       if (actLieu)      act.lieu     = actLieu;
       if (actTenue)     act.tenue    = actTenue;
@@ -1519,8 +1545,10 @@ function getWeekDataFromForm(weekDiv, showAlertOnError = false) {
       const actTenue     = row.querySelector(".act-tenue")?.value.trim()     || "";
       const actMateriel  = row.querySelector(".act-materiel")?.value.trim()  || "";
       const actEncadrant = row.querySelector(".act-encadrant")?.value.trim() || "";
+      const cartoucheStyle = row.querySelector(".act-cartouche-style")?.value || "standard";
 
       const act = { type, texte };
+      if (cartoucheStyle !== "standard") act.cartoucheStyle = cartoucheStyle;
       if (actHoraire)   act.horaire  = actHoraire;
       if (actLieu)      act.lieu     = actLieu;
       if (actTenue)     act.tenue    = actTenue;
@@ -1865,6 +1893,8 @@ function chargerPlanningExistant(sourceData) {
           if (act.tenue)     row.querySelector(".act-tenue").value     = act.tenue;
           if (act.materiel)  row.querySelector(".act-materiel").value  = act.materiel;
           if (act.encadrant) row.querySelector(".act-encadrant").value = act.encadrant;
+          const styleSelect = row.querySelector(".act-cartouche-style");
+          if (styleSelect) styleSelect.value = act.cartoucheStyle === "tricolore" ? "tricolore" : "standard";
 
           list.appendChild(row);
         });
@@ -1909,6 +1939,8 @@ function chargerPlanningExistant(sourceData) {
           if (act.tenue)     row.querySelector(".act-tenue").value     = act.tenue;
           if (act.materiel)  row.querySelector(".act-materiel").value  = act.materiel;
           if (act.encadrant) row.querySelector(".act-encadrant").value = act.encadrant;
+          const styleSelect = row.querySelector(".act-cartouche-style");
+          if (styleSelect) styleSelect.value = act.cartoucheStyle === "tricolore" ? "tricolore" : "standard";
 
           list.appendChild(row);
         });
@@ -2242,7 +2274,7 @@ function unlockMaintenance() {
 }
 
 async function chargerListeSauvegardes() {
-  if (!backupSelect) return;
+  if (!backupList) return;
   if (!window.EAJPlanning || !window.EAJPlanning.isConfigured()) {
     setMaintenanceStatus("Supabase n'est pas configuré : sauvegardes indisponibles.", "error", true);
     return;
@@ -2251,26 +2283,75 @@ async function chargerListeSauvegardes() {
   try {
     setButtonLoading(btnRefreshBackups, true, "⏳ Chargement...");
     setMaintenanceStatus("Chargement des sauvegardes...", "info");
-    const backups = await window.EAJPlanning.listBackups(30);
-    backupSelect.innerHTML = "";
+    const backups = await window.EAJPlanning.listBackups(100);
+    backupList.innerHTML = "";
 
     if (!backups.length) {
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = "Aucune sauvegarde disponible";
-      backupSelect.appendChild(opt);
+      backupList.innerHTML = '<div class="backup-empty">Aucune sauvegarde disponible pour l’instant.</div>';
       setMaintenanceStatus("Aucune sauvegarde trouvée pour l'instant.", "info");
       return;
     }
 
     backups.forEach(b => {
-      const opt = document.createElement("option");
-      opt.value = b.id;
+      const card = document.createElement("div");
+      card.className = "backup-card";
+      card.dataset.backupId = b.id;
+
+      const info = document.createElement("div");
       const date = b.created_at ? new Date(b.created_at).toLocaleString("fr-FR") : "date inconnue";
       const version = b.source_version ? `v${b.source_version}` : "version ?";
-      const reason = b.reason || "Sauvegarde";
-      opt.textContent = `${date} — ${version} — ${reason}`;
-      backupSelect.appendChild(opt);
+      const type = b.backup_type || (String(b.reason || "").toLowerCase().includes("automatique") ? "automatic" : "manual");
+      const badgeLabel = type === "manual" ? "Manuelle" : (type === "safety" ? "Sécurité" : "Automatique");
+      const title = (b.label || "").trim() || b.reason || "Sauvegarde";
+      const author = b.created_by_name ? ` • ${b.created_by_name}` : "";
+
+      const titleEl = document.createElement("div");
+      titleEl.className = "backup-card-title";
+      titleEl.textContent = title;
+      const badge = document.createElement("span");
+      badge.className = "backup-badge";
+      badge.textContent = badgeLabel;
+      titleEl.appendChild(badge);
+
+      const meta = document.createElement("div");
+      meta.className = "backup-card-meta";
+      meta.textContent = `${date} • ${version}${author}`;
+
+      info.appendChild(titleEl);
+      info.appendChild(meta);
+
+      if (b.note) {
+        const note = document.createElement("div");
+        note.className = "backup-card-note";
+        note.textContent = b.note;
+        info.appendChild(note);
+      } else if (b.label && b.reason && b.reason !== b.label) {
+        const reason = document.createElement("div");
+        reason.className = "backup-card-note";
+        reason.textContent = b.reason;
+        info.appendChild(reason);
+      }
+
+      const actions = document.createElement("div");
+      actions.className = "backup-card-actions";
+
+      const restoreBtn = document.createElement("button");
+      restoreBtn.type = "button";
+      restoreBtn.className = "btn btn-small btn-primary";
+      restoreBtn.textContent = "↩️ Restaurer";
+      restoreBtn.addEventListener("click", () => restaurerSauvegarde(b.id, title, restoreBtn));
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "btn btn-small btn-danger";
+      deleteBtn.textContent = "🗑️ Supprimer";
+      deleteBtn.addEventListener("click", () => supprimerSauvegarde(b.id, title, deleteBtn));
+
+      actions.appendChild(restoreBtn);
+      actions.appendChild(deleteBtn);
+      card.appendChild(info);
+      card.appendChild(actions);
+      backupList.appendChild(card);
     });
 
     setMaintenanceStatus(`${backups.length} sauvegarde(s) chargée(s).`, "ok");
@@ -2278,6 +2359,80 @@ async function chargerListeSauvegardes() {
     setMaintenanceStatus("Impossible de charger les sauvegardes : " + (error.message || error), "error", true);
   } finally {
     setButtonLoading(btnRefreshBackups, false);
+  }
+}
+
+async function creerSauvegardeManuelle() {
+  const label = (backupLabel?.value || "").trim();
+  const note = (backupNote?.value || "").trim();
+  if (!label) {
+    setMaintenanceStatus("Donne un nom à la sauvegarde manuelle.", "error", true);
+    backupLabel?.focus();
+    return;
+  }
+  try {
+    setButtonLoading(btnCreateBackup, true, "⏳ Sauvegarde...");
+    setMaintenanceStatus("Création de la sauvegarde manuelle...", "info", true);
+    await window.EAJPlanning.createBackup(label, {
+      label,
+      note,
+      backupType: "manual"
+    });
+    if (backupLabel) backupLabel.value = "";
+    if (backupNote) backupNote.value = "";
+    setMaintenanceStatus("Sauvegarde manuelle créée ✅", "ok", true);
+    await chargerListeSauvegardes();
+  } catch (error) {
+    setMaintenanceStatus("Impossible de créer la sauvegarde : " + (error.message || error), "error", true);
+  } finally {
+    setButtonLoading(btnCreateBackup, false);
+  }
+}
+
+async function restaurerSauvegarde(backupId, title = "cette sauvegarde", button = null) {
+  if (!backupId) return;
+  const ok = confirm(`Restaurer « ${title} » ?
+
+Une sauvegarde de sécurité de l'état actuel sera créée automatiquement avant la restauration.`);
+  if (!ok) return;
+
+  try {
+    setButtonLoading(button, true, "⏳ Restauration...");
+    setMaintenanceStatus("Sauvegarde de sécurité puis restauration en cours...", "info", true);
+    const restored = await window.EAJPlanning.restoreBackup(backupId, {
+      updatedByName: getGeneratorAdminName()
+    });
+    setSaveStatus(`Sauvegarde restaurée ✅ Version ${restored.version || "?"}.`, "ok", true);
+    setMaintenanceStatus(`« ${title} » a été restaurée dans Supabase.`, "ok", true);
+    const okLoad = chargerPlanningExistant(restored);
+    if (!okLoad) {
+      createWeekForm();
+      updateOutput();
+    }
+    await chargerListeSauvegardes();
+  } catch (error) {
+    setMaintenanceStatus("Erreur de restauration : " + (error.message || error), "error", true);
+    alert("Erreur de restauration : " + (error.message || error));
+  } finally {
+    setButtonLoading(button, false);
+  }
+}
+
+async function supprimerSauvegarde(backupId, title = "cette sauvegarde", button = null) {
+  if (!backupId) return;
+  const ok = confirm(`Supprimer définitivement « ${title} » ?
+
+Cette action ne modifie pas le planning actuel, mais la sauvegarde ne pourra plus être restaurée.`);
+  if (!ok) return;
+  try {
+    setButtonLoading(button, true, "⏳ Suppression...");
+    await window.EAJPlanning.deleteBackup(backupId);
+    setMaintenanceStatus(`Sauvegarde « ${title} » supprimée.`, "ok", true);
+    await chargerListeSauvegardes();
+  } catch (error) {
+    setMaintenanceStatus("Impossible de supprimer la sauvegarde : " + (error.message || error), "error", true);
+  } finally {
+    setButtonLoading(button, false);
   }
 }
 
@@ -2327,41 +2482,6 @@ async function remettreBaseAZeroAvecSauvegarde() {
   }
 }
 
-async function restaurerSauvegardeSelectionnee() {
-  const backupId = backupSelect?.value || "";
-  if (!backupId) {
-    setMaintenanceStatus("Choisis une sauvegarde à restaurer.", "error", true);
-    return;
-  }
-
-  const ok = confirm("Restaurer cette sauvegarde ? Une sauvegarde automatique de l'état actuel sera créée avant restauration.");
-  if (!ok) return;
-
-  try {
-    setButtonLoading(btnRestoreBackup, true, "⏳ Restauration...");
-    setMaintenanceStatus("Sauvegarde de sécurité puis restauration en cours...", "info", true);
-
-    const restored = await window.EAJPlanning.restoreBackup(backupId, {
-      updatedByName: getGeneratorAdminName()
-    });
-
-    setSaveStatus(`Sauvegarde restaurée ✅ Version ${restored.version || "?"}.`, "ok", true);
-    setMaintenanceStatus("Sauvegarde restaurée dans Supabase.", "ok");
-
-    const okLoad = chargerPlanningExistant(restored);
-    if (!okLoad) {
-      createWeekForm();
-      updateOutput();
-    }
-
-    await chargerListeSauvegardes();
-  } catch (error) {
-    setMaintenanceStatus("Erreur de restauration : " + (error.message || error), "error", true);
-    alert("Erreur de restauration : " + (error.message || error));
-  } finally {
-    setButtonLoading(btnRestoreBackup, false);
-  }
-}
 
 function initialiserMaintenance() {
   if (btnMaintenanceUnlock) btnMaintenanceUnlock.addEventListener("click", unlockMaintenance);
@@ -2374,8 +2494,8 @@ function initialiserMaintenance() {
     });
   }
   if (btnRefreshBackups) btnRefreshBackups.addEventListener("click", chargerListeSauvegardes);
+  if (btnCreateBackup) btnCreateBackup.addEventListener("click", creerSauvegardeManuelle);
   if (btnResetDb) btnResetDb.addEventListener("click", remettreBaseAZeroAvecSauvegarde);
-  if (btnRestoreBackup) btnRestoreBackup.addEventListener("click", restaurerSauvegardeSelectionnee);
 }
 
 // ===============================

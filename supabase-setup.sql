@@ -101,6 +101,9 @@ create extension if not exists pgcrypto;
 create table if not exists public.eaj_planning_backups (
   id uuid primary key default gen_random_uuid(),
   reason text not null default 'Sauvegarde',
+  label text,
+  note text,
+  backup_type text not null default 'automatic',
   planning jsonb not null,
   source_version integer,
   created_at timestamptz not null default now(),
@@ -110,7 +113,7 @@ create table if not exists public.eaj_planning_backups (
 
 alter table public.eaj_planning_backups enable row level security;
 
-grant select, insert on public.eaj_planning_backups to authenticated;
+grant select, insert, delete on public.eaj_planning_backups to authenticated;
 
 drop policy if exists "Seuls les admins peuvent lister les sauvegardes" on public.eaj_planning_backups;
 drop policy if exists "Seuls les admins peuvent créer une sauvegarde" on public.eaj_planning_backups;
@@ -135,6 +138,21 @@ to authenticated
 with check (
   created_by = auth.uid()
   and exists (
+    select 1
+    from public.eaj_admins a
+    where a.user_id = auth.uid()
+      and a.active = true
+  )
+);
+
+
+drop policy if exists "Seuls les admins peuvent supprimer les sauvegardes" on public.eaj_planning_backups;
+create policy "Seuls les admins peuvent supprimer les sauvegardes"
+on public.eaj_planning_backups
+for delete
+to authenticated
+using (
+  exists (
     select 1
     from public.eaj_admins a
     where a.user_id = auth.uid()

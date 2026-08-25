@@ -2172,3 +2172,20 @@ body[data-theme="dark"] .offline-status {
 
 
 /* v1.8.2 — le menu reste ouvert et défilable à la molette / au doigt. */
+
+
+/* v1.9.0 — cartouche d'activité tricolore optionnel */
+.activity-chip.activity-chip-tricolore {
+  color: #0f2742 !important;
+  border-top-color: rgba(255,255,255,.5);
+  border-bottom-color: rgba(255,255,255,.5);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), 0 2px 7px rgba(15,39,66,.12);
+}
+.activity-chip.activity-chip-tricolore strong,
+.activity-chip.activity-chip-tricolore small,
+.activity-chip.activity-chip-tricolore span {
+  color: #0f2742 !important;
+}
+body[data-theme="dark"] .activity-chip.activity-chip-tricolore {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.30), 0 3px 10px rgba(0,0,0,.22);
+}

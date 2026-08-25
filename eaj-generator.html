@@ -898,7 +898,7 @@
     }
 
 
-    /* ===== Admin simplifié v1.8.2 ===== */
+    /* ===== Admin simplifié v1.9.0 ===== */
     .admin-heading-row {
       display: flex;
       align-items: center;
@@ -1098,6 +1098,69 @@
       .admin-tools-details > summary span { display: none; }
     }
 
+
+    /* ===== Gestionnaire de sauvegardes v1.9.0 ===== */
+    .backup-manager {
+      border: 1px solid var(--border-soft);
+      border-radius: 0.85rem;
+      background: var(--bg-card-soft);
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .backup-manager-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .backup-create-grid {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto;
+      gap: 0.55rem;
+      align-items: end;
+      padding: 0.65rem;
+      border: 1px dashed var(--border-soft);
+      border-radius: 0.7rem;
+      background: var(--bg-card);
+    }
+    .backup-create-grid .full { grid-column: 1 / -1; }
+    .backup-create-grid textarea { resize: vertical; min-height: 3.8rem; }
+    .backup-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .backup-empty { padding: 0.8rem; text-align: center; color: var(--text-muted); }
+    .backup-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.7rem;
+      padding: 0.65rem 0.75rem;
+      border: 1px solid var(--border-soft);
+      border-radius: 0.7rem;
+      background: var(--bg-card);
+      align-items: center;
+    }
+    .backup-card-title { font-weight: 700; color: var(--text-main); }
+    .backup-card-meta { margin-top: 0.18rem; font-size: 0.76rem; color: var(--text-muted); }
+    .backup-card-note { margin-top: 0.32rem; font-size: 0.78rem; color: var(--text-main); white-space: pre-wrap; }
+    .backup-card-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; justify-content: flex-end; }
+    .backup-badge { display: inline-flex; margin-left: .35rem; padding: .08rem .4rem; border-radius: 999px; font-size: .68rem; border: 1px solid var(--border-soft); color: var(--text-muted); }
+    @media (max-width: 700px) {
+      .backup-create-grid, .backup-card { grid-template-columns: 1fr; }
+      .backup-card-actions { justify-content: stretch; }
+      .backup-card-actions .btn { flex: 1; }
+    }
+
+    /* Style par activité */
+    .activity-style-row {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      margin-top: .2rem;
+      flex-wrap: wrap;
+    }
+    .activity-style-row label { font-size: .75rem; color: var(--text-muted); }
+    .activity-style-select { min-width: 210px; font-size: .78rem; }
   </style>
 </head>
 <body data-theme="dark">
@@ -1345,13 +1408,28 @@
           </div>
 
           <div id="maintenance-tools" class="hidden">
-            <div class="maintenance-grid">
-              <div class="field">
-                <label>Sauvegardes disponibles</label>
-                <select id="backup-select"></select>
+            <div class="backup-manager">
+              <div class="backup-manager-head">
+                <div>
+                  <strong>💾 Gestionnaire de sauvegardes</strong>
+                  <div class="note">Crée une sauvegarde manuelle, restaure une ancienne version ou supprime les sauvegardes devenues inutiles.</div>
+                </div>
+                <button class="btn btn-secondary" type="button" id="btn-refresh-backups">🔄 Actualiser</button>
               </div>
-              <button class="btn btn-secondary" type="button" id="btn-refresh-backups">🔄 Actualiser</button>
-              <button class="btn btn-primary" type="button" id="btn-restore-backup">↩️ Charger la sauvegarde</button>
+
+              <div class="backup-create-grid">
+                <div class="field">
+                  <label>Nom de la sauvegarde</label>
+                  <input type="text" id="backup-label" maxlength="120" placeholder="Ex : Avant cérémonies novembre" />
+                </div>
+                <div class="field full">
+                  <label>Commentaire <span class="note">(facultatif)</span></label>
+                  <textarea id="backup-note" maxlength="1000" rows="2" placeholder="Ex : Planning validé avant modification des cérémonies."></textarea>
+                </div>
+                <button class="btn btn-primary" type="button" id="btn-create-backup">💾 Sauvegarder maintenant</button>
+              </div>
+
+              <div id="backup-list" class="backup-list" aria-live="polite"></div>
             </div>
 
             <hr style="border:0;border-top:1px dashed rgba(248,113,113,.35);margin:.9rem 0;">
@@ -1400,7 +1478,7 @@
 
   <!-- Scripts : Supabase + données de secours + générateur -->
 <script>
-  window.EAJ_BUILD = "1.8.2";
+  window.EAJ_BUILD = "1.9.0";
   (function () {
     const bust = Date.now();
 
@@ -1462,11 +1540,11 @@
     }
 
     loadClassic("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", function () {
-      loadSafe(`./supabase-config.js?v=1.8.2-${bust}`, function () {
-        loadSafe(`./planning.js?v=1.8.2-${bust}`, function () {
-          loadSafe(`./planning-api.js?v=1.8.2-${bust}`, function (apiOk) {
+      loadSafe(`./supabase-config.js?v=1.9.0-${bust}`, function () {
+        loadSafe(`./planning.js?v=1.9.0-${bust}`, function () {
+          loadSafe(`./planning-api.js?v=1.9.0-${bust}`, function (apiOk) {
             if (!apiOk) return;
-            loadSafe(`./eaj-generator.js?v=1.8.2-${bust}`);
+            loadSafe(`./eaj-generator.js?v=1.9.0-${bust}`);
           });
         }, { optional: true });
       });

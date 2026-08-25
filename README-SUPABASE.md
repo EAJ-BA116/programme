@@ -241,3 +241,12 @@ Exécuter une seule fois dans **Supabase > SQL Editor** :
 `supabase-migration-v1.8.2.sql`
 
 Cette migration ajoute la fonction sécurisée `eaj_delete_notification` utilisée par le Super Admin. Aucun redéploiement de l’Edge Function n’est nécessaire.
+
+
+## Version 1.9.0 — gestion avancée des sauvegardes
+
+Exécuter une seule fois :
+
+`supabase-migration-v1.9.0.sql`
+
+Cette migration ajoute un nom, un commentaire et un type aux sauvegardes, et autorise leur suppression par un Super Admin actif. Elle ne modifie pas le planning courant.
