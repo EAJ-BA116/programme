@@ -122,6 +122,11 @@ const output         = document.getElementById("output");
 const saveStatus     = document.getElementById("save-status");
 const saveStatusTop  = document.getElementById("save-status-top");
 
+// Exports PDF par période
+const pdfPeriodButtons    = Array.from(document.querySelectorAll("[data-pdf-period]"));
+const pdfSchoolYearBadge  = document.getElementById("pdf-school-year");
+const pdfExportStatus     = document.getElementById("pdf-export-status");
+
 const maintenanceUnlockInput = document.getElementById("maintenance-unlock-input");
 const btnMaintenanceUnlock   = document.getElementById("btn-maintenance-unlock");
 const maintenanceLocked      = document.getElementById("maintenance-locked");
@@ -1611,6 +1616,7 @@ function updateWeekTitlesWithDates() {
       ? `Semaine n°${i + 1} — ${dateLabel}`
       : `Semaine n°${i + 1}`;
   });
+  updatePdfAcademicYearBadge();
 }
 function focusWeekForm(weekDiv) {
   if (!weekDiv) return;
@@ -1726,6 +1732,655 @@ function downloadFile(filename, content) {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+// ===============================
+//  Exports PDF par période
+// ===============================
+
+const PDF_PERIODS = {
+  1: { label: "Période 1", title: "septembre à décembre", startMonth: 9, endMonth: 12, yearOffset: 0 },
+  2: { label: "Période 2", title: "janvier à mars", startMonth: 1, endMonth: 3, yearOffset: 1 },
+  3: { label: "Période 3", title: "avril à juin", startMonth: 4, endMonth: 6, yearOffset: 1 }
+};
+
+function setPdfExportStatus(message = "", type = "info") {
+  if (!pdfExportStatus) return;
+  pdfExportStatus.textContent = message || "";
+  pdfExportStatus.classList.remove("ok", "error", "info");
+  if (type) pdfExportStatus.classList.add(type);
+}
+
+function parseIsoLocal(iso) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
+  if (!match) return null;
+  const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12, 0, 0, 0);
+  if (
+    d.getFullYear() !== Number(match[1]) ||
+    d.getMonth() !== Number(match[2]) - 1 ||
+    d.getDate() !== Number(match[3])
+  ) return null;
+  return d;
+}
+
+function dateToIsoLocal(d) {
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function addDaysLocal(d, days) {
+  const copy = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0, 0);
+  copy.setDate(copy.getDate() + days);
+  return copy;
+}
+
+function getMondayForDate(d) {
+  const day = d.getDay();
+  const diff = (day + 6) % 7; // lundi = 0
+  return addDaysLocal(d, -diff);
+}
+
+function getWeekKeyFromIso(iso) {
+  const d = parseIsoLocal(iso);
+  return d ? dateToIsoLocal(getMondayForDate(d)) : "";
+}
+
+function getAcademicStartYear(weeks = getWeeksData()) {
+  const counts = new Map();
+  (Array.isArray(weeks) ? weeks : []).forEach(week => {
+    const d = parseIsoLocal(week?.isoDate);
+    if (!d) return;
+    const month = d.getMonth() + 1;
+    // Une année EAJ va de septembre N à juin N+1.
+    // Juillet/août éventuels sont rattachés à l'année qui vient de se terminer.
+    const startYear = month >= 9 ? d.getFullYear() : d.getFullYear() - 1;
+    counts.set(startYear, (counts.get(startYear) || 0) + 1);
+  });
+
+  if (counts.size > 0) {
+    return [...counts.entries()]
+      .sort((a, b) => (b[1] - a[1]) || (b[0] - a[0]))[0][0];
+  }
+
+  const now = new Date();
+  return (now.getMonth() + 1) >= 9 ? now.getFullYear() : now.getFullYear() - 1;
+}
+
+function updatePdfAcademicYearBadge() {
+  if (!pdfSchoolYearBadge) return;
+  const startYear = getAcademicStartYear();
+  pdfSchoolYearBadge.textContent = `Année EAJ : ${startYear}-${startYear + 1}`;
+}
+
+function getPeriodWednesdays(periodNumber, academicStartYear) {
+  const period = PDF_PERIODS[periodNumber];
+  if (!period) return [];
+  const year = academicStartYear + period.yearOffset;
+  const start = new Date(year, period.startMonth - 1, 1, 12, 0, 0, 0);
+  const end = new Date(year, period.endMonth, 0, 12, 0, 0, 0);
+
+  const first = new Date(start);
+  const daysToWednesday = (3 - first.getDay() + 7) % 7;
+  first.setDate(first.getDate() + daysToWednesday);
+
+  const dates = [];
+  for (let d = new Date(first); d <= end; d = addDaysLocal(d, 7)) {
+    dates.push(new Date(d));
+  }
+  return dates;
+}
+
+function shortDateFr(d, withYear = false) {
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  return withYear ? `${day}/${month}/${d.getFullYear()}` : `${day}/${month}`;
+}
+
+function formatExportTimestamp() {
+  const now = new Date();
+  const date = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+  const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  return `${date} à ${time}`;
+}
+
+function normalizePdfText(value) {
+  return String(value || "")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/\u2026/g, "...")
+    .replace(/\u00a0/g, " ")
+    .replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getGroupKindForPdf(group) {
+  const ids = Array.isArray(group?.groupIds) ? group.groupIds : [];
+  const title = String(group?.titre || "").toUpperCase();
+  if (ids.includes("EAJ2") && ids.includes("EAJ3")) return "EAJ23";
+  if (title.includes("2-3") || title.includes("2–3")) return "EAJ23";
+  if (title.includes("EAJ1")) return "EAJ1";
+  if (title.includes("EAJ2")) return "EAJ2";
+  if (title.includes("EAJ3")) return "EAJ3";
+  return "OTHER";
+}
+
+function activityTextForPdf(activity) {
+  if (!activity) return "";
+  const activityType = TYPES_ACTIVITE_DEFINITION[activity.type] ? activity.type : "autre";
+  const type = TYPES_ACTIVITE_DEFINITION[activityType]?.label || "Activité";
+  const parts = [];
+  const texte = normalizePdfText(activity.texte);
+  if (texte) parts.push(`${type}: ${texte}`);
+  const infos = [];
+  if (activity.horaire) infos.push(normalizePdfText(activity.horaire));
+  if (activity.lieu) infos.push(`lieu ${normalizePdfText(activity.lieu)}`);
+  if (activity.tenue) infos.push(`tenue ${normalizePdfText(activity.tenue)}`);
+  if (activity.materiel) infos.push(`mat. ${normalizePdfText(activity.materiel)}`);
+  if (activity.encadrant) infos.push(`enc. ${normalizePdfText(activity.encadrant)}`);
+  if (infos.length) parts.push(`[${infos.join(" | ")}]`);
+  // Marqueur interne : il n'est jamais imprimé. Il permet au moteur PDF
+  // de remettre l'emoji et la couleur de l'activité au moment du dessin.
+  return `[[ACT:${activityType}]]${parts.join(" ")}`;
+}
+
+function groupTextForPdf(group) {
+  if (!group) return "";
+  const lines = [];
+  const groupInfos = [];
+  if (group.horaire) groupInfos.push(normalizePdfText(group.horaire));
+  if (group.lieu) groupInfos.push(`lieu ${normalizePdfText(group.lieu)}`);
+  if (group.tenue) groupInfos.push(`tenue ${normalizePdfText(group.tenue)}`);
+  if (group.materiel) groupInfos.push(`mat. ${normalizePdfText(group.materiel)}`);
+  if (group.encadrant) groupInfos.push(`enc. ${normalizePdfText(group.encadrant)}`);
+  if (group.tag) groupInfos.push(normalizePdfText(group.tag));
+  if (groupInfos.length) lines.push(groupInfos.join(" | "));
+
+  (Array.isArray(group.activites) ? group.activites : []).forEach(activity => {
+    const text = activityTextForPdf(activity);
+    if (text) lines.push(text);
+  });
+  return lines.join("\n");
+}
+
+function commonTextForPdf(entry) {
+  if (!entry) return "";
+  const lines = [];
+  const groups = Array.isArray(entry.groupes) && entry.groupes.length
+    ? normalizePdfText(entry.groupes.join(" / ").replace("EAJ23", "EAJ2-3"))
+    : "Tous groupes";
+  const meta = [];
+  if (entry.horaire) meta.push(normalizePdfText(entry.horaire));
+  if (entry.lieu) meta.push(`lieu ${normalizePdfText(entry.lieu)}`);
+  if (entry.tenue) meta.push(`tenue ${normalizePdfText(entry.tenue)}`);
+  if (entry.materiel) meta.push(`mat. ${normalizePdfText(entry.materiel)}`);
+  if (entry.encadrant) meta.push(`enc. ${normalizePdfText(entry.encadrant)}`);
+  if (entry.tag) meta.push(normalizePdfText(entry.tag));
+  lines.push(`${groups}${meta.length ? ` - ${meta.join(" | ")}` : ""}`);
+  (Array.isArray(entry.activites) ? entry.activites : []).forEach(activity => {
+    const text = activityTextForPdf(activity);
+    if (text) lines.push(text);
+  });
+  return lines.join("\n");
+}
+
+function buildWeekRowForPdf(anchorWednesday, events) {
+  const monday = getMondayForDate(anchorWednesday);
+  const sunday = addDaysLocal(monday, 6);
+  const dateCell = `Semaine du ${shortDateFr(monday)} au ${shortDateFr(sunday)}\nMer. ${shortDateFr(anchorWednesday)}`;
+
+  const eaj1 = [];
+  const secondary = [];
+  const common = [];
+
+  (Array.isArray(events) ? events : []).forEach(week => {
+    const eventDate = parseIsoLocal(week?.isoDate);
+    const eventPrefix = eventDate && dateToIsoLocal(eventDate) !== dateToIsoLocal(anchorWednesday)
+      ? `${shortDateFr(eventDate)} - `
+      : "";
+
+    if (week?.statut === "off") {
+      const reason = normalizePdfText(week.messageOff || week.note || "Pas de séance");
+      common.push(`${eventPrefix}PAS DE SÉANCE${reason ? ` - ${reason}` : ""}`);
+      return;
+    }
+
+    const note = normalizePdfText(week?.note);
+    if (note) common.push(`${eventPrefix}Note : ${note}`);
+
+    (Array.isArray(week?.groupes) ? week.groupes : []).forEach(group => {
+      const kind = getGroupKindForPdf(group);
+      const text = groupTextForPdf(group);
+      if (!text) return;
+      if (kind === "EAJ1") eaj1.push(`${eventPrefix}${text}`);
+      else if (kind === "EAJ23") secondary.push(`${eventPrefix}EAJ 2-3 :\n${text}`);
+      else if (kind === "EAJ2") secondary.push(`${eventPrefix}EAJ2 :\n${text}`);
+      else if (kind === "EAJ3") secondary.push(`${eventPrefix}EAJ3 :\n${text}`);
+      else common.push(`${eventPrefix}${normalizePdfText(group.titre)} :\n${text}`);
+    });
+
+    (Array.isArray(week?.activitesCommunes) ? week.activitesCommunes : []).forEach(entry => {
+      const text = commonTextForPdf(entry);
+      if (text) common.push(`${eventPrefix}${text}`);
+    });
+  });
+
+  if (!events || events.length === 0) {
+    common.push("Aucune activité programmée");
+  }
+
+  return [dateCell, eaj1.join("\n"), secondary.join("\n"), common.join("\n")];
+}
+
+function buildPeriodRowsForPdf(periodNumber, academicStartYear, weeks) {
+  const eventsByWeek = new Map();
+  (Array.isArray(weeks) ? weeks : []).forEach(week => {
+    const key = getWeekKeyFromIso(week?.isoDate);
+    if (!key) return;
+    if (!eventsByWeek.has(key)) eventsByWeek.set(key, []);
+    eventsByWeek.get(key).push(week);
+  });
+
+  return getPeriodWednesdays(periodNumber, academicStartYear).map(wednesday => {
+    const key = dateToIsoLocal(getMondayForDate(wednesday));
+    const events = (eventsByWeek.get(key) || []).slice().sort((a, b) => String(a.isoDate).localeCompare(String(b.isoDate)));
+    return buildWeekRowForPdf(wednesday, events);
+  });
+}
+
+const PDF_EMOJI_CACHE = new Map();
+
+function hexToRgbPdf(hex, fallback = [100, 116, 139]) {
+  const match = /^#?([0-9a-f]{6})$/i.exec(String(hex || ""));
+  if (!match) return fallback;
+  const value = parseInt(match[1], 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+function getPdfEmojiImage(activityType) {
+  const key = TYPES_ACTIVITE_DEFINITION[activityType] ? activityType : "autre";
+  if (PDF_EMOJI_CACHE.has(key)) return PDF_EMOJI_CACHE.get(key);
+  try {
+    const cfg = TYPES_ACTIVITE_DEFINITION[key];
+    const canvas = document.createElement("canvas");
+    canvas.width = 96;
+    canvas.height = 96;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, 96, 96);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "64px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
+    ctx.fillText(cfg.emoji, 48, 50);
+    const data = canvas.toDataURL("image/png");
+    PDF_EMOJI_CACHE.set(key, data);
+    return data;
+  } catch (error) {
+    console.warn("Emoji PDF indisponible", activityType, error);
+    PDF_EMOJI_CACHE.set(key, "");
+    return "";
+  }
+}
+
+function splitPdfCell(doc, text, width) {
+  const normalized = String(text || "");
+  if (!normalized) return [];
+  const out = [];
+  normalized.split("\n").forEach(block => {
+    if (!block) {
+      out.push({ text: "", activityType: null, activityLine: false, firstActivityLine: false });
+      return;
+    }
+
+    const marker = block.match(/^(.*?)\[\[ACT:([a-zA-Z0-9_-]+)\]\](.*)$/);
+    if (marker) {
+      const activityType = TYPES_ACTIVITE_DEFINITION[marker[2]] ? marker[2] : "autre";
+      const visibleText = `${marker[1] || ""}${marker[3] || ""}`.trim();
+      // On réserve la place de l'emoji et du repère couleur sur toutes les lignes
+      // de l'activité pour garder un alignement propre en cas de retour à la ligne.
+      const lines = doc.splitTextToSize(visibleText, Math.max(4, width - 7.2));
+      lines.forEach((line, index) => out.push({
+        text: line,
+        activityType,
+        activityLine: true,
+        firstActivityLine: index === 0
+      }));
+      return;
+    }
+
+    const lines = doc.splitTextToSize(block, Math.max(4, width));
+    lines.forEach(line => out.push({ text: line, activityType: null, activityLine: false, firstActivityLine: false }));
+  });
+  return out;
+}
+
+function drawPdfActivityLegend(doc, x, y, width, format = "a4") {
+  const entries = Object.entries(TYPES_ACTIVITE_DEFINITION);
+  const rowsCount = 2;
+  const perRow = Math.ceil(entries.length / rowsCount);
+  const boxHeight = format === "a3" ? 14.5 : 12.2;
+  const innerPad = format === "a3" ? 2.4 : 2.0;
+  const itemWidth = (width - innerPad * 2) / perRow;
+  const rowHeight = (boxHeight - innerPad * 2) / rowsCount;
+
+  // Cartouche volontairement blanc : bordure fine uniquement, pour rester
+  // économique et lisible en impression noir et blanc.
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(190, 200, 211);
+  doc.setLineWidth(0.25);
+  doc.roundedRect(x, y, width, boxHeight, 1.4, 1.4, "FD");
+
+  entries.forEach(([key, cfg], index) => {
+    const row = Math.floor(index / perRow);
+    const col = index % perRow;
+    const itemX = x + innerPad + col * itemWidth;
+    const itemY = y + innerPad + row * rowHeight;
+    const [r, g, b] = hexToRgbPdf(cfg.color);
+
+    doc.setFillColor(r, g, b);
+    doc.roundedRect(itemX, itemY + 0.45, format === "a3" ? 1.6 : 1.35, rowHeight - 1.0, 0.35, 0.35, "F");
+
+    const emoji = getPdfEmojiImage(key);
+    const emojiSize = format === "a3" ? 4.0 : 3.4;
+    if (emoji) {
+      try { doc.addImage(emoji, "PNG", itemX + 2.2, itemY + 0.15, emojiSize, emojiSize, undefined, "FAST"); }
+      catch (error) { /* le libellé reste présent */ }
+    }
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(format === "a3" ? 6.6 : 5.6);
+    doc.setTextColor(45, 55, 68);
+    doc.text(cfg.label, itemX + (format === "a3" ? 6.8 : 6.0), itemY + (format === "a3" ? 3.15 : 2.75), {
+      maxWidth: itemWidth - (format === "a3" ? 7.2 : 6.4)
+    });
+  });
+
+  return boxHeight;
+}
+
+function calculatePdfLayout(doc, rows, columns, availableHeight, options = {}) {
+  let fontSize = Number(options.startFontSize || 6.2);
+  const minFontSize = Number(options.minFontSize || 4.2);
+  const step = Number(options.step || 0.2);
+  let result = null;
+
+  while (fontSize >= minFontSize - 0.001) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(fontSize);
+    const lineHeight = fontSize * 0.3528 * 1.10;
+    const wrappedRows = rows.map(row => row.map((cell, idx) => splitPdfCell(doc, cell, columns[idx].width - 2.4)));
+    const heights = wrappedRows.map(cells => {
+      const maxLines = Math.max(1, ...cells.map(lines => Math.max(1, lines.length)));
+      return Math.max(5.0, maxLines * lineHeight + 1.6);
+    });
+    const totalHeight = heights.reduce((sum, h) => sum + h, 0);
+    result = { fontSize, lineHeight, wrappedRows, heights, totalHeight, fits: totalHeight <= availableHeight };
+    if (result.fits) return result;
+    fontSize -= step;
+  }
+
+  return result;
+}
+
+function createPeriodPdfContext(JsPdf, rows, format = "a4", minFontSize = 4.2) {
+  const doc = new JsPdf({ orientation: "landscape", unit: "mm", format, compress: true });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginX = format === "a3" ? 9 : 7;
+  const tableTop = format === "a3" ? 44 : 39;
+  const signatureTop = pageHeight - (format === "a3" ? 27 : 24);
+  const tableBottom = signatureTop - 3;
+  const headerHeight = format === "a3" ? 8 : 7;
+  const availableBodyHeight = tableBottom - tableTop - headerHeight;
+  const usableWidth = pageWidth - (marginX * 2);
+
+  // Les proportions restent les mêmes en A4 et en A3 ; en A3, les cellules
+  // sont simplement plus larges, donc le texte revient moins souvent à la ligne.
+  const dateWidth = usableWidth * 0.115;
+  const eaj1Width = usableWidth * 0.312;
+  const secondaryWidth = usableWidth * 0.352;
+  const commonWidth = usableWidth - dateWidth - eaj1Width - secondaryWidth;
+  const columns = [
+    { title: "SEMAINE", width: dateWidth },
+    { title: "EAJ1", width: eaj1Width },
+    { title: "EAJ2 / EAJ3 / EAJ 2-3", width: secondaryWidth },
+    { title: "COMMUN / INFORMATIONS", width: commonWidth }
+  ];
+
+  const layout = calculatePdfLayout(doc, rows, columns, availableBodyHeight, {
+    startFontSize: format === "a3" ? 7.0 : 6.2,
+    minFontSize,
+    step: 0.2
+  });
+
+  return {
+    doc,
+    format,
+    pageWidth,
+    pageHeight,
+    marginX,
+    tableTop,
+    signatureTop,
+    tableBottom,
+    headerHeight,
+    availableBodyHeight,
+    columns,
+    layout
+  };
+}
+
+function exportPeriodPdf(periodNumber) {
+  const period = PDF_PERIODS[periodNumber];
+  if (!period) return;
+
+  const JsPdf = window.jspdf?.jsPDF;
+  if (!JsPdf) {
+    setPdfExportStatus("Export PDF indisponible : la bibliothèque PDF n'a pas pu être chargée. Vérifie la connexion puis recharge la page.", "error");
+    return;
+  }
+
+  const weeks = getWeeksData();
+  const academicStartYear = getAcademicStartYear(weeks);
+  const periodYear = academicStartYear + period.yearOffset;
+  const rows = buildPeriodRowsForPdf(periodNumber, academicStartYear, weeks);
+
+  if (!rows.length) {
+    setPdfExportStatus("Aucune semaine n'a pu être construite pour cette période.", "error");
+    return;
+  }
+
+  setPdfExportStatus(`Création du PDF ${period.label.toLowerCase()}…`, "info");
+
+  try {
+    // A4 paysage en priorité. Si le contenu est trop dense pour tenir sans
+    // supprimer de texte, bascule automatiquement en A3 paysage : toujours 1 page.
+    let ctx = createPeriodPdfContext(JsPdf, rows, "a4", 4.2);
+    if (!ctx.layout?.fits) {
+      ctx = createPeriodPdfContext(JsPdf, rows, "a3", 4.2);
+    }
+    if (!ctx.layout?.fits) {
+      // Cas extrême : on reste en A3, mais on autorise une police plus petite
+      // plutôt que de couper des informations.
+      ctx = createPeriodPdfContext(JsPdf, rows, "a3", 2.8);
+    }
+    if (!ctx.layout?.fits) {
+      throw new Error("Le contenu de cette période est trop dense pour tenir intégralement sur une seule page.");
+    }
+
+    const {
+      doc, format, pageWidth, pageHeight, marginX,
+      tableTop, signatureTop, headerHeight, columns, layout
+    } = ctx;
+
+    // Mise en page sobre : fond de page blanc, aucun aplat décoratif.
+    // La couleur est réservée au titre, à une ligne d’accent et à l’en-tête du tableau.
+    const navy = [22, 55, 88];
+    const accent = [42, 102, 153];
+    const grid = [205, 214, 223];
+    const zebra = [248, 250, 252];
+    const emptyText = [119, 129, 143];
+
+    // En-tête du document
+    doc.setTextColor(...navy);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(format === "a3" ? 16.5 : 14.2);
+    doc.text("PROGRAMME EAJ - BA 116", marginX, format === "a3" ? 12 : 10.3);
+
+    doc.setFontSize(format === "a3" ? 11.8 : 10.1);
+    doc.setFont("helvetica", "normal");
+    doc.text(`${period.label} - ${period.title} ${periodYear}`, marginX, format === "a3" ? 19.2 : 16.4);
+
+    // Ligne d’accent très fine : elle structure la page sans créer de fond coloré.
+    const accentY = format === "a3" ? 22.1 : 19.1;
+    doc.setDrawColor(...accent);
+    doc.setLineWidth(format === "a3" ? 0.75 : 0.55);
+    doc.line(marginX, accentY, pageWidth - marginX, accentY);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(format === "a3" ? 8.2 : 7.0);
+    doc.setTextColor(88, 99, 113);
+    doc.text(
+      `Année EAJ ${academicStartYear}-${academicStartYear + 1} - Toutes les semaines de la période sont affichées.`,
+      marginX,
+      format === "a3" ? 26.2 : 23.0
+    );
+
+    // Légende des activités placée en haut, juste avant le tableau :
+    // emoji + repère couleur + libellé, sur deux lignes compactes.
+    drawPdfActivityLegend(doc, marginX, format === "a3" ? 28.2 : 24.8, pageWidth - (marginX * 2), format);
+
+    // En-tête du tableau : bleu profond, texte blanc.
+    let x = marginX;
+    doc.setFillColor(...navy);
+    doc.setDrawColor(...navy);
+    doc.setLineWidth(0.25);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(format === "a3" ? 7.8 : 6.6);
+    columns.forEach((col, index) => {
+      doc.rect(x, tableTop, col.width, headerHeight, "FD");
+      const align = index === 0 ? "center" : "left";
+      const tx = index === 0 ? x + (col.width / 2) : x + 1.5;
+      doc.text(col.title, tx, tableTop + (format === "a3" ? 5.25 : 4.55), {
+        maxWidth: col.width - 3,
+        align
+      });
+      x += col.width;
+    });
+
+    // Corps du tableau : blanc, avec une alternance presque imperceptible.
+    // Les cellules ne reçoivent aucun gros fond coloré.
+    let y = tableTop + headerHeight;
+    rows.forEach((row, rowIndex) => {
+      const rowHeight = layout.heights[rowIndex];
+      x = marginX;
+      const isEmptyWeek = row[3] === "Aucune activité programmée" && !row[1] && !row[2];
+
+      columns.forEach((col, colIndex) => {
+        if (rowIndex % 2 === 1) doc.setFillColor(...zebra);
+        else doc.setFillColor(255, 255, 255);
+
+        doc.setDrawColor(...grid);
+        doc.setLineWidth(0.18);
+        doc.rect(x, y, col.width, rowHeight, "FD");
+
+        const lines = layout.wrappedRows[rowIndex][colIndex];
+        if (isEmptyWeek && colIndex === 3) doc.setTextColor(...emptyText);
+        else if (colIndex === 0) doc.setTextColor(...navy);
+        else doc.setTextColor(39, 48, 60);
+
+        doc.setFont("helvetica", colIndex === 0 ? "bold" : "normal");
+        doc.setFontSize(layout.fontSize);
+        let textY = y + 1.25 + layout.lineHeight;
+        lines.forEach(lineInfo => {
+          const line = typeof lineInfo === "string" ? lineInfo : lineInfo.text;
+          const activityType = typeof lineInfo === "object" ? lineInfo.activityType : null;
+          const isActivityLine = Boolean(typeof lineInfo === "object" && lineInfo.activityLine);
+          const firstActivityLine = Boolean(typeof lineInfo === "object" && lineInfo.firstActivityLine);
+          let textX = x + 1.35;
+
+          if (isActivityLine && activityType) {
+            const cfg = TYPES_ACTIVITE_DEFINITION[activityType] || TYPES_ACTIVITE_DEFINITION.autre;
+            const [r, g, b] = hexToRgbPdf(cfg.color);
+            doc.setFillColor(r, g, b);
+            doc.roundedRect(x + 1.15, textY - layout.lineHeight * 0.80, 0.85, layout.lineHeight * 0.92, 0.18, 0.18, "F");
+            textX = x + 7.0;
+
+            if (firstActivityLine) {
+              const emoji = getPdfEmojiImage(activityType);
+              if (emoji) {
+                const emojiSize = Math.min(4.1, Math.max(2.7, layout.lineHeight * 1.45));
+                try {
+                  doc.addImage(emoji, "PNG", x + 2.25, textY - emojiSize * 0.78, emojiSize, emojiSize, undefined, "FAST");
+                } catch (error) { /* le texte + la couleur restent visibles */ }
+              }
+            }
+          }
+
+          doc.text(line, textX, textY, { baseline: "alphabetic" });
+          textY += layout.lineHeight;
+        });
+        x += col.width;
+      });
+      y += rowHeight;
+    });
+
+    // Trait de fermeture du tableau légèrement plus marqué.
+    doc.setDrawColor(150, 162, 175);
+    doc.setLineWidth(0.3);
+    doc.line(marginX, y, pageWidth - marginX, y);
+
+    // Pied de page + zone de signature
+    const footerLineY = signatureTop - 1.6;
+    doc.setDrawColor(208, 216, 224);
+    doc.setLineWidth(0.22);
+    doc.line(marginX, footerLineY, pageWidth - marginX, footerLineY);
+
+    doc.setTextColor(83, 94, 108);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(format === "a3" ? 8.2 : 7.1);
+    doc.text(`Export effectué le ${formatExportTimestamp()}`, marginX, signatureTop + (format === "a3" ? 6 : 5));
+
+    const signatureWidth = format === "a3" ? 98 : 78;
+    const signatureHeight = format === "a3" ? 18 : 16;
+    const signatureX = pageWidth - marginX - signatureWidth;
+    const signatureY = signatureTop;
+
+    doc.setDrawColor(170, 181, 192);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(signatureX, signatureY, signatureWidth, signatureHeight, 1.6, 1.6, "S");
+    doc.setTextColor(...navy);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(format === "a3" ? 8.3 : 7.2);
+    doc.text("Signature du responsable des EAJ", signatureX + 3, signatureY + (format === "a3" ? 5.2 : 4.5));
+
+    doc.setDrawColor(190, 199, 209);
+    doc.setLineWidth(0.2);
+    const signLineY = signatureY + (format === "a3" ? 11.2 : 10.0);
+    doc.line(signatureX + 3, signLineY, signatureX + signatureWidth - 3, signLineY);
+    doc.setTextColor(108, 117, 128);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(format === "a3" ? 6.9 : 6.0);
+    doc.text("Nom / visa", signatureX + 3, signatureY + signatureHeight - 2.4);
+
+    const safeTitle = period.title.replace(/\s+/g, "-");
+    const filename = `programme-EAJ-${academicStartYear}-${academicStartYear + 1}-${safeTitle}.pdf`;
+    doc.save(filename);
+    const formatMessage = format === "a3" ? " (A3 paysage pour conserver tout le contenu sur une page)" : "";
+    setPdfExportStatus(`${period.label} exportée en PDF ✅${formatMessage}`, "ok");
+  } catch (error) {
+    console.error("Erreur export PDF :", error);
+    setPdfExportStatus(`Erreur pendant l'export PDF : ${error?.message || error}`, "error");
+  }
+}
+
+function initialiserExportsPdf() {
+  updatePdfAcademicYearBadge();
+  pdfPeriodButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      const periodNumber = Number(button.dataset.pdfPeriod || 0);
+      exportPeriodPdf(periodNumber);
+    });
+  });
 }
 
 // ===============================
@@ -2606,6 +3261,7 @@ async function initGeneratorApp() {
   initialiserNavigationAdmin();
   initialiserMaintenance();
   initialiserPushAdmin();
+  initialiserExportsPdf();
 
   // Permet de taper la date facilement (ex: 23012026 -> 23/01/2026)
   if (lastUpdateInput) {

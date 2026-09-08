@@ -1038,6 +1038,66 @@
     .compact-action-pack { justify-content: flex-start; margin: .65rem 0; }
     .compact-output-block { margin-top: .5rem; }
 
+    /* ===== Exports PDF par période v1.9.4 ===== */
+    .pdf-export-card {
+      border: 1px solid var(--border-soft);
+      border-radius: 1rem;
+      background: var(--bg-card);
+      padding: .85rem .95rem;
+      display: flex;
+      flex-direction: column;
+      gap: .7rem;
+      box-shadow: 0 8px 24px rgba(15,23,42,.06);
+    }
+    .pdf-export-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: .75rem;
+      flex-wrap: wrap;
+    }
+    .pdf-export-head h3 {
+      margin: 0;
+      color: var(--text-main);
+      font-size: .96rem;
+    }
+    .pdf-export-head p {
+      margin: .18rem 0 0;
+      color: var(--text-muted);
+      font-size: .78rem;
+    }
+    .pdf-school-year {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      padding: .35rem .62rem;
+      background: var(--bg-card-soft);
+      border: 1px solid var(--border-soft);
+      color: var(--text-main);
+      font-size: .73rem;
+      font-weight: 800;
+    }
+    .pdf-export-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: .55rem;
+    }
+    .pdf-period-btn {
+      justify-content: center;
+      min-height: 2.55rem;
+      text-align: center;
+      line-height: 1.15;
+    }
+    .pdf-export-status {
+      min-height: 1rem;
+      margin: 0;
+      color: var(--text-muted);
+      font-size: .75rem;
+    }
+    .pdf-export-status.ok { color: #16a34a; }
+    .pdf-export-status.error { color: #dc2626; }
+    body[data-theme="dark"] .pdf-export-status.ok { color: #86efac; }
+    body[data-theme="dark"] .pdf-export-status.error { color: #fca5a5; }
+
     .push-compose-card { padding: .85rem; }
     .push-compose-grid { margin-bottom: 0; }
     .push-send-row {
@@ -1092,6 +1152,8 @@
       .admin-global-actions .btn { justify-content: center; }
       .admin-section-heading { align-items: stretch; }
       .admin-section-heading > .btn { width: 100%; justify-content: center; }
+      .pdf-export-actions { grid-template-columns: 1fr; }
+      .pdf-period-btn { width: 100%; }
       .push-compact-count { width: 100%; justify-content: space-between; }
       .push-send-main { width: 100%; }
       .push-send-row .push-admin-status { flex-basis: 100%; }
@@ -1243,6 +1305,22 @@
         </div>
         <button class="btn btn-primary" type="button" id="btn-add-week">➕ Ajouter une semaine</button>
       </div>
+
+      <section class="pdf-export-card" aria-labelledby="pdf-export-title">
+        <div class="pdf-export-head">
+          <div>
+            <h3 id="pdf-export-title">📄 Exporter le programme par période</h3>
+            <p>Chaque bouton crée un PDF indépendant d’une seule page, avec toutes les semaines de la période, y compris les semaines sans activité.</p>
+          </div>
+          <span class="pdf-school-year" id="pdf-school-year">Année EAJ : …</span>
+        </div>
+        <div class="pdf-export-actions">
+          <button class="btn btn-secondary pdf-period-btn" type="button" data-pdf-period="1">⬇️ Septembre → décembre</button>
+          <button class="btn btn-secondary pdf-period-btn" type="button" data-pdf-period="2">⬇️ Janvier → mars</button>
+          <button class="btn btn-secondary pdf-period-btn" type="button" data-pdf-period="3">⬇️ Avril → juin</button>
+        </div>
+        <p id="pdf-export-status" class="pdf-export-status" aria-live="polite"></p>
+      </section>
 
       <div id="weeks-container" class="weeks-container">
         <!-- Les semaines seront ajoutées ici en JS -->
@@ -1478,7 +1556,7 @@
 
   <!-- Scripts : Supabase + données de secours + générateur -->
 <script>
-  window.EAJ_BUILD = "1.9.1";
+  window.EAJ_BUILD = "1.9.4";
   (function () {
     const bust = Date.now();
 
@@ -1540,11 +1618,14 @@
     }
 
     loadClassic("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", function () {
-      loadSafe(`./supabase-config.js?v=1.9.1-${bust}`, function () {
-        loadSafe(`./planning.js?v=1.9.1-${bust}`, function () {
-          loadSafe(`./planning-api.js?v=1.9.1-${bust}`, function (apiOk) {
+      loadSafe(`./supabase-config.js?v=1.9.4-${bust}`, function () {
+        loadSafe(`./planning.js?v=1.9.4-${bust}`, function () {
+          loadSafe(`./planning-api.js?v=1.9.4-${bust}`, function (apiOk) {
             if (!apiOk) return;
-            loadSafe(`./eaj-generator.js?v=1.9.1-${bust}`);
+            loadClassic("https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js", function (pdfOk) {
+              if (!pdfOk) console.warn("Bibliothèque PDF indisponible : les autres fonctions d’administration restent utilisables.");
+              loadSafe(`./eaj-generator.js?v=1.9.4-${bust}`);
+            });
           });
         }, { optional: true });
       });
