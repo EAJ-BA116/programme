@@ -18,7 +18,7 @@ const APP_VERSION = "1.9.4";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
-const WHATSAPP_PHONE = "33614732790";
+const WHATSAPP_PHONE = "33675665959";
 
 /* ---------- Source planning Supabase / fallback ---------- */
 
@@ -1506,7 +1506,7 @@ function initialiserClothesExchange(){
       : "Je souhaite faire un échange de vêtements (cassé / abîmé).";
 
     let msg =
-`Bonjour Yoann,\n\n` +
+`Bonjour Marcus,\n\n` +
 `${intro}\n\n` +
 `• Prénom : ${prenom || "(à compléter)"}\n` +
 `• Groupe : ${groupe || "(à choisir)"}\n` +
