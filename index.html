@@ -15,22 +15,22 @@
   <meta name="theme-color" content="#0053a6">
 
   <!-- PWA Android -->
-  <link rel="manifest" href="manifest.json?v=1.9.7">
+  <link rel="manifest" href="manifest.json?v=1.9.8">
 
   <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="EAJ 116">
-  <link rel="apple-touch-icon" href="images/logo_eaj192.png?v=1.9.7">
+  <link rel="apple-touch-icon" href="images/logo_eaj192.png?v=1.9.8">
 
   <!-- Icônes Android -->
-  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png?v=1.9.7">
-  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png?v=1.9.7">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo_eaj192.png?v=1.9.8">
+  <link rel="icon" type="image/png" sizes="512x512" href="images/logo_eaj512.png?v=1.9.8">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="images/eaj.ico?v=1.9.7">
+  <link rel="icon" type="image/x-icon" href="images/eaj.ico?v=1.9.8">
 
-  <link id="main-style" rel="stylesheet" href="style.css?v=1.9.7">
+  <link id="main-style" rel="stylesheet" href="style.css?v=1.9.8">
 </head>
 
 <body data-theme="dark">
@@ -115,7 +115,7 @@
   <footer>
     <div class="footer-line">EAJ BA 116 – 2026</div>
     <div class="footer-line" id="last-update"></div>
-    <div class="footer-line footer-version">Version 1.9.7 du 09/09/2026 • Codé par Yoann</div>
+    <div class="footer-line footer-version">Version 1.9.8 du 09/09/2026 • Codé par Yoann</div>
     <div class="footer-line">
       <a href="#" id="admin-link" class="footer-link footer-link-admin">🔧 Accès administration</a>
     </div>
@@ -174,7 +174,7 @@
         <button class="menu-item" type="button" data-action="open-about">ℹ️ À propos</button>
       </nav>
 
-      <div class="menu-popover-footer muted">Version 1.9.7 • 09/09/2026</div>
+      <div class="menu-popover-footer muted">Version 1.9.8 • 09/09/2026</div>
     </div>
   </div>
 
@@ -257,11 +257,12 @@
       </div>
 
       <div class="modal-body">
-        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.9.7</strong> • 09/09/2026 • Codé par <strong>Yoann</strong></p>
+        <p class="modal-meta"><strong>Programme EAJ – BA 116</strong><br>Version <strong>1.9.8</strong> • 09/09/2026 • Codé par <strong>Yoann</strong></p>
 
         <div class="changelog">
           <div class="changelog-title">Dernières modifications</div>
           <ul>
+            <li>v1.9.8 : export PDF simplifié en 4 colonnes, avec police agrandie et fusion de la colonne commun / observations</li>
             <li>v1.9.7 : export PDF avec en-têtes explicites : EAJ 1, EAJ 2-3, activités communes et observations</li>
             <li>v1.9.6 : export PDF encore plus aéré : davantage d'espace entre les blocs d'activités et cartouche semaine/date plus respirant</li>
             <li>v1.9.5 : export PDF clarifié : numéro de semaine affiché, semaines sans séance sur toute la largeur, tri par horaires, suppression des détails tenue/matériel/à amener et aération du tableau</li>
@@ -451,11 +452,11 @@ Résultat attendu : …"></textarea>
 <!-- ⚙️ JS : d’abord planning.js (avec version), puis la logique -->
   <script>
   // Cache-buster global (évite les "versions fantômes" sur GitHub Pages)
-  window.EAJ_BUILD = "1.9.7";
+  window.EAJ_BUILD = "1.9.8";
   (function () {
     const bust = Date.now();
     const s = document.createElement('script');
-    s.src = `version-loader.js?v=1.9.7-${bust}`;
+    s.src = `version-loader.js?v=1.9.8-${bust}`;
     document.head.appendChild(s);
   })();
 </script>

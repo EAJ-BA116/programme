@@ -1962,12 +1962,14 @@ function buildWeekRowForPdf(anchorWednesday, events) {
   const monday = getMondayForDate(anchorWednesday);
   const sunday = addDaysLocal(monday, 6);
   const weekInfo = getIsoWeekInfoFromDateLocal(anchorWednesday);
-  const dateCell = `Semaine ${weekInfo?.week ?? ''}\n\nDu ${shortDateFr(monday)} au ${shortDateFr(sunday)}\nMer. ${shortDateFr(anchorWednesday)}`;
+  const dateCell = `Semaine ${weekInfo?.week ?? ''}
+
+Du ${shortDateFr(monday)} au ${shortDateFr(sunday)}
+Mer. ${shortDateFr(anchorWednesday)}`;
 
   const eaj1 = [];
   const secondary = [];
-  const commonActivities = [];
-  const observations = [];
+  const commonInfos = [];
   const offMessages = [];
 
   (Array.isArray(events) ? events : []).forEach(week => {
@@ -1983,7 +1985,7 @@ function buildWeekRowForPdf(anchorWednesday, events) {
     }
 
     const note = normalizePdfText(week?.note);
-    if (note) pushPdfEntry(observations, `${eventPrefix}${note}`, -1000);
+    if (note) pushPdfEntry(commonInfos, `${eventPrefix}${note}`, -1000);
 
     sortPdfItemsByHour(Array.isArray(week?.groupes) ? week.groupes : [], item => `${getGroupKindForPdf(item)} ${normalizePdfText(item?.titre || '')}`)
       .forEach(group => {
@@ -1993,38 +1995,41 @@ function buildWeekRowForPdf(anchorWednesday, events) {
         const sortKey = getPdfTimeSortKey(group?.horaire);
         if (kind === 'EAJ1') pushPdfEntry(eaj1, `${eventPrefix}${text}`, sortKey);
         else if (kind === 'EAJ23') pushPdfEntry(secondary, `${eventPrefix}${text}`, sortKey);
-        else if (kind === 'EAJ2') pushPdfEntry(secondary, `${eventPrefix}EAJ2\n${text}`, sortKey);
-        else if (kind === 'EAJ3') pushPdfEntry(secondary, `${eventPrefix}EAJ3\n${text}`, sortKey);
-        else pushPdfEntry(observations, `${eventPrefix}${normalizePdfText(group.titre)}\n${text}`, sortKey);
+        else if (kind === 'EAJ2') pushPdfEntry(secondary, `${eventPrefix}EAJ2
+${text}`, sortKey);
+        else if (kind === 'EAJ3') pushPdfEntry(secondary, `${eventPrefix}EAJ3
+${text}`, sortKey);
+        else pushPdfEntry(commonInfos, `${eventPrefix}${normalizePdfText(group.titre)}
+${text}`, sortKey);
       });
 
     sortPdfItemsByHour(Array.isArray(week?.activitesCommunes) ? week.activitesCommunes : [], item => normalizePdfText(item?.titre || item?.texte || ''))
       .forEach(entry => {
         const text = commonTextForPdf(entry);
-        if (text) pushPdfEntry(commonActivities, `${eventPrefix}${text}`, getPdfTimeSortKey(entry?.horaire));
+        if (text) pushPdfEntry(commonInfos, `${eventPrefix}${text}`, getPdfTimeSortKey(entry?.horaire));
       });
   });
 
   if (!events || events.length === 0) {
-    pushPdfEntry(observations, 'Aucune activité programmée', 99999);
+    pushPdfEntry(commonInfos, 'Aucune activité programmée', 99999);
   }
 
-  const hasOnlyOff = offMessages.length > 0 && eaj1.length === 0 && secondary.length === 0 && commonActivities.length === 0 && observations.length === 0;
+  const hasOnlyOff = offMessages.length > 0 && eaj1.length === 0 && secondary.length === 0 && commonInfos.length === 0;
   if (hasOnlyOff) {
     return {
-      cells: [dateCell, '', '', '', ''],
+      cells: [dateCell, '', '', ''],
       mergeActivityColumns: true,
       mergeText: offMessages.join('\n'),
       isEmptyWeek: false
     };
   }
 
-  const cells = [dateCell, joinPdfEntries(eaj1), joinPdfEntries(secondary), joinPdfEntries(commonActivities), joinPdfEntries(observations)];
+  const cells = [dateCell, joinPdfEntries(eaj1), joinPdfEntries(secondary), joinPdfEntries(commonInfos)];
   return {
     cells,
     mergeActivityColumns: false,
     mergeText: '',
-    isEmptyWeek: cells[4] === 'Aucune activité programmée' && !cells[1] && !cells[2] && !cells[3]
+    isEmptyWeek: cells[3] === 'Aucune activité programmée' && !cells[1] && !cells[2]
   };
 }
 
@@ -2168,14 +2173,13 @@ function calculatePdfLayout(doc, rows, columns, availableHeight, options = {}) {
     doc.setFontSize(fontSize);
     const lineHeight = fontSize * 0.3528 * 1.24;
     const wrappedRows = rows.map(row => {
-      const rowData = Array.isArray(row) ? { cells: row, mergeActivityColumns: false, mergeText: "" } : (row || { cells: ["", "", "", "", ""], mergeActivityColumns: false, mergeText: "" });
-      const cells = Array.isArray(rowData.cells) ? rowData.cells : ["", "", "", "", ""];
+      const rowData = Array.isArray(row) ? { cells: row, mergeActivityColumns: false, mergeText: "" } : (row || { cells: ["", "", "", ""], mergeActivityColumns: false, mergeText: "" });
+      const cells = Array.isArray(rowData.cells) ? rowData.cells : ["", "", "", ""];
       if (rowData.mergeActivityColumns) {
         const mergedWidth = columns[1].width + columns[2].width + columns[3].width - 2.4;
         return [
           splitPdfCell(doc, cells[0], columns[0].width - 2.4),
           splitPdfCell(doc, rowData.mergeText || "", mergedWidth),
-          [],
           [],
           []
         ];
@@ -2209,21 +2213,19 @@ function createPeriodPdfContext(JsPdf, rows, format = "a4", minFontSize = 4.2) {
 
   // Les proportions restent les mêmes en A4 et en A3 ; en A3, les cellules
   // sont simplement plus larges, donc le texte revient moins souvent à la ligne.
-  const dateWidth = usableWidth * 0.14;
-  const eaj1Width = usableWidth * 0.23;
-  const secondaryWidth = usableWidth * 0.23;
-  const commonWidth = usableWidth * 0.24;
-  const observationWidth = usableWidth - dateWidth - eaj1Width - secondaryWidth - commonWidth;
+  const dateWidth = usableWidth * 0.15;
+  const eaj1Width = usableWidth * 0.265;
+  const secondaryWidth = usableWidth * 0.265;
+  const commonWidth = usableWidth - dateWidth - eaj1Width - secondaryWidth;
   const columns = [
     { title: "SEMAINE", width: dateWidth },
     { title: "EAJ 1", width: eaj1Width },
     { title: "EAJ 2-3", width: secondaryWidth },
-    { title: "ACTIVITES COMMUNES", width: commonWidth },
-    { title: "OBSERVATIONS", width: observationWidth }
+    { title: "COMMUN / OBSERVATIONS", width: commonWidth }
   ];
 
   const layout = calculatePdfLayout(doc, rows, columns, availableBodyHeight, {
-    startFontSize: format === "a3" ? 7.0 : 6.4,
+    startFontSize: format === "a3" ? 8.2 : 7.4,
     minFontSize,
     step: 0.2
   });
@@ -2269,14 +2271,14 @@ function exportPeriodPdf(periodNumber) {
   try {
     // A4 paysage en priorité. Si le contenu est trop dense pour tenir sans
     // supprimer de texte, bascule automatiquement en A3 paysage : toujours 1 page.
-    let ctx = createPeriodPdfContext(JsPdf, rows, "a4", 4.2);
+    let ctx = createPeriodPdfContext(JsPdf, rows, "a4", 5.2);
     if (!ctx.layout?.fits) {
-      ctx = createPeriodPdfContext(JsPdf, rows, "a3", 4.2);
+      ctx = createPeriodPdfContext(JsPdf, rows, "a3", 5.0);
     }
     if (!ctx.layout?.fits) {
       // Cas extrême : on reste en A3, mais on autorise une police plus petite
       // plutôt que de couper des informations.
-      ctx = createPeriodPdfContext(JsPdf, rows, "a3", 2.8);
+      ctx = createPeriodPdfContext(JsPdf, rows, "a3", 4.0);
     }
     if (!ctx.layout?.fits) {
       throw new Error("Le contenu de cette période est trop dense pour tenir intégralement sur une seule page.");
@@ -2331,7 +2333,7 @@ function exportPeriodPdf(periodNumber) {
     doc.setLineWidth(0.25);
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(format === "a3" ? 7.8 : 6.6);
+    doc.setFontSize(format === "a3" ? 9.0 : 7.9);
     columns.forEach((col, index) => {
       doc.rect(x, tableTop, col.width, headerHeight, "FD");
       const align = "center";
@@ -2347,8 +2349,8 @@ function exportPeriodPdf(periodNumber) {
     // Les cellules ne reçoivent aucun gros fond coloré.
     let y = tableTop + headerHeight;
     rows.forEach((row, rowIndex) => {
-      const rowData = Array.isArray(row) ? { cells: row, mergeActivityColumns: false, isEmptyWeek: false } : (row || { cells: ["", "", "", "", ""], mergeActivityColumns: false, isEmptyWeek: false });
-      const rowCells = Array.isArray(rowData.cells) ? rowData.cells : ["", "", "", "", ""];
+      const rowData = Array.isArray(row) ? { cells: row, mergeActivityColumns: false, isEmptyWeek: false } : (row || { cells: ["", "", "", ""], mergeActivityColumns: false, isEmptyWeek: false });
+      const rowCells = Array.isArray(rowData.cells) ? rowData.cells : ["", "", "", ""];
       const rowHeight = layout.heights[rowIndex];
       const rowFill = rowIndex % 2 === 1 ? zebra : [255, 255, 255];
 
@@ -2370,7 +2372,7 @@ function exportPeriodPdf(periodNumber) {
       x += columns[0].width;
 
       if (rowData.mergeActivityColumns) {
-        const mergedWidth = columns[1].width + columns[2].width + columns[3].width + columns[4].width;
+        const mergedWidth = columns[1].width + columns[2].width + columns[3].width;
         doc.setFillColor(...rowFill);
         doc.setDrawColor(...grid);
         doc.setLineWidth(0.18);
@@ -2402,7 +2404,7 @@ function exportPeriodPdf(periodNumber) {
         doc.rect(x, y, col.width, rowHeight, "FD");
 
         const lines = layout.wrappedRows[rowIndex][colIndex] || [];
-        if (rowData.isEmptyWeek && colIndex === 4) doc.setTextColor(...emptyText);
+        if (rowData.isEmptyWeek && colIndex === 3) doc.setTextColor(...emptyText);
         else doc.setTextColor(39, 48, 60);
 
         doc.setFont("helvetica", "normal");
