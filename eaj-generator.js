@@ -1962,11 +1962,12 @@ function buildWeekRowForPdf(anchorWednesday, events) {
   const monday = getMondayForDate(anchorWednesday);
   const sunday = addDaysLocal(monday, 6);
   const weekInfo = getIsoWeekInfoFromDateLocal(anchorWednesday);
-  const dateCell = `Semaine ${weekInfo?.week ?? ''}\nDu ${shortDateFr(monday)} au ${shortDateFr(sunday)}\nMer. ${shortDateFr(anchorWednesday)}`;
+  const dateCell = `Semaine ${weekInfo?.week ?? ''}\n\nDu ${shortDateFr(monday)} au ${shortDateFr(sunday)}\nMer. ${shortDateFr(anchorWednesday)}`;
 
   const eaj1 = [];
   const secondary = [];
-  const common = [];
+  const commonActivities = [];
+  const observations = [];
   const offMessages = [];
 
   (Array.isArray(events) ? events : []).forEach(week => {
@@ -1982,7 +1983,7 @@ function buildWeekRowForPdf(anchorWednesday, events) {
     }
 
     const note = normalizePdfText(week?.note);
-    if (note) pushPdfEntry(common, `${eventPrefix}Note : ${note}`, -1000);
+    if (note) pushPdfEntry(observations, `${eventPrefix}${note}`, -1000);
 
     sortPdfItemsByHour(Array.isArray(week?.groupes) ? week.groupes : [], item => `${getGroupKindForPdf(item)} ${normalizePdfText(item?.titre || '')}`)
       .forEach(group => {
@@ -1991,39 +1992,39 @@ function buildWeekRowForPdf(anchorWednesday, events) {
         if (!text) return;
         const sortKey = getPdfTimeSortKey(group?.horaire);
         if (kind === 'EAJ1') pushPdfEntry(eaj1, `${eventPrefix}${text}`, sortKey);
-        else if (kind === 'EAJ23') pushPdfEntry(secondary, `${eventPrefix}EAJ 2-3\n${text}`, sortKey);
+        else if (kind === 'EAJ23') pushPdfEntry(secondary, `${eventPrefix}${text}`, sortKey);
         else if (kind === 'EAJ2') pushPdfEntry(secondary, `${eventPrefix}EAJ2\n${text}`, sortKey);
         else if (kind === 'EAJ3') pushPdfEntry(secondary, `${eventPrefix}EAJ3\n${text}`, sortKey);
-        else pushPdfEntry(common, `${eventPrefix}${normalizePdfText(group.titre)}\n${text}`, sortKey);
+        else pushPdfEntry(observations, `${eventPrefix}${normalizePdfText(group.titre)}\n${text}`, sortKey);
       });
 
     sortPdfItemsByHour(Array.isArray(week?.activitesCommunes) ? week.activitesCommunes : [], item => normalizePdfText(item?.titre || item?.texte || ''))
       .forEach(entry => {
         const text = commonTextForPdf(entry);
-        if (text) pushPdfEntry(common, `${eventPrefix}${text}`, getPdfTimeSortKey(entry?.horaire));
+        if (text) pushPdfEntry(commonActivities, `${eventPrefix}${text}`, getPdfTimeSortKey(entry?.horaire));
       });
   });
 
   if (!events || events.length === 0) {
-    pushPdfEntry(common, 'Aucune activité programmée', 99999);
+    pushPdfEntry(observations, 'Aucune activité programmée', 99999);
   }
 
-  const hasOnlyOff = offMessages.length > 0 && eaj1.length === 0 && secondary.length === 0 && common.length === 0;
+  const hasOnlyOff = offMessages.length > 0 && eaj1.length === 0 && secondary.length === 0 && commonActivities.length === 0 && observations.length === 0;
   if (hasOnlyOff) {
     return {
-      cells: [dateCell, '', '', ''],
+      cells: [dateCell, '', '', '', ''],
       mergeActivityColumns: true,
       mergeText: offMessages.join('\n'),
       isEmptyWeek: false
     };
   }
 
-  const cells = [dateCell, joinPdfEntries(eaj1), joinPdfEntries(secondary), joinPdfEntries(common)];
+  const cells = [dateCell, joinPdfEntries(eaj1), joinPdfEntries(secondary), joinPdfEntries(commonActivities), joinPdfEntries(observations)];
   return {
     cells,
     mergeActivityColumns: false,
     mergeText: '',
-    isEmptyWeek: cells[3] === 'Aucune activité programmée' && !cells[1] && !cells[2]
+    isEmptyWeek: cells[4] === 'Aucune activité programmée' && !cells[1] && !cells[2] && !cells[3]
   };
 }
 
@@ -2165,15 +2166,16 @@ function calculatePdfLayout(doc, rows, columns, availableHeight, options = {}) {
   while (fontSize >= minFontSize - 0.001) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(fontSize);
-    const lineHeight = fontSize * 0.3528 * 1.18;
+    const lineHeight = fontSize * 0.3528 * 1.24;
     const wrappedRows = rows.map(row => {
-      const rowData = Array.isArray(row) ? { cells: row, mergeActivityColumns: false, mergeText: "" } : (row || { cells: ["", "", "", ""], mergeActivityColumns: false, mergeText: "" });
-      const cells = Array.isArray(rowData.cells) ? rowData.cells : ["", "", "", ""];
+      const rowData = Array.isArray(row) ? { cells: row, mergeActivityColumns: false, mergeText: "" } : (row || { cells: ["", "", "", "", ""], mergeActivityColumns: false, mergeText: "" });
+      const cells = Array.isArray(rowData.cells) ? rowData.cells : ["", "", "", "", ""];
       if (rowData.mergeActivityColumns) {
         const mergedWidth = columns[1].width + columns[2].width + columns[3].width - 2.4;
         return [
           splitPdfCell(doc, cells[0], columns[0].width - 2.4),
           splitPdfCell(doc, rowData.mergeText || "", mergedWidth),
+          [],
           [],
           []
         ];
@@ -2182,7 +2184,7 @@ function calculatePdfLayout(doc, rows, columns, availableHeight, options = {}) {
     });
     const heights = wrappedRows.map(cells => {
       const maxLines = Math.max(1, ...cells.map(lines => Math.max(1, lines.length)));
-      return Math.max(6.0, maxLines * lineHeight + 2.0);
+      return Math.max(6.8, maxLines * lineHeight + 2.8);
     });
     const totalHeight = heights.reduce((sum, h) => sum + h, 0);
     result = { fontSize, lineHeight, wrappedRows, heights, totalHeight, fits: totalHeight <= availableHeight };
@@ -2207,15 +2209,17 @@ function createPeriodPdfContext(JsPdf, rows, format = "a4", minFontSize = 4.2) {
 
   // Les proportions restent les mêmes en A4 et en A3 ; en A3, les cellules
   // sont simplement plus larges, donc le texte revient moins souvent à la ligne.
-  const dateWidth = usableWidth * 0.13;
-  const eaj1Width = usableWidth * 0.29;
-  const secondaryWidth = usableWidth * 0.31;
-  const commonWidth = usableWidth - dateWidth - eaj1Width - secondaryWidth;
+  const dateWidth = usableWidth * 0.14;
+  const eaj1Width = usableWidth * 0.23;
+  const secondaryWidth = usableWidth * 0.23;
+  const commonWidth = usableWidth * 0.24;
+  const observationWidth = usableWidth - dateWidth - eaj1Width - secondaryWidth - commonWidth;
   const columns = [
     { title: "SEMAINE", width: dateWidth },
-    { title: "EAJ1", width: eaj1Width },
-    { title: "EAJ2 / EAJ3 / EAJ 2-3", width: secondaryWidth },
-    { title: "COMMUN / INFORMATIONS", width: commonWidth }
+    { title: "EAJ 1", width: eaj1Width },
+    { title: "EAJ 2-3", width: secondaryWidth },
+    { title: "ACTIVITES COMMUNES", width: commonWidth },
+    { title: "OBSERVATIONS", width: observationWidth }
   ];
 
   const layout = calculatePdfLayout(doc, rows, columns, availableBodyHeight, {
@@ -2330,8 +2334,8 @@ function exportPeriodPdf(periodNumber) {
     doc.setFontSize(format === "a3" ? 7.8 : 6.6);
     columns.forEach((col, index) => {
       doc.rect(x, tableTop, col.width, headerHeight, "FD");
-      const align = index === 0 ? "center" : "left";
-      const tx = index === 0 ? x + (col.width / 2) : x + 1.5;
+      const align = "center";
+      const tx = x + (col.width / 2);
       doc.text(col.title, tx, tableTop + (format === "a3" ? 5.25 : 4.55), {
         maxWidth: col.width - 3,
         align
@@ -2343,8 +2347,8 @@ function exportPeriodPdf(periodNumber) {
     // Les cellules ne reçoivent aucun gros fond coloré.
     let y = tableTop + headerHeight;
     rows.forEach((row, rowIndex) => {
-      const rowData = Array.isArray(row) ? { cells: row, mergeActivityColumns: false, isEmptyWeek: false } : (row || { cells: ["", "", "", ""], mergeActivityColumns: false, isEmptyWeek: false });
-      const rowCells = Array.isArray(rowData.cells) ? rowData.cells : ["", "", "", ""];
+      const rowData = Array.isArray(row) ? { cells: row, mergeActivityColumns: false, isEmptyWeek: false } : (row || { cells: ["", "", "", "", ""], mergeActivityColumns: false, isEmptyWeek: false });
+      const rowCells = Array.isArray(rowData.cells) ? rowData.cells : ["", "", "", "", ""];
       const rowHeight = layout.heights[rowIndex];
       const rowFill = rowIndex % 2 === 1 ? zebra : [255, 255, 255];
 
@@ -2357,7 +2361,7 @@ function exportPeriodPdf(periodNumber) {
       doc.setTextColor(...navy);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(layout.fontSize);
-      let dateTextY = y + 1.55 + layout.lineHeight;
+      let dateTextY = y + 1.85 + layout.lineHeight;
       (layout.wrappedRows[rowIndex][0] || []).forEach(lineInfo => {
         const line = typeof lineInfo === "string" ? lineInfo : lineInfo.text;
         doc.text(line, x + 1.35, dateTextY, { baseline: "alphabetic" });
@@ -2366,7 +2370,7 @@ function exportPeriodPdf(periodNumber) {
       x += columns[0].width;
 
       if (rowData.mergeActivityColumns) {
-        const mergedWidth = columns[1].width + columns[2].width + columns[3].width;
+        const mergedWidth = columns[1].width + columns[2].width + columns[3].width + columns[4].width;
         doc.setFillColor(...rowFill);
         doc.setDrawColor(...grid);
         doc.setLineWidth(0.18);
@@ -2398,12 +2402,12 @@ function exportPeriodPdf(periodNumber) {
         doc.rect(x, y, col.width, rowHeight, "FD");
 
         const lines = layout.wrappedRows[rowIndex][colIndex] || [];
-        if (rowData.isEmptyWeek && colIndex === 3) doc.setTextColor(...emptyText);
+        if (rowData.isEmptyWeek && colIndex === 4) doc.setTextColor(...emptyText);
         else doc.setTextColor(39, 48, 60);
 
         doc.setFont("helvetica", "normal");
         doc.setFontSize(layout.fontSize);
-        let textY = y + 1.55 + layout.lineHeight;
+        let textY = y + 1.85 + layout.lineHeight;
         lines.forEach(lineInfo => {
           const line = typeof lineInfo === "string" ? lineInfo : lineInfo.text;
           const activityType = typeof lineInfo === "object" ? lineInfo.activityType : null;
