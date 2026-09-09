@@ -14,11 +14,11 @@ const TYPES_ACTIVITE = {
 };
 
 // v1.8.2 — Meta
-const APP_VERSION = "1.9.4";
+const APP_VERSION = "1.9.5";
 
 // 📲 WhatsApp (format international sans + ni espaces). Exemple : 33612345678
 // Laisse vide si tu ne veux pas afficher le bouton.
-const WHATSAPP_PHONE = "33675665959";
+const WHATSAPP_PHONE = "33614732790";
 
 /* ---------- Source planning Supabase / fallback ---------- */
 
@@ -1506,7 +1506,7 @@ function initialiserClothesExchange(){
       : "Je souhaite faire un échange de vêtements (cassé / abîmé).";
 
     let msg =
-`Bonjour Marcus,\n\n` +
+`Bonjour Yoann,\n\n` +
 `${intro}\n\n` +
 `• Prénom : ${prenom || "(à compléter)"}\n` +
 `• Groupe : ${groupe || "(à choisir)"}\n` +
@@ -1731,7 +1731,7 @@ function initialiserOfflineMode() {
   window.addEventListener("online", refreshPlanningAfterReconnect);
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js?v=1.9.4", { scope: "./" })
+    navigator.serviceWorker.register("./sw.js?v=1.9.5", { scope: "./" })
       .catch((error) => console.warn("Service Worker hors ligne indisponible :", error));
   }
 }
@@ -1888,7 +1888,7 @@ async function getPushServiceWorkerRegistration() {
   if (__eajPushRegistration) return __eajPushRegistration;
   if (!pushIsSupported()) return null;
 
-  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.9.4", {
+  __eajPushRegistration = await navigator.serviceWorker.register("./sw.js?v=1.9.5", {
     scope: "./",
     updateViaCache: "none"
   });

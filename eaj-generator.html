@@ -1038,7 +1038,7 @@
     .compact-action-pack { justify-content: flex-start; margin: .65rem 0; }
     .compact-output-block { margin-top: .5rem; }
 
-    /* ===== Exports PDF par période v1.9.4 ===== */
+    /* ===== Exports PDF par période v1.9.5 ===== */
     .pdf-export-card {
       border: 1px solid var(--border-soft);
       border-radius: 1rem;
@@ -1556,7 +1556,7 @@
 
   <!-- Scripts : Supabase + données de secours + générateur -->
 <script>
-  window.EAJ_BUILD = "1.9.4";
+  window.EAJ_BUILD = "1.9.5";
   (function () {
     const bust = Date.now();
 
@@ -1618,13 +1618,13 @@
     }
 
     loadClassic("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", function () {
-      loadSafe(`./supabase-config.js?v=1.9.4-${bust}`, function () {
-        loadSafe(`./planning.js?v=1.9.4-${bust}`, function () {
-          loadSafe(`./planning-api.js?v=1.9.4-${bust}`, function (apiOk) {
+      loadSafe(`./supabase-config.js?v=1.9.5-${bust}`, function () {
+        loadSafe(`./planning.js?v=1.9.5-${bust}`, function () {
+          loadSafe(`./planning-api.js?v=1.9.5-${bust}`, function (apiOk) {
             if (!apiOk) return;
             loadClassic("https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js", function (pdfOk) {
               if (!pdfOk) console.warn("Bibliothèque PDF indisponible : les autres fonctions d’administration restent utilisables.");
-              loadSafe(`./eaj-generator.js?v=1.9.4-${bust}`);
+              loadSafe(`./eaj-generator.js?v=1.9.5-${bust}`);
             });
           });
         }, { optional: true });

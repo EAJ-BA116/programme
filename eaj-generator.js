@@ -1865,111 +1865,166 @@ function getGroupKindForPdf(group) {
   return "OTHER";
 }
 
+
+function getIsoWeekInfoFromDateLocal(d) {
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return null;
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  const isoYear = date.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+  const week = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  return { week, year: isoYear };
+}
+
+function getPdfTimeSortKey(value) {
+  const text = normalizePdfText(value).toLowerCase();
+  const match = text.match(/(\d{1,2})\s*[h:]\s*(\d{0,2})/);
+  if (!match) return 99999;
+  return (Number(match[1]) * 60) + Number(match[2] || 0);
+}
+
+function sortPdfItemsByHour(items = [], getLabel = (item => normalizePdfText(item?.texte || item?.titre || ""))) {
+  return [...items].sort((a, b) => {
+    const diff = getPdfTimeSortKey(a?.horaire) - getPdfTimeSortKey(b?.horaire);
+    if (diff !== 0) return diff;
+    return getLabel(a).localeCompare(getLabel(b), 'fr', { sensitivity: 'base' });
+  });
+}
+
+function pushPdfEntry(target, text, sortKey = 99999) {
+  const clean = String(text || '').trim();
+  if (!clean) return;
+  target.push({ text: clean, sortKey });
+}
+
+function joinPdfEntries(entries = []) {
+  return [...entries]
+    .sort((a, b) => (a.sortKey - b.sortKey) || a.text.localeCompare(b.text, 'fr', { sensitivity: 'base' }))
+    .map(entry => entry.text)
+    .join('\n\n');
+}
+
 function activityTextForPdf(activity) {
-  if (!activity) return "";
-  const activityType = TYPES_ACTIVITE_DEFINITION[activity.type] ? activity.type : "autre";
-  const type = TYPES_ACTIVITE_DEFINITION[activityType]?.label || "Activité";
-  const parts = [];
+  if (!activity) return '';
+  const activityType = TYPES_ACTIVITE_DEFINITION[activity.type] ? activity.type : 'autre';
+  const type = TYPES_ACTIVITE_DEFINITION[activityType]?.label || 'Activité';
   const texte = normalizePdfText(activity.texte);
-  if (texte) parts.push(`${type}: ${texte}`);
-  const infos = [];
-  if (activity.horaire) infos.push(normalizePdfText(activity.horaire));
-  if (activity.lieu) infos.push(`lieu ${normalizePdfText(activity.lieu)}`);
-  if (activity.tenue) infos.push(`tenue ${normalizePdfText(activity.tenue)}`);
-  if (activity.materiel) infos.push(`mat. ${normalizePdfText(activity.materiel)}`);
-  if (activity.encadrant) infos.push(`enc. ${normalizePdfText(activity.encadrant)}`);
-  if (infos.length) parts.push(`[${infos.join(" | ")}]`);
-  // Marqueur interne : il n'est jamais imprimé. Il permet au moteur PDF
-  // de remettre l'emoji et la couleur de l'activité au moment du dessin.
-  return `[[ACT:${activityType}]]${parts.join(" ")}`;
+  const title = texte ? `${type} : ${texte}` : type;
+  const parts = [];
+  if (activity.horaire) parts.push(normalizePdfText(activity.horaire));
+  parts.push(title);
+  if (activity.lieu) parts.push(`Lieu ${normalizePdfText(activity.lieu)}`);
+  if (activity.encadrant) parts.push(`Enc. ${normalizePdfText(activity.encadrant)}`);
+  return `[[ACT:${activityType}]]${parts.join(' | ')}`;
 }
 
 function groupTextForPdf(group) {
-  if (!group) return "";
+  if (!group) return '';
   const lines = [];
-  const groupInfos = [];
-  if (group.horaire) groupInfos.push(normalizePdfText(group.horaire));
-  if (group.lieu) groupInfos.push(`lieu ${normalizePdfText(group.lieu)}`);
-  if (group.tenue) groupInfos.push(`tenue ${normalizePdfText(group.tenue)}`);
-  if (group.materiel) groupInfos.push(`mat. ${normalizePdfText(group.materiel)}`);
-  if (group.encadrant) groupInfos.push(`enc. ${normalizePdfText(group.encadrant)}`);
-  if (group.tag) groupInfos.push(normalizePdfText(group.tag));
-  if (groupInfos.length) lines.push(groupInfos.join(" | "));
+  const sessionInfos = [];
+  if (group.horaire) sessionInfos.push(normalizePdfText(group.horaire));
+  if (group.lieu) sessionInfos.push(`Lieu ${normalizePdfText(group.lieu)}`);
+  if (group.encadrant) sessionInfos.push(`Enc. ${normalizePdfText(group.encadrant)}`);
+  if (sessionInfos.length) lines.push(sessionInfos.join(' | '));
 
-  (Array.isArray(group.activites) ? group.activites : []).forEach(activity => {
-    const text = activityTextForPdf(activity);
-    if (text) lines.push(text);
-  });
-  return lines.join("\n");
+  sortPdfItemsByHour(Array.isArray(group.activites) ? group.activites : [], item => normalizePdfText(item?.texte || ''))
+    .forEach(activity => {
+      const text = activityTextForPdf(activity);
+      if (text) lines.push(text);
+    });
+
+  return lines.join('\n\n');
 }
 
 function commonTextForPdf(entry) {
-  if (!entry) return "";
+  if (!entry) return '';
   const lines = [];
   const groups = Array.isArray(entry.groupes) && entry.groupes.length
-    ? normalizePdfText(entry.groupes.join(" / ").replace("EAJ23", "EAJ2-3"))
-    : "Tous groupes";
-  const meta = [];
+    ? normalizePdfText(entry.groupes.join(' / ').replace('EAJ23', 'EAJ2-3'))
+    : 'Tous groupes';
+  const meta = [groups];
   if (entry.horaire) meta.push(normalizePdfText(entry.horaire));
-  if (entry.lieu) meta.push(`lieu ${normalizePdfText(entry.lieu)}`);
-  if (entry.tenue) meta.push(`tenue ${normalizePdfText(entry.tenue)}`);
-  if (entry.materiel) meta.push(`mat. ${normalizePdfText(entry.materiel)}`);
-  if (entry.encadrant) meta.push(`enc. ${normalizePdfText(entry.encadrant)}`);
-  if (entry.tag) meta.push(normalizePdfText(entry.tag));
-  lines.push(`${groups}${meta.length ? ` - ${meta.join(" | ")}` : ""}`);
-  (Array.isArray(entry.activites) ? entry.activites : []).forEach(activity => {
-    const text = activityTextForPdf(activity);
-    if (text) lines.push(text);
-  });
-  return lines.join("\n");
+  if (entry.lieu) meta.push(`Lieu ${normalizePdfText(entry.lieu)}`);
+  if (entry.encadrant) meta.push(`Enc. ${normalizePdfText(entry.encadrant)}`);
+  lines.push(meta.join(' | '));
+
+  sortPdfItemsByHour(Array.isArray(entry.activites) ? entry.activites : [], item => normalizePdfText(item?.texte || ''))
+    .forEach(activity => {
+      const text = activityTextForPdf(activity);
+      if (text) lines.push(text);
+    });
+
+  return lines.join('\n\n');
 }
 
 function buildWeekRowForPdf(anchorWednesday, events) {
   const monday = getMondayForDate(anchorWednesday);
   const sunday = addDaysLocal(monday, 6);
-  const dateCell = `Semaine du ${shortDateFr(monday)} au ${shortDateFr(sunday)}\nMer. ${shortDateFr(anchorWednesday)}`;
+  const weekInfo = getIsoWeekInfoFromDateLocal(anchorWednesday);
+  const dateCell = `Semaine ${weekInfo?.week ?? ''}\nDu ${shortDateFr(monday)} au ${shortDateFr(sunday)}\nMer. ${shortDateFr(anchorWednesday)}`;
 
   const eaj1 = [];
   const secondary = [];
   const common = [];
+  const offMessages = [];
 
   (Array.isArray(events) ? events : []).forEach(week => {
     const eventDate = parseIsoLocal(week?.isoDate);
     const eventPrefix = eventDate && dateToIsoLocal(eventDate) !== dateToIsoLocal(anchorWednesday)
       ? `${shortDateFr(eventDate)} - `
-      : "";
+      : '';
 
-    if (week?.statut === "off") {
-      const reason = normalizePdfText(week.messageOff || week.note || "Pas de séance");
-      common.push(`${eventPrefix}PAS DE SÉANCE${reason ? ` - ${reason}` : ""}`);
+    if (week?.statut === 'off') {
+      const reason = normalizePdfText(week.messageOff || week.note || 'Vacances / interruption');
+      offMessages.push(`${eventPrefix}PAS DE SÉANCE - ${reason}`);
       return;
     }
 
     const note = normalizePdfText(week?.note);
-    if (note) common.push(`${eventPrefix}Note : ${note}`);
+    if (note) pushPdfEntry(common, `${eventPrefix}Note : ${note}`, -1000);
 
-    (Array.isArray(week?.groupes) ? week.groupes : []).forEach(group => {
-      const kind = getGroupKindForPdf(group);
-      const text = groupTextForPdf(group);
-      if (!text) return;
-      if (kind === "EAJ1") eaj1.push(`${eventPrefix}${text}`);
-      else if (kind === "EAJ23") secondary.push(`${eventPrefix}EAJ 2-3 :\n${text}`);
-      else if (kind === "EAJ2") secondary.push(`${eventPrefix}EAJ2 :\n${text}`);
-      else if (kind === "EAJ3") secondary.push(`${eventPrefix}EAJ3 :\n${text}`);
-      else common.push(`${eventPrefix}${normalizePdfText(group.titre)} :\n${text}`);
-    });
+    sortPdfItemsByHour(Array.isArray(week?.groupes) ? week.groupes : [], item => `${getGroupKindForPdf(item)} ${normalizePdfText(item?.titre || '')}`)
+      .forEach(group => {
+        const kind = getGroupKindForPdf(group);
+        const text = groupTextForPdf(group);
+        if (!text) return;
+        const sortKey = getPdfTimeSortKey(group?.horaire);
+        if (kind === 'EAJ1') pushPdfEntry(eaj1, `${eventPrefix}${text}`, sortKey);
+        else if (kind === 'EAJ23') pushPdfEntry(secondary, `${eventPrefix}EAJ 2-3\n${text}`, sortKey);
+        else if (kind === 'EAJ2') pushPdfEntry(secondary, `${eventPrefix}EAJ2\n${text}`, sortKey);
+        else if (kind === 'EAJ3') pushPdfEntry(secondary, `${eventPrefix}EAJ3\n${text}`, sortKey);
+        else pushPdfEntry(common, `${eventPrefix}${normalizePdfText(group.titre)}\n${text}`, sortKey);
+      });
 
-    (Array.isArray(week?.activitesCommunes) ? week.activitesCommunes : []).forEach(entry => {
-      const text = commonTextForPdf(entry);
-      if (text) common.push(`${eventPrefix}${text}`);
-    });
+    sortPdfItemsByHour(Array.isArray(week?.activitesCommunes) ? week.activitesCommunes : [], item => normalizePdfText(item?.titre || item?.texte || ''))
+      .forEach(entry => {
+        const text = commonTextForPdf(entry);
+        if (text) pushPdfEntry(common, `${eventPrefix}${text}`, getPdfTimeSortKey(entry?.horaire));
+      });
   });
 
   if (!events || events.length === 0) {
-    common.push("Aucune activité programmée");
+    pushPdfEntry(common, 'Aucune activité programmée', 99999);
   }
 
-  return [dateCell, eaj1.join("\n"), secondary.join("\n"), common.join("\n")];
+  const hasOnlyOff = offMessages.length > 0 && eaj1.length === 0 && secondary.length === 0 && common.length === 0;
+  if (hasOnlyOff) {
+    return {
+      cells: [dateCell, '', '', ''],
+      mergeActivityColumns: true,
+      mergeText: offMessages.join('\n'),
+      isEmptyWeek: false
+    };
+  }
+
+  const cells = [dateCell, joinPdfEntries(eaj1), joinPdfEntries(secondary), joinPdfEntries(common)];
+  return {
+    cells,
+    mergeActivityColumns: false,
+    mergeText: '',
+    isEmptyWeek: cells[3] === 'Aucune activité programmée' && !cells[1] && !cells[2]
+  };
 }
 
 function buildPeriodRowsForPdf(periodNumber, academicStartYear, weeks) {
@@ -1983,7 +2038,11 @@ function buildPeriodRowsForPdf(periodNumber, academicStartYear, weeks) {
 
   return getPeriodWednesdays(periodNumber, academicStartYear).map(wednesday => {
     const key = dateToIsoLocal(getMondayForDate(wednesday));
-    const events = (eventsByWeek.get(key) || []).slice().sort((a, b) => String(a.isoDate).localeCompare(String(b.isoDate)));
+    const events = (eventsByWeek.get(key) || []).slice().sort((a, b) => {
+      const dateDiff = String(a?.isoDate || '').localeCompare(String(b?.isoDate || ''));
+      if (dateDiff !== 0) return dateDiff;
+      return getPdfTimeSortKey(a?.horaire) - getPdfTimeSortKey(b?.horaire);
+    });
     return buildWeekRowForPdf(wednesday, events);
   });
 }
@@ -2106,11 +2165,24 @@ function calculatePdfLayout(doc, rows, columns, availableHeight, options = {}) {
   while (fontSize >= minFontSize - 0.001) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(fontSize);
-    const lineHeight = fontSize * 0.3528 * 1.10;
-    const wrappedRows = rows.map(row => row.map((cell, idx) => splitPdfCell(doc, cell, columns[idx].width - 2.4)));
+    const lineHeight = fontSize * 0.3528 * 1.18;
+    const wrappedRows = rows.map(row => {
+      const rowData = Array.isArray(row) ? { cells: row, mergeActivityColumns: false, mergeText: "" } : (row || { cells: ["", "", "", ""], mergeActivityColumns: false, mergeText: "" });
+      const cells = Array.isArray(rowData.cells) ? rowData.cells : ["", "", "", ""];
+      if (rowData.mergeActivityColumns) {
+        const mergedWidth = columns[1].width + columns[2].width + columns[3].width - 2.4;
+        return [
+          splitPdfCell(doc, cells[0], columns[0].width - 2.4),
+          splitPdfCell(doc, rowData.mergeText || "", mergedWidth),
+          [],
+          []
+        ];
+      }
+      return cells.map((cell, idx) => splitPdfCell(doc, cell, columns[idx].width - 2.4));
+    });
     const heights = wrappedRows.map(cells => {
       const maxLines = Math.max(1, ...cells.map(lines => Math.max(1, lines.length)));
-      return Math.max(5.0, maxLines * lineHeight + 1.6);
+      return Math.max(6.0, maxLines * lineHeight + 2.0);
     });
     const totalHeight = heights.reduce((sum, h) => sum + h, 0);
     result = { fontSize, lineHeight, wrappedRows, heights, totalHeight, fits: totalHeight <= availableHeight };
@@ -2135,9 +2207,9 @@ function createPeriodPdfContext(JsPdf, rows, format = "a4", minFontSize = 4.2) {
 
   // Les proportions restent les mêmes en A4 et en A3 ; en A3, les cellules
   // sont simplement plus larges, donc le texte revient moins souvent à la ligne.
-  const dateWidth = usableWidth * 0.115;
-  const eaj1Width = usableWidth * 0.312;
-  const secondaryWidth = usableWidth * 0.352;
+  const dateWidth = usableWidth * 0.13;
+  const eaj1Width = usableWidth * 0.29;
+  const secondaryWidth = usableWidth * 0.31;
   const commonWidth = usableWidth - dateWidth - eaj1Width - secondaryWidth;
   const columns = [
     { title: "SEMAINE", width: dateWidth },
@@ -2147,7 +2219,7 @@ function createPeriodPdfContext(JsPdf, rows, format = "a4", minFontSize = 4.2) {
   ];
 
   const layout = calculatePdfLayout(doc, rows, columns, availableBodyHeight, {
-    startFontSize: format === "a3" ? 7.0 : 6.2,
+    startFontSize: format === "a3" ? 7.0 : 6.4,
     minFontSize,
     step: 0.2
   });
@@ -2271,26 +2343,67 @@ function exportPeriodPdf(periodNumber) {
     // Les cellules ne reçoivent aucun gros fond coloré.
     let y = tableTop + headerHeight;
     rows.forEach((row, rowIndex) => {
+      const rowData = Array.isArray(row) ? { cells: row, mergeActivityColumns: false, isEmptyWeek: false } : (row || { cells: ["", "", "", ""], mergeActivityColumns: false, isEmptyWeek: false });
+      const rowCells = Array.isArray(rowData.cells) ? rowData.cells : ["", "", "", ""];
       const rowHeight = layout.heights[rowIndex];
+      const rowFill = rowIndex % 2 === 1 ? zebra : [255, 255, 255];
+
+      // Colonne SEMAINE toujours dessinée normalement.
       x = marginX;
-      const isEmptyWeek = row[3] === "Aucune activité programmée" && !row[1] && !row[2];
+      doc.setFillColor(...rowFill);
+      doc.setDrawColor(...grid);
+      doc.setLineWidth(0.18);
+      doc.rect(x, y, columns[0].width, rowHeight, "FD");
+      doc.setTextColor(...navy);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(layout.fontSize);
+      let dateTextY = y + 1.55 + layout.lineHeight;
+      (layout.wrappedRows[rowIndex][0] || []).forEach(lineInfo => {
+        const line = typeof lineInfo === "string" ? lineInfo : lineInfo.text;
+        doc.text(line, x + 1.35, dateTextY, { baseline: "alphabetic" });
+        dateTextY += layout.lineHeight;
+      });
+      x += columns[0].width;
 
-      columns.forEach((col, colIndex) => {
-        if (rowIndex % 2 === 1) doc.setFillColor(...zebra);
-        else doc.setFillColor(255, 255, 255);
+      if (rowData.mergeActivityColumns) {
+        const mergedWidth = columns[1].width + columns[2].width + columns[3].width;
+        doc.setFillColor(...rowFill);
+        doc.setDrawColor(...grid);
+        doc.setLineWidth(0.18);
+        doc.rect(x, y, mergedWidth, rowHeight, "FD");
+        doc.setTextColor(55, 65, 81);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(layout.fontSize + 0.15);
+        const lines = layout.wrappedRows[rowIndex][1] || [];
+        const textBlockHeight = Math.max(layout.lineHeight, lines.length * layout.lineHeight);
+        let textY = y + ((rowHeight - textBlockHeight) / 2) + layout.lineHeight * 0.82;
+        lines.forEach(lineInfo => {
+          const line = typeof lineInfo === "string" ? lineInfo : lineInfo.text;
+          doc.text(line, x + (mergedWidth / 2), textY, {
+            baseline: "alphabetic",
+            align: "center",
+            maxWidth: mergedWidth - 6
+          });
+          textY += layout.lineHeight;
+        });
+        y += rowHeight;
+        return;
+      }
 
+      columns.slice(1).forEach((col, relativeIndex) => {
+        const colIndex = relativeIndex + 1;
+        doc.setFillColor(...rowFill);
         doc.setDrawColor(...grid);
         doc.setLineWidth(0.18);
         doc.rect(x, y, col.width, rowHeight, "FD");
 
-        const lines = layout.wrappedRows[rowIndex][colIndex];
-        if (isEmptyWeek && colIndex === 3) doc.setTextColor(...emptyText);
-        else if (colIndex === 0) doc.setTextColor(...navy);
+        const lines = layout.wrappedRows[rowIndex][colIndex] || [];
+        if (rowData.isEmptyWeek && colIndex === 3) doc.setTextColor(...emptyText);
         else doc.setTextColor(39, 48, 60);
 
-        doc.setFont("helvetica", colIndex === 0 ? "bold" : "normal");
+        doc.setFont("helvetica", "normal");
         doc.setFontSize(layout.fontSize);
-        let textY = y + 1.25 + layout.lineHeight;
+        let textY = y + 1.55 + layout.lineHeight;
         lines.forEach(lineInfo => {
           const line = typeof lineInfo === "string" ? lineInfo : lineInfo.text;
           const activityType = typeof lineInfo === "object" ? lineInfo.activityType : null;
